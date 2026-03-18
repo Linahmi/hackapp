@@ -1,64 +1,151 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import Loader from "@/components/Loader";
+import RequestCard from "@/components/RequestCard";
+import ValidationPanel from "@/components/ValidationPanel";
+import SupplierTable from "@/components/SupplierTable";
+import EscalationPanel from "@/components/EscalationPanel";
+import RecommendationCard from "@/components/RecommendationCard";
+import AuditTrail from "@/components/AuditTrail";
+import DiffView from "@/components/DiffView";
+
+const EXAMPLE_TEXT =
+  "Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception.";
+
+type Stage = "idle" | "intake" | "processing" | "done" | "error";
 
 export default function Home() {
+  const [text, setText] = useState("");
+  const [stage, setStage] = useState<Stage>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [intake, setIntake] = useState<any>(null);
+  const [result, setResult] = useState<any>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!text.trim()) return;
+
+    setError(null);
+    setIntake(null);
+    setResult(null);
+
+    try {
+      // Step 1: intake — parse raw text → structured request
+      setStage("intake");
+      const intakeRes = await fetch("/api/intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text.trim() }),
+      });
+      if (!intakeRes.ok) {
+        const body = await intakeRes.json();
+        throw new Error(body.error ?? "Intake failed");
+      }
+      const intakeData = await intakeRes.json();
+      setIntake(intakeData);
+
+      // Step 2: process — run full pipeline on structured request
+      setStage("processing");
+      const processRes = await fetch("/api/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(intakeData),
+      });
+      if (!processRes.ok) {
+        const body = await processRes.json();
+        throw new Error(body.error ?? "Processing failed");
+      }
+      const processData = await processRes.json();
+      setResult(processData);
+      setStage("done");
+    } catch (err: any) {
+      setError(err.message ?? "Unknown error");
+      setStage("error");
+    }
+  }
+
+  const isLoading = stage === "intake" || stage === "processing";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-zinc-50">
+      {/* Header */}
+      <header className="border-b border-zinc-200 bg-white px-6 py-4">
+        <div className="mx-auto max-w-5xl">
+          <h1 className="text-lg font-bold text-zinc-900">Procurement Intelligence</h1>
+          <p className="text-sm text-zinc-500">Paste a free-text procurement request to analyse it end-to-end.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+      </header>
+
+      <main className="mx-auto max-w-5xl px-6 py-8 space-y-6">
+        {/* Input form */}
+        <form onSubmit={handleSubmit} className="rounded-xl border border-zinc-200 bg-white shadow-sm">
+          <div className="border-b border-zinc-100 px-5 py-3">
+            <h2 className="text-sm font-semibold text-zinc-800">Request Text</h2>
+          </div>
+          <div className="px-5 py-4 space-y-3">
+            <textarea
+              className="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-800 placeholder-zinc-400 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none"
+              rows={4}
+              placeholder="e.g. Need 100 laptops for the Berlin office by end of month, budget EUR 90 000, prefer Dell…"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              disabled={isLoading}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setText(EXAMPLE_TEXT)}
+                className="text-xs text-indigo-500 hover:text-indigo-700 underline underline-offset-2"
+                disabled={isLoading}
+              >
+                Load example
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading || !text.trim()}
+                className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+              >
+                {isLoading ? "Analysing…" : "Analyse Request"}
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {/* Loading states */}
+        {stage === "intake" && <Loader message="Parsing request with Claude…" />}
+        {stage === "processing" && <Loader message="Running procurement pipeline…" />}
+
+        {/* Error */}
+        {stage === "error" && error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+            <span className="font-semibold">Error: </span>{error}
+          </div>
+        )}
+
+        {/* Results */}
+        {stage === "done" && result && (
+          <>
+            <RecommendationCard
+              recommendation={result.recommendation}
+              policyEvaluation={result.policy_evaluation}
+            />
+            <RequestCard
+              interpretation={result.request_interpretation}
+              confidence={result.confidence_score}
+              requestId={result.request_id}
+            />
+            <ValidationPanel validation={result.validation} />
+            <SupplierTable
+              shortlist={result.supplier_shortlist}
+              excluded={result.suppliers_excluded}
+              currency={result.request_interpretation?.currency}
+            />
+            <EscalationPanel escalations={result.escalations} />
+            <AuditTrail auditTrail={result.audit_trail} processedAt={result.processed_at} />
+            <DiffView rawText={text} structured={result.request_interpretation} />
+          </>
+        )}
       </main>
     </div>
   );
