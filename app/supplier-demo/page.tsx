@@ -30,8 +30,6 @@ type MetaEntry = {
   risk: "Low" | "Med" | "High"; esg: "A" | "B" | "C" | "D";
   blocked: boolean; blockedReason?: string;
   preferred?: boolean; incumbent?: boolean;
-  tcoBreakdown?: { base_cost: number; reliability_cost: number; lead_time_risk: number; risk_premium: number } | null;
-  tcoVsBudgetPct?: number | null;
 };
 
 const DEMO_META: Record<string, MetaEntry> = {
@@ -128,18 +126,38 @@ function generateExplanation(bestName: string, runnerUp: string, w: Weights, raw
   );
 }
 
-const FIXED_WEIGHTS: Weights = { price: 35, risk: 20, delivery: 25, esg: 20 };
+// ─── Slider ───────────────────────────────────────────────────────────────────
+
+function WeightSlider({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex flex-col gap-3 group">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 transition-colors">{label}</span>
+        <span className="w-8 text-right text-sm font-bold tabular-nums text-gray-900 dark:text-white group-hover:text-red-500 transition-colors">{value}</span>
+      </div>
+      <input
+        type="range" min={0} max={100} step={1} value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full cursor-pointer h-1.5 rounded-full appearance-none bg-gray-200 dark:bg-gray-800 outline-none slider-thumb-red"
+        style={{ accentColor: "#dc2626" }}
+      />
+    </div>
+  );
+}
 
 // ─── Why panel ────────────────────────────────────────────────────────────────
 
 function WhyPanel({ text }: { text: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-[#1A1D27] px-5 py-4">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#C8102E]" />
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Why this recommendation?</h3>
+    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-[#1A1D27]/80 backdrop-blur-md px-6 py-5 shadow-sm transition-all hover:shadow-md animate-fade-slide-up delay-150">
+      <div className="flex items-center gap-2.5 mb-3">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+        </span>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">Why this recommendation?</h3>
       </div>
-      <p className="text-sm leading-relaxed text-gray-200">{text}</p>
+      <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium">{text}</p>
     </div>
   );
 }
@@ -190,14 +208,12 @@ export default function SupplierDemoPage() {
       };
       meta[s.supplier_name] = {
         price:    formatAmount(s.total_price, currency),
-        tco:      s.tco ? formatAmount(s.tco, currency) : formatAmount(Math.round(s.total_price * 1.06), currency),
+        tco:      s.tco != null ? formatAmount(s.tco, currency) : "N/A",
         risk:     riskLabel(s.risk_score ?? 50),
         esg:      esgLabel(s.esg_score  ?? 50),
         blocked:  false,
         preferred: s.preferred,
         incumbent: s.incumbent,
-        tcoBreakdown: s.tco_breakdown ?? null,
-        tcoVsBudgetPct: s.tco_vs_budget_pct ?? null,
       };
     });
     return { rawScores, meta, isFromApi: true };
@@ -247,7 +263,14 @@ export default function SupplierDemoPage() {
     return entries;
   }, [apiResult]);
 
-  const weights = FIXED_WEIGHTS;
+  // ─── Interactive weight sliders ───────────────────────────────────────────
+
+  const [priceWeight,    setPriceWeight]    = useState(25);
+  const [riskWeight,     setRiskWeight]     = useState(40);
+  const [deliveryWeight, setDeliveryWeight] = useState(20);
+  const [esgWeight,      setEsgWeight]      = useState(15);
+
+  const weights: Weights = { price: priceWeight, risk: riskWeight, delivery: deliveryWeight, esg: esgWeight };
 
   // ─── Compute weighted scores ──────────────────────────────────────────────
 
@@ -303,11 +326,11 @@ export default function SupplierDemoPage() {
   // ─── Sensitivity factors ──────────────────────────────────────────────────
 
   const sensitivityFactors: SensitivityFactor[] = [
-    { label: "Price",          impact: FIXED_WEIGHTS.price    },
-    { label: "Delivery",       impact: FIXED_WEIGHTS.delivery },
-    { label: "Risk",           impact: FIXED_WEIGHTS.risk     },
-    { label: "ESG Compliance", impact: FIXED_WEIGHTS.esg      },
-  ];
+    { label: "Risk",           impact: riskWeight     },
+    { label: "Price",          impact: priceWeight    },
+    { label: "Delivery",       impact: deliveryWeight },
+    { label: "ESG Compliance", impact: esgWeight      },
+  ].sort((a, b) => b.impact - a.impact);
 
   const explanation  = generateExplanation(bestName, runnerName, weights, rawScores);
   const confidence   = apiResult?.confidence_score ?? null;
@@ -316,131 +339,174 @@ export default function SupplierDemoPage() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen px-6 py-10 md:px-12 md:py-14" style={{ backgroundColor: "var(--bg-app)" }}>
-
-      {/* Page header */}
-      <div className="mb-8 border-b pb-6 flex items-end justify-between" style={{ borderColor: "var(--border-subtle)" }}>
-        <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#C8102E]">
-            Procurement Intelligence
-          </p>
-          <h1 className="text-2xl font-bold text-[color:var(--text-main)]">Supplier Comparison</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            AI-generated recommendation
-            {ri?.delivery_countries?.[0] ? ` · ${ri.delivery_countries[0]} region` : " · Geneva region"}
-            {ri?.category_l1 ? ` · ${ri.category_l1} category` : " · Hardware category"}
-          </p>
-        </div>
-        {confidence !== null && (
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>AI Confidence</span>
-            <span className={`text-2xl font-bold tabular-nums ${confidence >= 70 ? "text-emerald-400" : confidence >= 40 ? "text-amber-400" : "text-red-400"}`}>
-              {confidence}%
-            </span>
+    <main className="min-h-screen pb-16 transition-colors duration-300 bg-gray-50 dark:bg-[#0f1117]">
+      
+      {/* Hero Header */}
+      <div className="w-full bg-white dark:bg-[#12151f] border-b border-gray-200 dark:border-[#1e2130] px-6 py-12 md:px-12 md:py-16">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-end justify-between gap-6">
+          <div className="animate-fade-slide-up delay-0">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-widest mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              Procurement Intelligence
+            </div>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-3">Supplier Analysis</h1>
+            <p className="text-base text-gray-600 dark:text-gray-400 font-medium max-w-2xl">
+              AI-generated analysis for
+              {ri?.delivery_countries?.[0] ? ` ${ri.delivery_countries[0]} region` : " Geneva region"}
+              {ri?.category_l1 ? ` · ${ri.category_l1}` : " · Hardware"}
+            </p>
           </div>
-        )}
-      </div>
-
-      {/* User request context */}
-      <div className="mb-5 flex items-start gap-3 rounded-xl px-5 py-4" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
-        <svg className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-        <div>
-          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>User request</span>
-          <p className="mt-0.5 text-sm font-medium" style={{ color: "var(--text-main)" }}>"{buyerRequest}"</p>
+          
+          {confidence !== null && (
+            <div className="flex flex-col items-end gap-1.5 bg-gray-50 dark:bg-[#0f1117] px-5 py-4 rounded-2xl border border-gray-200 dark:border-white/5 animate-fade-slide-up delay-0">
+              <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Decision Confidence</span>
+              <span className={`text-4xl font-black tabular-nums tracking-tight ${confidence >= 70 ? "text-emerald-500" : confidence >= 40 ? "text-amber-500" : "text-red-500"}`}>
+                {confidence}%
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-
-      {/* Why panel */}
-      <div className="mb-5">
-        <WhyPanel text={explanation} />
-      </div>
-
-      {/* Table + banners + audit + sensitivity */}
-      <SupplierRadarChart />
-
-      <div id="supplier-table">
-        <SupplierComparisonTable
-          suppliers={suppliers}
-          sourceTags={sourceTags}
-          conflicts={conflicts}
-          auditTrail={auditTrail}
-          sensitivityFactors={sensitivityFactors}
-        />
-      </div>
-
-      <DecisionRow
-        bestName={bestName}
-        bestScore={eligibleRanked[0]?.score ?? null}
-        bestPrice={bestPrice}
-        isAutoApproved={isAutoApproved}
-        status={hasBlocking ? "cannot_proceed" : "pending_approval"}
-        escalations={realEscalations}
-      />
-
-      {isFromApi && (
-        <DecisionJustification
-          recommendation={apiResult?.recommendation ?? null}
-          topSupplier={apiResult?.supplier_shortlist?.[0] ?? null}
-          runnerUp={apiResult?.supplier_shortlist?.[1] ?? null}
-          currency={apiResult?.request_interpretation?.currency ?? "EUR"}
-        />
-      )}
-
-      {/* Hierarchy panel for API results, legacy EscalationRow for demo */}
-      {isFromApi && realEscalations.length > 0 ? (
-        <EscalationHierarchyPanel
-          escalations={realEscalations}
-          currency={apiResult?.request_interpretation?.currency ?? "EUR"}
-        />
-      ) : !isFromApi ? (
-        <EscalationRow
-          label="Escalation required"
-          title="Bundle opportunity detected"
-          description="Manager approval required to combine compatible orders"
-          note="Potential savings identified, but human validation is needed"
-          estimatedSavings={savingsStr}
-        />
-      ) : null}
-
-      {/* ── Market Intelligence (Tavily) ────────────────────────────────── */}
-      <div className="mt-6">
-        {!intelFetched && !intelLoading && names.length > 0 && (
-          <button
-            onClick={async () => {
-              setIntelLoading(true);
-              try {
-                const category = apiResult?.request_interpretation?.category_l2 ?? apiResult?.request_interpretation?.category_l1 ?? "enterprise hardware";
-                const region = apiResult?.request_interpretation?.delivery_countries?.[0] ?? "Europe";
-                const res = await fetch("/api/supplier-intel", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ suppliers: names, category, region }),
-                });
-                if (res.ok) {
-                  const data = await res.json();
-                  setMarketIntel(data.results ?? []);
-                }
-              } catch (err) {
-                console.error("Market intel fetch failed:", err);
-              } finally {
-                setIntelLoading(false);
-                setIntelFetched(true);
-              }
-            }}
-            className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-[#3B82F6]/30 bg-[#3B82F6]/10 px-6 py-3.5 text-sm font-semibold text-[#3B82F6] transition-all hover:bg-[#3B82F6]/15 hover:border-[#3B82F6]/40"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <div className="max-w-7xl mx-auto px-6 md:px-12 mt-8 space-y-8">
+        {/* User request context */}
+        <div className="flex items-start gap-4 rounded-2xl px-6 py-5 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm animate-fade-slide-up delay-0">
+          <div className="mt-1 p-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400">
+            <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            Search Live Market Intelligence
-          </button>
-        )}
-        {(intelLoading || intelFetched) && (
-          <MarketIntelCard results={marketIntel} loading={intelLoading} />
-        )}
+          </div>
+          <div>
+            <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">User Request</span>
+            <p className="mt-1.5 text-base font-medium text-gray-900 dark:text-gray-100 leading-relaxed">"{buyerRequest}"</p>
+          </div>
+        </div>
+
+        {/* Weight sliders */}
+        <div className="rounded-2xl px-6 py-6 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm animate-fade-slide-up delay-150">
+          <div className="mb-6">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-900 dark:text-white">Decision Weights</h2>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">Drag sliders to recompute scores — ranking and recommendation will update live in real-time.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-x-12 gap-y-8 md:grid-cols-4">
+            <WeightSlider label="Price Focus"    value={priceWeight}    onChange={setPriceWeight}    />
+            <WeightSlider label="Risk Aversion"  value={riskWeight}     onChange={setRiskWeight}     />
+            <WeightSlider label="Delivery Speed" value={deliveryWeight} onChange={setDeliveryWeight} />
+            <WeightSlider label="ESG Priority"   value={esgWeight}      onChange={setEsgWeight}      />
+          </div>
+          <div className="mt-8 flex flex-wrap gap-2.5 border-t border-gray-200 dark:border-white/5 pt-5">
+            {[
+              { label: "Price",    value: priceWeight    },
+              { label: "Risk",     value: riskWeight     },
+              { label: "Delivery", value: deliveryWeight },
+              { label: "ESG",      value: esgWeight      },
+            ].map(({ label, value }) => {
+              const total = priceWeight + riskWeight + deliveryWeight + esgWeight;
+              const pct   = total > 0 ? Math.round((value / total) * 100) : 0;
+              return (
+                <span key={label} className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/5">
+                  {label}
+                  <span className="text-gray-900 dark:text-white">{pct}%</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Why panel */}
+        <WhyPanel text={explanation} />
+
+        <div className="animate-fade-slide-up delay-300">
+          <SupplierRadarChart />
+        </div>
+
+        <div id="supplier-table" className="animate-fade-slide-up delay-450">
+          <SupplierComparisonTable
+            suppliers={suppliers}
+            sourceTags={sourceTags}
+            conflicts={conflicts}
+            auditTrail={auditTrail}
+            sensitivityFactors={sensitivityFactors}
+          />
+        </div>
+
+        <div className="animate-fade-slide-up delay-600">
+          <DecisionRow
+            bestName={bestName}
+            bestScore={eligibleRanked[0]?.score ?? null}
+            bestPrice={bestPrice}
+            isAutoApproved={isAutoApproved}
+            status={hasBlocking ? "cannot_proceed" : "pending_approval"}
+            escalations={realEscalations}
+          />
+        </div>
+
+        <div className="animate-fade-slide-up delay-600">
+          {isFromApi && (
+            <DecisionJustification
+              recommendation={apiResult?.recommendation ?? null}
+              topSupplier={apiResult?.supplier_shortlist?.[0] ?? null}
+              runnerUp={apiResult?.supplier_shortlist?.[1] ?? null}
+              currency={apiResult?.request_interpretation?.currency ?? "EUR"}
+            />
+          )}
+        </div>
+
+        <div className="animate-fade-slide-up delay-600">
+          {/* Hierarchy panel for API results, legacy EscalationRow for demo */}
+          {isFromApi && realEscalations.length > 0 ? (
+            <EscalationHierarchyPanel
+              escalations={realEscalations}
+              currency={apiResult?.request_interpretation?.currency ?? "EUR"}
+            />
+          ) : !isFromApi ? (
+            <EscalationRow
+              label="Escalation required"
+              title="Bundle opportunity detected"
+              description="Manager approval required to combine compatible orders"
+              note="Potential savings identified, but human validation is needed"
+              estimatedSavings={savingsStr}
+            />
+          ) : null}
+        </div>
+
+        {/* ── Market Intelligence (Tavily) ────────────────────────────────── */}
+        <div className="mt-8 animate-fade-slide-up delay-600">
+          {!intelFetched && !intelLoading && names.length > 0 && (
+            <button
+              onClick={async () => {
+                setIntelLoading(true);
+                try {
+                  const category = apiResult?.request_interpretation?.category_l2 ?? apiResult?.request_interpretation?.category_l1 ?? "enterprise hardware";
+                  const region = apiResult?.request_interpretation?.delivery_countries?.[0] ?? "Europe";
+                  const res = await fetch("/api/supplier-intel", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ suppliers: names, category, region }),
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    setMarketIntel(data.results ?? []);
+                  }
+                } catch (err) {
+                  console.error("Market intel fetch failed:", err);
+                } finally {
+                  setIntelLoading(false);
+                  setIntelFetched(true);
+                }
+              }}
+              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 px-6 py-4 text-sm font-bold text-blue-600 dark:text-blue-400 transition-all hover:bg-blue-100 dark:hover:bg-blue-500/15 hover:scale-[1.01] hover:shadow-sm"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Search Live Market Intelligence
+            </button>
+          )}
+          {(intelLoading || intelFetched) && (
+            <MarketIntelCard results={marketIntel} loading={intelLoading} />
+          )}
+        </div>
       </div>
     </main>
   );

@@ -1,5 +1,5 @@
 {
-  "counter": 17,
+  "counter": 21,
   "requests": [
     {
       "id": "R-0001",
@@ -75,23 +75,23 @@
     },
     {
       "id": "R-0010",
-      "timestamp": "2026-03-19T16:05:57.469Z",
-      "category": "Facilities > Shoes",
-      "quantity": 5,
-      "budget": 1200,
+      "timestamp": "2026-03-19T15:32:46.521Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 25199.55,
       "status": "cannot_proceed"
     },
     {
       "id": "R-0011",
-      "timestamp": "2026-03-19T16:07:24.341Z",
+      "timestamp": "2026-03-19T15:41:32.837Z",
       "category": "IT > Docking Stations",
       "quantity": 240,
-      "budget": 0.77,
+      "budget": 25199.55,
       "status": "cannot_proceed"
     },
     {
       "id": "R-0012",
-      "timestamp": "2026-03-19T16:08:20.704Z",
+      "timestamp": "2026-03-19T15:41:51.095Z",
       "category": "IT > Docking Stations",
       "quantity": 240,
       "budget": 25199.55,
@@ -99,31 +99,71 @@
     },
     {
       "id": "R-0013",
-      "timestamp": "2026-03-19T16:09:30.386Z",
+      "timestamp": "2026-03-19T16:08:02.786Z",
       "category": "IT > Docking Stations",
       "quantity": 240,
-      "budget": 0.77,
+      "budget": 25199.55,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0014",
+      "timestamp": "2026-03-19T16:08:50.051Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 25199.55,
       "status": "cannot_proceed"
     },
     {
       "id": "R-0015",
-      "timestamp": "2026-03-19T16:59:49.594Z",
+      "timestamp": "2026-03-19T16:17:34.816Z",
       "category": "IT > Docking Stations",
-      "quantity": 567,
-      "budget": 25000,
+      "quantity": 240,
+      "budget": 25199.55,
       "status": "cannot_proceed"
     },
     {
       "id": "R-0016",
-      "timestamp": "2026-03-19T17:09:35.585Z",
-      "category": "IT > Laptops",
-      "quantity": 7,
-      "budget": null,
+      "timestamp": "2026-03-19T16:52:39.277Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 25199.55,
       "status": "cannot_proceed"
     },
     {
       "id": "R-0017",
-      "timestamp": "2026-03-19T17:20:21.152Z",
+      "timestamp": "2026-03-19T16:56:41.813Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 25199.55,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0018",
+      "timestamp": "2026-03-19T17:04:02.354Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 25199.55,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0019",
+      "timestamp": "2026-03-19T17:11:45.807Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 25199.55,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0020",
+      "timestamp": "2026-03-19T17:24:31.021Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 25199.55,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0021",
+      "timestamp": "2026-03-19T17:38:35.740Z",
       "category": "IT > Docking Stations",
       "quantity": 240,
       "budget": 25199.55,
