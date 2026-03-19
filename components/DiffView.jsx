@@ -7,14 +7,15 @@ export default function DiffView({ rawText, structured }) {
   if (!rawText && !structured) return null;
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
+    <div className="rounded-xl shadow-sm" style={{ border: "1px solid var(--border-card)", backgroundColor: "var(--bg-card)" }}>
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between px-5 py-3 text-left"
       >
-        <h2 className="text-sm font-semibold text-zinc-800">Raw Input vs Structured Output</h2>
+        <h2 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Raw Input vs Structured Output</h2>
         <svg
-          className={`h-4 w-4 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
+          style={{ color: "var(--text-muted)" }}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -25,20 +26,20 @@ export default function DiffView({ rawText, structured }) {
       </button>
 
       {open && (
-        <div className="grid grid-cols-1 gap-px border-t border-zinc-100 bg-zinc-100 sm:grid-cols-2">
-          <div className="bg-white">
-            <p className="px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
+        <div className="grid grid-cols-1 gap-px sm:grid-cols-2" style={{ borderTop: "1px solid var(--border-subtle)", backgroundColor: "var(--border-subtle)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)" }}>
+            <p className="px-4 py-2 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
               Raw Text Input
             </p>
-            <pre className="whitespace-pre-wrap px-4 py-3 text-xs text-zinc-600 font-mono leading-relaxed max-h-72 overflow-y-auto">
+            <pre className="whitespace-pre-wrap px-4 py-3 text-xs font-mono leading-relaxed max-h-72 overflow-y-auto" style={{ color: "var(--text-main)" }}>
               {rawText ?? "—"}
             </pre>
           </div>
-          <div className="bg-white">
-            <p className="px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-400 border-b border-zinc-100">
+          <div style={{ backgroundColor: "var(--bg-card)" }}>
+            <p className="px-4 py-2 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border-subtle)" }}>
               Structured Interpretation
             </p>
-            <pre className="whitespace-pre-wrap px-4 py-3 text-xs text-zinc-600 font-mono leading-relaxed max-h-72 overflow-y-auto">
+            <pre className="whitespace-pre-wrap px-4 py-3 text-xs font-mono leading-relaxed max-h-72 overflow-y-auto" style={{ color: "var(--text-main)" }}>
               {structured ? JSON.stringify(structured, null, 2) : "—"}
             </pre>
           </div>
