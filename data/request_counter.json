@@ -1,5 +1,5 @@
 {
-  "counter": 23,
+  "counter": 27,
   "requests": [
     {
       "id": "R-0001",
@@ -172,6 +172,38 @@
     {
       "id": "R-0022",
       "timestamp": "2026-03-19T18:25:05.490Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0024",
+      "timestamp": "2026-03-19T19:06:24.071Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0025",
+      "timestamp": "2026-03-19T19:06:46.978Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0026",
+      "timestamp": "2026-03-19T19:07:37.646Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0027",
+      "timestamp": "2026-03-19T19:08:21.723Z",
       "category": "null > null",
       "quantity": null,
       "budget": null,

@@ -14,10 +14,10 @@ export async function POST(request) {
       // Mock logic simulating AI delay
       await new Promise(r => setTimeout(r, 400));
       return NextResponse.json({
-         quantity: /\\b\\d+\\b/i.test(text) || /(one|two|three|four|five|six|seven|eight|nine|ten|un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)/i.test(text),
-         budget: /(budget|\\$|€|k|m|eur|usd|chf|franc)/i.test(text),
-         location: /(geneva|kigali|europe|berlin|london|paris|office|delivery|casablanca|maroc|france|suisse|canada|usa|uk\\b|fr\\b|de\\b|à [a-z]+|in [a-z]+)/i.test(text),
-         timeline: /(weeks?|days?|months?|years?|asap|urgent|noon|morning|by\\b|q[1-4]|202[0-9]|soon|demain|matin|soir|jour|semaine|mois|an|année|rapidement|vite|bientôt)/i.test(text)
+         quantity: /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn)\b/i.test(text),
+         budget: /(budget|\$|€|£|eur|usd|chf|franc|euro|dollar|kosten|preis)/i.test(text) || /\b(k|m)\b/i.test(text),
+         location: /\b(geneva|genève|genf|kigali|europe|berlin|london|paris|office|bureaux|büro|delivery|livraison|lieferung|casablanca|maroc|france|suisse|schweiz|canada|usa|us|uk|fr|de|germany|deutschland|ville|pays|country|land)\b/i.test(text) || /\b(in|à|a|nach)\s+[a-z]+/i.test(text),
+         timeline: /\b(weeks?|days?|months?|years?|asap|urgent|noon|morning|by|q[1-4]|202[0-9]|soon|demain|matin|soir|jour|semaine|mois|an|année|rapidement|vite|bientôt|morgen|heute|woche|monat|jahr|schnell|dringend)\b/i.test(text)
       });
     }
 
