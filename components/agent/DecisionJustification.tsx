@@ -22,6 +22,9 @@ type Recommendation = {
   status: string;
   reason?: string;
   rationale?: string;
+  decision_summary?: string;
+  justification?: string;
+  next_action?: string;
   key_reasons?: string[];
   risks?: string[];
   preferred_supplier_if_resolved?: string;
@@ -64,7 +67,7 @@ function ScoreBar({ value, max = 1 }: { value: number; max?: number }) {
 export function DecisionJustification({ recommendation, topSupplier, runnerUp, currency }: Props) {
   if (!recommendation || !topSupplier) return null;
 
-  const { rationale, key_reasons, risks, status } = recommendation;
+  const { rationale, decision_summary, justification, next_action, key_reasons, risks, status } = recommendation;
   const bd = topSupplier.score_breakdown ?? {};
   const isBlocked = status === "cannot_proceed";
 
@@ -89,15 +92,39 @@ export function DecisionJustification({ recommendation, topSupplier, runnerUp, c
 
       <div className="px-5 py-5 flex flex-col gap-5">
 
-        {/* ── Rationale from AI ── */}
-        {rationale && (
+        {/* ── Structured decision justification ── */}
+        {(decision_summary || justification || next_action) ? (
+          <div className="flex flex-col gap-3">
+            {decision_summary && (
+              <div className="rounded-lg px-4 py-3" style={{ backgroundColor: isBlocked ? "rgba(239,68,68,0.08)" : "rgba(16,185,129,0.08)", border: `1px solid ${isBlocked ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.2)"}` }}>
+                <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: isBlocked ? "#fca5a5" : "#6ee7b7" }}>Decision</p>
+                <p className="text-sm font-semibold leading-snug" style={{ color: "var(--text-main)" }}>{decision_summary}</p>
+              </div>
+            )}
+            {justification && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--text-muted)" }}>Justification</p>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text-main)" }}>{justification}</p>
+              </div>
+            )}
+            {next_action && (
+              <div className="rounded-lg px-4 py-3 flex items-start gap-3" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid var(--border-subtle)" }}>
+                <svg className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd"/>
+                </svg>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider mb-0.5 text-amber-400">Next Action</p>
+                  <p className="text-sm leading-snug" style={{ color: "var(--text-main)" }}>{next_action}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : rationale ? (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
-              AI Rationale
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Decision</p>
             <p className="text-sm leading-relaxed" style={{ color: "var(--text-main)" }}>{rationale}</p>
           </div>
-        )}
+        ) : null}
 
         {/* ── Supplier choice summary ── */}
         {!isBlocked && (

@@ -285,7 +285,6 @@ export default function SupplierDemoPage() {
 
   const eligibleRanked = scored.filter(s => s.score !== null);
   const bestName       = eligibleRanked[0]?.name ?? "";
-  const runnerName     = eligibleRanked[1]?.name ?? "";
   const bestPrice      = bestName ? (meta[bestName]?.price ?? "") : "";
 
   // ─── Decision & escalation data ───────────────────────────────────────────
@@ -324,7 +323,9 @@ export default function SupplierDemoPage() {
     };
   });
 
-  const explanation  = generateExplanation(bestName, runnerName, weights, rawScores);
+  const runnerName    = eligibleRanked[1]?.name ?? "";
+  const explanation    = generateExplanation(bestName, runnerName, weights, rawScores);
+
   const confidence   = apiResult?.confidence_score ?? null;
   const ri           = apiResult?.request_interpretation;
 
@@ -356,6 +357,9 @@ export default function SupplierDemoPage() {
   }, [apiResult]);
 
   const isLocked = mounted && !apiResult;
+
+  if (!mounted) return null;
+
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -471,9 +475,54 @@ export default function SupplierDemoPage() {
           </div>
         </div>
 
-        {/* Why panel */}
-        <WhyPanel text={explanation} />
+        {/* Decision + Justification — most important, shown first */}
+        <div className="animate-fade-slide-up delay-150">
+          <DecisionRow
+            bestName={bestName}
+            bestScore={eligibleRanked[0]?.score ?? null}
+            bestPrice={bestPrice}
+            isAutoApproved={isAutoApproved}
+            status={hasBlocking ? "cannot_proceed" : "pending_approval"}
+            escalations={realEscalations}
+          />
+        </div>
 
+        {isFromApi && (
+          <div className="animate-fade-slide-up delay-200">
+            <DecisionJustification
+              recommendation={apiResult?.recommendation ?? null}
+              topSupplier={apiResult?.supplier_shortlist?.[0] ?? null}
+              runnerUp={apiResult?.supplier_shortlist?.[1] ?? null}
+              currency={apiResult?.request_interpretation?.currency ?? "EUR"}
+            />
+          </div>
+        )}
+
+
+        {/* Case-type escalation contact */}
+        {apiResult?.case_type && apiResult.case_type !== "READY_FOR_VALIDATION" && (() => {
+          const caseContacts: Record<string, { role: string; action: string; color: string }> = {
+            MORE_INFO_REQUIRED:     { role: "Intern / Sourcing Agent",  action: "Follow up with the requester to collect missing information before this request can proceed.", color: "#f59e0b" },
+            FAILED_IMPOSSIBLE_DATE: { role: "Intern / Sourcing Agent",  action: "Contact the requester to negotiate a revised delivery deadline or confirm if an alternative date is acceptable.", color: "#f59e0b" },
+            NO_SUPPLIER_AVAILABLE:  { role: "Sourcing Specialist",      action: "Identify and onboard a new supplier capable of fulfilling this requirement, or escalate to category management.", color: "#dc2626" },
+            SIMILAR_NOT_EXACT_MATCH:{ role: "Procurement Manager",      action: "Review the proposed alternatives with the requester and confirm acceptance of a substitute product or specification.", color: "#6366f1" },
+          };
+          const c = caseContacts[apiResult.case_type];
+          if (!c) return null;
+          return (
+            <div className="animate-fade-slide-up delay-200 rounded-xl px-5 py-4 flex items-start gap-4 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
+              <div className="mt-0.5 w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${c.color}20` }}>
+                <svg className="w-4 h-4" style={{ color: c.color }} viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: c.color }}>Assigned to: {c.role}</p>
+                <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">{c.action}</p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Validation issues (severity-tagged, from AI) */}
         {validationIssues.length > 0 && (
@@ -583,29 +632,8 @@ export default function SupplierDemoPage() {
           </div>
         )}
 
-        <div className="animate-fade-slide-up delay-1000">
-          <DecisionRow
-            bestName={bestName}
-            bestScore={eligibleRanked[0]?.score ?? null}
-            bestPrice={bestPrice}
-            isAutoApproved={isAutoApproved}
-            status={hasBlocking ? "cannot_proceed" : "pending_approval"}
-            escalations={realEscalations}
-          />
-        </div>
+        <div className="animate-fade-slide-up delay-600">
 
-        <div className="animate-slide-in-left delay-1100">
-          {isFromApi && (
-            <DecisionJustification
-              recommendation={apiResult?.recommendation ?? null}
-              topSupplier={apiResult?.supplier_shortlist?.[0] ?? null}
-              runnerUp={apiResult?.supplier_shortlist?.[1] ?? null}
-              currency={apiResult?.request_interpretation?.currency ?? "EUR"}
-            />
-          )}
-        </div>
-
-        <div className="animate-fade-slide-up delay-1200">
           {/* Hierarchy panel for API results, legacy EscalationRow for demo */}
           {isFromApi && realEscalations.length > 0 ? (
             <EscalationHierarchyPanel
