@@ -256,8 +256,8 @@ export default function SupplierDemoPage() {
     (apiResult.escalations as any[] ?? []).forEach((e: any) => {
       entries.push({ text: `${e.rule}: ${e.trigger}`, status: e.blocking ? "blocked" : "escalated" });
     });
-    if (at.suppliers_evaluated?.length) {
-      entries.push({ text: `${at.suppliers_evaluated.length} supplier(s) evaluated`, status: "approved" });
+    if (at.supplier_ids_evaluated?.length) {
+      entries.push({ text: `${at.supplier_ids_evaluated.length} supplier(s) evaluated`, status: "approved" });
     }
     if (at.historical_awards_consulted) {
       entries.push({ text: "Historical award data consulted", status: "approved" });
