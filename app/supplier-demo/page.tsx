@@ -124,25 +124,6 @@ function generateExplanation(bestName: string, runnerUp: string, w: Weights, raw
   );
 }
 
-// ─── Slider ───────────────────────────────────────────────────────────────────
-
-function WeightSlider({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  return (
-    <div className="flex flex-col gap-3 group">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 transition-colors">{label}</span>
-        <span className="w-8 text-right text-sm font-bold tabular-nums text-gray-900 dark:text-white group-hover:text-red-500 transition-colors">{value}</span>
-      </div>
-      <input
-        type="range" min={0} max={100} step={1} value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full cursor-pointer h-1.5 rounded-full appearance-none bg-gray-200 dark:bg-gray-800 outline-none slider-thumb-red"
-        style={{ accentColor: "#dc2626" }}
-      />
-    </div>
-  );
-}
-
 // ─── Why panel ────────────────────────────────────────────────────────────────
 
 function WhyPanel({ text }: { text: string }) {
@@ -261,14 +242,9 @@ export default function SupplierDemoPage() {
     return entries;
   }, [apiResult]);
 
-  // ─── Interactive weight sliders ───────────────────────────────────────────
+  // ─── Fixed internal weights (not exposed to user) ─────────────────────────
 
-  const [priceWeight,    setPriceWeight]    = useState(25);
-  const [riskWeight,     setRiskWeight]     = useState(40);
-  const [deliveryWeight, setDeliveryWeight] = useState(20);
-  const [esgWeight,      setEsgWeight]      = useState(15);
-
-  const weights: Weights = { price: priceWeight, risk: riskWeight, delivery: deliveryWeight, esg: esgWeight };
+  const weights: Weights = { price: 25, risk: 40, delivery: 20, esg: 15 };
 
   // ─── Compute weighted scores ──────────────────────────────────────────────
 
@@ -327,10 +303,10 @@ export default function SupplierDemoPage() {
   // ─── Sensitivity factors ──────────────────────────────────────────────────
 
   const sensitivityFactors: SensitivityFactor[] = [
-    { label: "Risk",           impact: riskWeight     },
-    { label: "Price",          impact: priceWeight    },
-    { label: "Delivery",       impact: deliveryWeight },
-    { label: "ESG Compliance", impact: esgWeight      },
+    { label: "Risk",           impact: weights.risk     },
+    { label: "Price",          impact: weights.price    },
+    { label: "Delivery",       impact: weights.delivery },
+    { label: "ESG Compliance", impact: weights.esg      },
   ].sort((a, b) => b.impact - a.impact);
 
   const explanation  = generateExplanation(bestName, runnerName, weights, rawScores);
@@ -380,37 +356,6 @@ export default function SupplierDemoPage() {
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">User Request</span>
             <p className="mt-1.5 text-base font-medium text-gray-900 dark:text-gray-100 leading-relaxed">"{buyerRequest}"</p>
-          </div>
-        </div>
-
-        {/* Weight sliders */}
-        <div className="rounded-2xl px-6 py-6 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm animate-fade-slide-up delay-150">
-          <div className="mb-6">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-900 dark:text-white">Decision Weights</h2>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">Drag sliders to recompute scores — ranking and recommendation will update live in real-time.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-x-12 gap-y-8 md:grid-cols-4">
-            <WeightSlider label="Price Focus"    value={priceWeight}    onChange={setPriceWeight}    />
-            <WeightSlider label="Risk Aversion"  value={riskWeight}     onChange={setRiskWeight}     />
-            <WeightSlider label="Delivery Speed" value={deliveryWeight} onChange={setDeliveryWeight} />
-            <WeightSlider label="ESG Priority"   value={esgWeight}      onChange={setEsgWeight}      />
-          </div>
-          <div className="mt-8 flex flex-wrap gap-2.5 border-t border-gray-200 dark:border-white/5 pt-5">
-            {[
-              { label: "Price",    value: priceWeight    },
-              { label: "Risk",     value: riskWeight     },
-              { label: "Delivery", value: deliveryWeight },
-              { label: "ESG",      value: esgWeight      },
-            ].map(({ label, value }) => {
-              const total = priceWeight + riskWeight + deliveryWeight + esgWeight;
-              const pct   = total > 0 ? Math.round((value / total) * 100) : 0;
-              return (
-                <span key={label} className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/5">
-                  {label}
-                  <span className="text-gray-900 dark:text-white">{pct}%</span>
-                </span>
-              );
-            })}
           </div>
         </div>
 
