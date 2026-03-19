@@ -1,5 +1,5 @@
 {
-  "counter": 5,
+  "counter": 8,
   "requests": [
     {
       "id": "R-0001",
@@ -39,6 +39,30 @@
       "category": "IT > Monitors",
       "quantity": 54,
       "budget": 476543001,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0006",
+      "timestamp": "2026-03-19T13:41:30.060Z",
+      "category": "IT > Monitors",
+      "quantity": 54,
+      "budget": 476543001,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0007",
+      "timestamp": "2026-03-19T14:16:33.136Z",
+      "category": "Facilities > Produce",
+      "quantity": 6,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0008",
+      "timestamp": "2026-03-19T14:21:06.832Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 25199.55,
       "status": "cannot_proceed"
     }
   ]
