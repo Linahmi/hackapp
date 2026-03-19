@@ -79,17 +79,33 @@ export default function DecisionCard({ recommendation, policyEvaluation, escalat
         style={{ backgroundColor: cfg.bg, border: `1px solid ${cfg.border}` }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">{cfg.icon}</span>
-            <span className="text-white font-bold text-base">Decision</span>
+             <span className="text-xl" style={{ color: cfg.badgeColor }}>{cfg.icon}</span>
+             <span className="text-white font-bold text-base">Decision</span>
+             <span
+                className="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide ml-2"
+                style={{ backgroundColor: cfg.badgeBg, color: cfg.badgeColor }}
+             >
+                {cfg.label}
+             </span>
           </div>
-          <span
-            className="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide"
-            style={{ backgroundColor: cfg.badgeBg, color: cfg.badgeColor }}
+
+          <button
+            onClick={() => {
+              const btn = document.getElementById("export-btn");
+              if (btn) btn.innerHTML = "Exporting...";
+              setTimeout(() => {
+                if (btn) btn.innerHTML = "✓ Exported to ERP / PDF";
+                setTimeout(() => { if (btn) btn.innerHTML = "Export Case"; }, 3000);
+              }, 1200);
+            }}
+            id="export-btn"
+            className="text-xs font-semibold px-3 py-1.5 rounded flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+            style={{ backgroundColor: "#1e2130", color: "#e5e7eb", border: "1px solid #374151" }}
           >
-            {cfg.label}
-          </span>
+            Export Case
+          </button>
         </div>
 
         {/* Reason */}

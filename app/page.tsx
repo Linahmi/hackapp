@@ -7,6 +7,7 @@ import RequestInterpretation from "@/components/RequestInterpretation";
 import PolicyCheck           from "@/components/PolicyCheck";
 import SupplierComparison    from "@/components/SupplierComparison";
 import DecisionCard          from "@/components/DecisionCard";
+import AuditTrail            from "@/components/AuditTrail";
 
 type Stage = "idle" | "intake" | "processing" | "done" | "error";
 
@@ -34,80 +35,25 @@ export default function Home() {
     setResult(null);
 
     try {
-      // Step 1: intake simulé
       setStage("intake");
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Step 2: process simulé
-      setStage("processing");
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockResult = {
-        request_interpretation: {
-          category_l1: "Hardware",
-          category_l2: "Accessories",
-          quantity: 240,
-          unit_of_measure: "units",
-          budget_amount: 25199.55,
-          currency: "EUR",
-          delivery_countries: ["France"],
-          required_by_date: "2026-03-20",
-          preferred_supplier_stated: "Dell Enterprise Europe"
-        },
-        confidence_score: 95,
-        validation: {
-          is_valid: true,
-          reasons: ["Budget respecté", "Fournisseurs certifiés"],
-        },
-        supplier_shortlist: [
-          {
-            rank: 1,
-            supplier_id: "SUP-01",
-            supplier_name: "Dell Enterprise Europe",
-            composite_score: 0.92,
-            unit_price: 104.99,
-            total_price: 25197.60,
-            standard_lead_time_days: 14,
-            preferred: true,
-            incumbent: true,
-            recommendation_note: "Matches preferred request",
-            currency: "EUR"
-          },
-          {
-            rank: 2,
-            supplier_id: "SUP-02",
-            supplier_name: "TechData Pro",
-            composite_score: 0.82,
-            unit_price: 110.00,
-            total_price: 26400.00,
-            standard_lead_time_days: 7,
-            currency: "EUR"
-          }
-        ],
-        suppliers_excluded: [
-          {
-            supplier_id: "SUP-03",
-            supplier_name: "UnknownVend",
-            reason: "Non certifié par la politique IT"
-          }
-        ],
-        recommendation: {
-          status: "pending_approval",
-          reason: "Requête dépassant le seuil d'approbation automatique pour la catégorie Hardware.",
-          recommended_supplier: "Dell Enterprise Europe",
-          recommended_supplier_rationale: "Fournisseur référencé offrant le meilleur score composite.",
-        },
-        policy_evaluation: {
-          approval_threshold: {
-            rule_applied: "Hardware > 10,000 EUR",
-            quotes_required: 2,
-            approvers: ["IT Manager", "Finance Director"]
-          }
-        },
-        escalations: []
-      };
+      const resIntake = await fetch("/api/intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      const dataIntake = await resIntake.json();
+      if (!resIntake.ok) throw new Error(dataIntake.error || "Intake failed");
 
-      setResult(mockResult);
+      setStage("processing");
+      const resProcess = await fetch("/api/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataIntake)
+      });
+      const dataProcess = await resProcess.json();
+      if (!resProcess.ok) throw new Error(dataProcess.error || "Processing failed");
+
+      setResult(dataProcess);
       setStage("done");
     } catch (err: any) {
       setError(err.message ?? "Unknown error");
@@ -168,6 +114,7 @@ export default function Home() {
             policyEvaluation={result.policy_evaluation}
             escalations={result.escalations ?? []}
           />
+          <AuditTrail auditTrail={result.audit_trail} />
         </>
       )}
 
