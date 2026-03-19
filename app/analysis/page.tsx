@@ -22,7 +22,7 @@ function CaseBanner({ caseType, onValidate }: { caseType: string; onValidate?: (
   const cfg = CASE_CONFIG[caseType];
   if (!cfg) return null;
   return (
-    <div className="rounded-xl px-5 py-4 flex items-start gap-4" style={{ backgroundColor: cfg.bg, border: `1px solid ${cfg.border}` }}>
+    <div className="rounded-xl px-5 py-4 flex items-start gap-4 bg-white dark:bg-[#12151f]" style={{ border: `1px solid ${cfg.border}` }}>
       <div className="mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: cfg.border }}>
         {caseType === "READY_FOR_VALIDATION" ? (
           <svg className="w-4 h-4" style={{ color: cfg.iconColor }} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
@@ -97,8 +97,28 @@ export default function AnalysisPage() {
   if (!result) return null;
 
   return (
-    <div className="flex flex-col items-center gap-8 px-4 py-16 min-h-[calc(100vh-65px)] bg-gray-50 dark:bg-[#0f1117] transition-colors duration-300">
-      <div className="w-full max-w-2xl pt-4 mb-4">
+    <div className="relative flex flex-col items-center gap-8 px-4 py-16 min-h-[calc(100vh-65px)] bg-gray-50 dark:bg-[#0f1117] transition-colors duration-300">
+      {/* Mesh Gradient Background — matches home page */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none transition-colors duration-1000">
+        {/* Glowing orbs */}
+        <div className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vh] rounded-full bg-blue-500/30 dark:bg-blue-600/30 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" />
+        <div className="absolute top-[10%] -right-[10%] w-[50vw] h-[60vh] rounded-full bg-red-400/30 dark:bg-red-600/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: "2s" }} />
+        <div className="absolute -bottom-[20%] left-[10%] w-[70vw] h-[60vh] rounded-full bg-purple-500/30 dark:bg-indigo-600/20 blur-[140px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: "4s" }} />
+
+        {/* Enterprise Grid Lines */}
+        <div
+          className="absolute inset-0 opacity-[0.25] dark:opacity-[0.10]"
+          style={{
+            backgroundImage: `linear-gradient(to right, #6b7280 1px, transparent 1px), linear-gradient(to bottom, #6b7280 1px, transparent 1px)`,
+            backgroundSize: `4rem 4rem`,
+            maskImage: `radial-gradient(ellipse at 50% 30%, black 40%, transparent 80%)`,
+            WebkitMaskImage: `radial-gradient(ellipse at 50% 30%, black 40%, transparent 80%)`,
+          }}
+        />
+        {/* Smooth gradient fade to page background */}
+        <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-gray-50 dark:from-[#0f1117] to-transparent" />
+      </div>
+      <div className="w-full max-w-2xl pt-4 mb-4 relative z-10">
         <button
           onClick={() => {
             sessionStorage.clear();
@@ -112,7 +132,7 @@ export default function AnalysisPage() {
         </button>
       </div>
 
-      <div className="w-full max-w-2xl animate-fade-slide-up delay-0">
+      <div className="w-full max-w-2xl animate-fade-slide-up delay-0 relative z-10">
         <ProgressStepper
           activeStep={5}
           thinkingText=""
@@ -127,7 +147,7 @@ export default function AnalysisPage() {
       </div>
 
       {result.case_type && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-100">
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-100 relative z-10">
           <CaseBanner
             caseType={result.case_type}
             onValidate={result.case_type === "READY_FOR_VALIDATION" && !validated ? () => setValidated(true) : undefined}
@@ -141,18 +161,18 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      <div className="w-full max-w-2xl animate-fade-slide-up delay-150">
+      <div className="w-full max-w-2xl animate-fade-slide-up delay-150 relative z-10">
         <RequestInterpretation interpretation={result.request_interpretation} />
       </div>
 
       {result.case_type === "READY_FOR_VALIDATION" && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-300">
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-300 relative z-10">
           <PolicyCheck validation={result.validation} />
         </div>
       )}
 
       {(result?.recommendation?.decision_summary || result?.recommendation?.rationale) && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-350">
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-350 relative z-10">
           <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12151f] px-6 py-5 shadow-sm">
             <div className="flex items-center gap-2.5 mb-4">
               <span className="relative flex h-2.5 w-2.5">
@@ -188,12 +208,12 @@ export default function AnalysisPage() {
       )}
 
       {(result.case_type === 'READY_FOR_VALIDATION' || result.case_type === 'SIMILAR_NOT_EXACT_MATCH') && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-450">
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-450 relative z-10">
           <BundlingOpportunityCard bundlingOpportunity={result.bundling_opportunity ?? null} />
         </div>
       )}
 
-      <div className="w-full max-w-2xl animate-fade-slide-up delay-600">
+      <div className="w-full max-w-2xl animate-fade-slide-up delay-600 relative z-10">
         <AuditPDFExport data={result} />
 
         {(intelLoading || intelFetched) && !intelError && (
