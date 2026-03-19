@@ -126,24 +126,7 @@ function generateExplanation(bestName: string, runnerUp: string, w: Weights, raw
   );
 }
 
-// ─── Slider ───────────────────────────────────────────────────────────────────
-
-function WeightSlider({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{label}</span>
-        <span className="w-8 text-right text-sm font-bold tabular-nums text-[color:var(--text-main)]">{value}</span>
-      </div>
-      <input
-        type="range" min={0} max={100} step={1} value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full cursor-pointer"
-        style={{ accentColor: "#C8102E" }}
-      />
-    </div>
-  );
-}
+const FIXED_WEIGHTS: Weights = { price: 35, risk: 20, delivery: 25, esg: 20 };
 
 // ─── Why panel ────────────────────────────────────────────────────────────────
 
@@ -262,14 +245,7 @@ export default function SupplierDemoPage() {
     return entries;
   }, [apiResult]);
 
-  // ─── Interactive weight sliders ───────────────────────────────────────────
-
-  const [priceWeight,    setPriceWeight]    = useState(25);
-  const [riskWeight,     setRiskWeight]     = useState(40);
-  const [deliveryWeight, setDeliveryWeight] = useState(20);
-  const [esgWeight,      setEsgWeight]      = useState(15);
-
-  const weights: Weights = { price: priceWeight, risk: riskWeight, delivery: deliveryWeight, esg: esgWeight };
+  const weights = FIXED_WEIGHTS;
 
   // ─── Compute weighted scores ──────────────────────────────────────────────
 
@@ -328,11 +304,11 @@ export default function SupplierDemoPage() {
   // ─── Sensitivity factors ──────────────────────────────────────────────────
 
   const sensitivityFactors: SensitivityFactor[] = [
-    { label: "Risk",           impact: riskWeight     },
-    { label: "Price",          impact: priceWeight    },
-    { label: "Delivery",       impact: deliveryWeight },
-    { label: "ESG Compliance", impact: esgWeight      },
-  ].sort((a, b) => b.impact - a.impact);
+    { label: "Price",          impact: FIXED_WEIGHTS.price    },
+    { label: "Delivery",       impact: FIXED_WEIGHTS.delivery },
+    { label: "Risk",           impact: FIXED_WEIGHTS.risk     },
+    { label: "ESG Compliance", impact: FIXED_WEIGHTS.esg      },
+  ];
 
   const explanation  = generateExplanation(bestName, runnerName, weights, rawScores);
   const confidence   = apiResult?.confidence_score ?? null;
@@ -377,34 +353,6 @@ export default function SupplierDemoPage() {
         </div>
       </div>
 
-      {/* Weight sliders */}
-      <div className="mb-5 rounded-xl px-6 py-5" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
-        <h2 className="mb-0.5 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Decision weights</h2>
-        <p className="mb-5 text-xs" style={{ color: "var(--text-muted)" }}>Drag sliders to recompute scores — ranking and recommendation update live</p>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-5 md:grid-cols-4">
-          <WeightSlider label="Price"    value={priceWeight}    onChange={setPriceWeight}    />
-          <WeightSlider label="Risk"     value={riskWeight}     onChange={setRiskWeight}     />
-          <WeightSlider label="Delivery" value={deliveryWeight} onChange={setDeliveryWeight} />
-          <WeightSlider label="ESG"      value={esgWeight}      onChange={setEsgWeight}      />
-        </div>
-        <div className="mt-5 flex flex-wrap gap-2 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
-          {[
-            { label: "Price",    value: priceWeight    },
-            { label: "Risk",     value: riskWeight     },
-            { label: "Delivery", value: deliveryWeight },
-            { label: "ESG",      value: esgWeight      },
-          ].map(({ label, value }) => {
-            const total = priceWeight + riskWeight + deliveryWeight + esgWeight;
-            const pct   = total > 0 ? Math.round((value / total) * 100) : 0;
-            return (
-              <span key={label} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs" style={{ backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-card)", color: "var(--text-muted)" }}>
-                {label}
-                <span className="font-bold text-[color:var(--text-main)]">{pct}%</span>
-              </span>
-            );
-          })}
-        </div>
-      </div>
 
       {/* Why panel */}
       <div className="mb-5">
