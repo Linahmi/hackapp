@@ -34,7 +34,7 @@ export default function Navbar() {
           href="/" 
           className={`text-sm font-semibold transition-colors ${pathname === "/" ? "text-[color:var(--text-main)]" : "text-[color:var(--text-muted)] hover:opacity-70"}`}
         >
-          Buyer Portal
+          Client Portal
         </Link>
         <Link
           href="/supplier"
