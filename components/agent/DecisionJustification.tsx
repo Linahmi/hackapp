@@ -43,8 +43,9 @@ const SCORE_LABELS: Record<string, string> = {
   esg:       "ESG compliance",
 };
 
+// Weights must match computeFinalScore() in supplier-demo/page.tsx
 const SCORE_WEIGHTS: Record<string, number> = {
-  price: 30, lead_time: 30, quality: 20, risk: 10, esg: 10,
+  price: 25, lead_time: 20, risk: 40, esg: 15,
 };
 
 function ScoreBar({ value, max = 1 }: { value: number; max?: number }) {

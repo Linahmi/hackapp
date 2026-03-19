@@ -264,6 +264,9 @@ export default function SupplierDemoPage() {
     if (at.historical_awards_consulted) {
       entries.push({ text: "Historical award data consulted", status: "approved" });
     }
+    (at.uncertainty_flags as string[] ?? []).forEach((flag: string) => {
+      entries.push({ text: `Uncertainty: ${flag}`, status: "escalated" });
+    });
     return entries;
   }, [apiResult]);
 
@@ -360,36 +363,32 @@ export default function SupplierDemoPage() {
   const confidence   = apiResult?.confidence_score ?? null;
   const ri           = apiResult?.request_interpretation;
 
-  // ─── Market Price Benchmark ───────────────────────────────────────────────
+  // ─── Market Price Benchmark (only from API — no client-side estimation) ──────
 
   const marketBenchmark = useMemo(() => {
-    if (!bestName || !bestPrice) return null;
-    const cat = ri?.category_l2 || ri?.category_l1 || "Hardware (IT)";
-    let mrkMin = 850;
-    let mrkMax = 950;
-    let unitOffer = 881;
-    let currency = ri?.currency || "EUR";
-    
-    // Attempt real extraction if possible
-    const matchQty = buyerRequest.match(/\b(\d+)\b/);
-    const qty = matchQty ? parseInt(matchQty[1], 10) : 500;
-    const priceNum = parseFloat(bestPrice.replace(/[^0-9.]/g, ""));
-    if (priceNum > 0 && qty > 0) {
-      unitOffer = Math.round(priceNum / qty);
-      mrkMin = Math.round(unitOffer * 0.95);
-      mrkMax = Math.round(unitOffer * 1.08);
-    }
-    
-    const isAbove = unitOffer > mrkMax * 1.10; // >10% above
+    const mb = apiResult?.market_benchmark;
+    if (!mb) return null;
     return {
-      category: cat,
-      min: mrkMin,
-      max: mrkMax,
-      offer: unitOffer,
-      currency: currency,
-      isAbove,
+      category: mb.category ?? ri?.category_l2 ?? ri?.category_l1 ?? "Hardware",
+      min:      mb.market_min,
+      max:      mb.market_max,
+      offer:    mb.best_offer_unit_price,
+      currency: mb.currency ?? ri?.currency ?? "EUR",
+      isAbove:  mb.is_above_market ?? false,
     };
-  }, [bestName, bestPrice, buyerRequest, ri]);
+  }, [apiResult, ri]);
+
+  // ─── Validation issues (severity-tagged) ─────────────────────────────────
+
+  const validationIssues = useMemo(() => {
+    return (apiResult?.validation?.issues_detected as any[]) ?? [];
+  }, [apiResult]);
+
+  // ─── Excluded suppliers (non-blocking filter reasons) ─────────────────────
+
+  const excludedSuppliers = useMemo(() => {
+    return (apiResult?.suppliers_excluded as any[]) ?? [];
+  }, [apiResult]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -451,6 +450,46 @@ export default function SupplierDemoPage() {
           <SupplierRadarChart />
         </div>
 
+        {/* Validation issues (severity-tagged, from AI) */}
+        {validationIssues.length > 0 && (
+          <div className="animate-fade-slide-up delay-350 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
+            <div className="px-6 py-3.5 border-b border-gray-200 dark:border-[#1e2130] flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Validation Issues</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 font-semibold border border-red-500/20">{validationIssues.length}</span>
+            </div>
+            <ul className="divide-y divide-gray-100 dark:divide-white/5">
+              {validationIssues.map((issue: any, i: number) => {
+                const isCritical = issue.severity === "critical";
+                const isHigh     = issue.severity === "high";
+                return (
+                  <li key={issue.issue_id ?? i} className="px-6 py-4">
+                    <div className="flex items-start gap-3">
+                      <span className={`mt-0.5 shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+                        isCritical ? "bg-red-500/15 text-red-400 border border-red-500/30"
+                        : isHigh   ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                                   : "bg-gray-500/15 text-gray-400 border border-gray-500/30"
+                      }`}>
+                        {issue.severity ?? "info"}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">{issue.description}</p>
+                        {issue.action_required && (
+                          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                            Required: {issue.action_required}
+                          </p>
+                        )}
+                        {issue.issue_id && (
+                          <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500">{issue.issue_id} · {issue.type}</span>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
         <div id="supplier-table" className="animate-fade-slide-up delay-450">
           <SupplierComparisonTable
             suppliers={suppliers}
@@ -460,6 +499,32 @@ export default function SupplierDemoPage() {
             sensitivityFactors={sensitivityFactors}
           />
         </div>
+
+        {/* Excluded suppliers (non-blocked, with explicit reason) */}
+        {excludedSuppliers.length > 0 && (
+          <div className="animate-fade-slide-up delay-460 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
+            <div className="px-6 py-3.5 border-b border-gray-200 dark:border-[#1e2130] flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Suppliers Excluded from Shortlist</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/10 text-gray-500 font-semibold border border-gray-500/20">{excludedSuppliers.length}</span>
+            </div>
+            <ul className="divide-y divide-gray-100 dark:divide-white/5">
+              {excludedSuppliers.map((s: any, i: number) => (
+                <li key={s.supplier_id ?? i} className="px-6 py-3.5 flex items-start gap-3">
+                  <span className="mt-0.5 shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide bg-gray-500/10 text-gray-400 border border-gray-500/20">
+                    excluded
+                  </span>
+                  <div className="min-w-0">
+                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{s.supplier_name}</span>
+                    {s.supplier_id && (
+                      <span className="ml-2 text-[10px] font-mono text-gray-400 dark:text-gray-500">{s.supplier_id}</span>
+                    )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{s.reason}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Live Market Benchmark */}
         {marketBenchmark && (
