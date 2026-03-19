@@ -35,7 +35,7 @@ export async function POST(request) {
         currency: "EUR",
         required_by_date: "2026-03-20",
         delivery_countries: ["France", "CH"],
-        preferred_supplier_mentioned: "Dell Enterprise Europe",
+        preferred_supplier_stated: "Dell Enterprise Europe",
         contract_type_requested: "purchase",
         data_residency_constraint: false,
         esg_requirement: false,
