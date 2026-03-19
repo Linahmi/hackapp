@@ -19,8 +19,8 @@ export default function AnalysisPage() {
 
   useEffect(() => {
     try {
-      if (sessionStorage.getItem("session_active") === "true") {
-        const savedResult = sessionStorage.getItem("procure_result");
+      if (sessionStorage.getItem("procuretrace_session_active") === "true") {
+        const savedResult = sessionStorage.getItem("procuretrace_result");
         if (savedResult) {
           setResult(JSON.parse(savedResult));
         } else {

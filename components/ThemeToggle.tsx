@@ -3,22 +3,35 @@
 import { useEffect, useState } from "react";
 
 export default function ThemeToggle() {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    // Read from DOM on mount, default should be dark
-    setIsDark(document.documentElement.classList.contains("dark"));
+    const saved = localStorage.getItem("procuretrace_theme");
+    if (saved) {
+      const isDarkMode = saved === "dark";
+      setIsDark(isDarkMode);
+      if (isDarkMode) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    } else {
+      setIsDark(false);
+      document.documentElement.classList.remove("dark");
+    }
   }, []);
 
   const toggleTheme = () => {
     const html = document.documentElement;
-    if (html.classList.contains("dark")) {
-      html.classList.remove("dark");
-      setIsDark(false);
-    } else {
+    const newIsDark = !html.classList.contains("dark");
+    if (newIsDark) {
       html.classList.add("dark");
       setIsDark(true);
+    } else {
+      html.classList.remove("dark");
+      setIsDark(false);
     }
+    localStorage.setItem("procuretrace_theme", newIsDark ? "dark" : "light");
   };
 
   return (

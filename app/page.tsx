@@ -47,6 +47,15 @@ export default function Home() {
     const savedText = localStorage.getItem("buyer_request");
     if (savedText && !requestText) setRequestText(savedText);
 
+    const result = sessionStorage.getItem("procuretrace_result");
+    const active = sessionStorage.getItem("procuretrace_session_active");
+    const restoredText = sessionStorage.getItem("procuretrace_request_text");
+    if (result && active === "true") {
+      if (restoredText) setRequestText(restoredText);
+      setStage("done");
+      router.push("/analysis");
+    }
+
     // Scroll listener for parallax
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -150,8 +159,9 @@ export default function Home() {
             }
 
             if (eventType === "result") {
-              sessionStorage.setItem("procure_result", JSON.stringify(payload));
-              sessionStorage.setItem("session_active", "true");
+              sessionStorage.setItem("procuretrace_result", JSON.stringify(payload));
+              sessionStorage.setItem("procuretrace_session_active", "true");
+              sessionStorage.setItem("procuretrace_request_text", finalRequestText);
               setStage("done");
               router.push("/analysis");
               return;
