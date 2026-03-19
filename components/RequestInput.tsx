@@ -22,8 +22,42 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
   const recognitionRef = useRef<any>(null);
   const valueRef = useRef(value);
 
+  const [validations, setValidations] = useState({ quantity: false, budget: false, location: false, timeline: false });
+  const [isValidating, setIsValidating] = useState(false);
+
   useEffect(() => {
     valueRef.current = value;
+  }, [value]);
+
+  useEffect(() => {
+    if (!value.trim()) {
+      setValidations({ quantity: false, budget: false, location: false, timeline: false });
+      return;
+    }
+    const handler = setTimeout(async () => {
+      setIsValidating(true);
+      try {
+        const res = await fetch("/api/live-validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: value })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setValidations({
+            quantity: Boolean(data.quantity),
+            budget: Boolean(data.budget),
+            location: Boolean(data.location),
+            timeline: Boolean(data.timeline)
+          });
+        }
+      } catch (e) {
+        console.error("Live validation failed", e);
+      } finally {
+        setIsValidating(false);
+      }
+    }, 600);
+    return () => clearTimeout(handler);
   }, [value]);
 
   useEffect(() => {
@@ -173,20 +207,20 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
       {/* Live Validation Checklist */}
       {value.trim() && (
         <div className="flex flex-wrap items-center gap-5 bg-gray-50/80 dark:bg-white/[0.02] px-4 py-3 rounded-xl border border-gray-200 dark:border-white/5 animate-fade-slide-up no-print">
-          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|dozen|hundred|thousand)\b/i.test(value) && /\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats|desks|keyboards|mice|monitors|cables|docks?|phones?|devices?|licenses?|servers?|switches?|routers?)\b/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
-            {/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|dozen|hundred|thousand)\b/i.test(value) && /\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats|desks|keyboards|mice|monitors|cables|docks?|phones?|devices?|licenses?|servers?|switches?|routers?)\b/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${validations.quantity ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {!validations.quantity && isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : validations.quantity ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             Quantity
           </div>
-          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(budget|\bk\b|\bm\b|chf|eur|usd|£|\$|€|\b\d+\s*(k|m)\b)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
-            {/(budget|\bk\b|\bm\b|chf|eur|usd|£|\$|€|\b\d+\s*(k|m)\b)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${validations.budget ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {!validations.budget && isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : validations.budget ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             Budget
           </div>
-          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(geneva|kigali|europe|emea|\bde\b|berlin|\buk\b|london|paris|\bfr\b|\bus\b|office|site)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
-            {/(geneva|kigali|europe|emea|\bde\b|berlin|\buk\b|london|paris|\bfr\b|\bus\b|office|site)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${validations.location ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {!validations.location && isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : validations.location ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             Location
           </div>
-          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(weeks?|days?|months?|years?|asap|\bby\b|urgent|q[1-4]|202[0-9]|soon)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
-            {/(weeks?|days?|months?|years?|asap|\bby\b|urgent|q[1-4]|202[0-9]|soon)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${validations.timeline ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {!validations.timeline && isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : validations.timeline ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             Timeline
           </div>
         </div>
