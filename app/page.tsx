@@ -110,16 +110,20 @@ export default function Home() {
           <PolicyCheck
             validation={result.validation}
           />
-          <SupplierComparison
-            shortlist={result.supplier_shortlist ?? []}
-            excluded={result.suppliers_excluded ?? []}
-            currency={result.request_interpretation?.currency}
-          />
+          <div id="supplier-table">
+            <SupplierComparison
+              shortlist={result.supplier_shortlist ?? []}
+              excluded={result.suppliers_excluded ?? []}
+              currency={result.request_interpretation?.currency}
+            />
+          </div>
           <DecisionRow
             bestName={result.supplier_shortlist?.[0]?.supplier_name ?? ""}
             bestScore={result.supplier_shortlist?.[0]?.composite_score_pct ?? null}
             bestPrice={`${result.supplier_shortlist?.[0]?.total_price ?? "0"} ${result.request_interpretation?.currency ?? "EUR"}`}
             isAutoApproved={result.recommendation?.is_auto_approved ?? false}
+            status={result.recommendation?.status ?? "pending_approval"}
+            escalations={result.escalations ?? []}
           />
           <DecisionCard
             recommendation={result.recommendation}

@@ -7,9 +7,11 @@ export type DecisionRowProps = {
   bestScore: number | null;
   bestPrice: string;
   isAutoApproved: boolean;
+  status?: string;
+  escalations?: any[];
 };
 
-export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved }: DecisionRowProps) {
+export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, status = "pending_approval", escalations = [] }: DecisionRowProps) {
   const [approved, setApproved] = useState(false);
 
   // Reset if best supplier changes (slider moved after approval)
@@ -88,6 +90,44 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved }: 
                 </div>
               </div>
             </div>
+          ) : status === "cannot_proceed" ? (
+            /* ── Cannot Proceed state ── */
+            <div
+              className="rounded-lg border border-red-700/50 bg-red-900/15 px-5 py-4"
+              style={{ borderLeft: "3px solid #EF4444" }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-red-700/50 bg-red-900/40">
+                    <span className="text-red-500 font-bold mb-0.5 text-lg">✗</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-0.5 text-red-500">
+                      Cannot proceed
+                    </p>
+                    <p className="text-base font-bold text-white">Blocking Issues Detected</p>
+                    <p className="text-sm text-gray-400 mt-0.5 mb-2">Manual intervention required before sourcing can proceed</p>
+                    {escalations && escalations.length > 0 && (
+                      <div className="flex flex-col gap-1.5 mt-2">
+                        {escalations.filter(e => e.blocking).map((e, i) => (
+                          <div key={i} className="text-xs rounded bg-red-950/40 border border-red-900/50 px-2.5 py-1.5 text-red-200">
+                            <span className="font-semibold text-red-400">{e.rule}:</span> {e.trigger}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                  <button
+                    onClick={handleReview}
+                    className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-300 transition-colors hover:bg-white/10"
+                  >
+                    Review details
+                  </button>
+                </div>
+              </div>
+            </div>
           ) : (
             /* ── Default decision card ── */
             <div
@@ -120,7 +160,7 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved }: 
                   </div>
                   <div>
                     <p className={`text-xs font-semibold uppercase tracking-wider mb-0.5 ${isAutoApproved ? "text-emerald-500" : "text-amber-500"}`}>
-                      Decision ready
+                      {isAutoApproved ? "Auto-approved" : "Requires review"}
                     </p>
                     <p className="text-base font-bold text-white">{bestName} selected</p>
                     <p className="text-sm text-gray-400 mt-0.5">You can proceed with this supplier</p>
