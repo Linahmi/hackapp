@@ -114,6 +114,25 @@ export default function Home() {
         >
           Load Standard Demo (REQ-000038)
         </button>
+        <button 
+          onClick={() => {
+            // Use the full text for REQ-000001 so the agent doesn't have to guess
+            handleTextChange("Need 400 consulting days of IT project management support starting next month. Delivery required by 2026-05-17. Budget is approximately 400 000.00 EUR. Prefer Accenture Advisory Europe if commercially competitive.");
+            setActiveReqId("REQ-000001");
+          }}
+          className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000001" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
+        >
+          Load IT Project (REQ-000001)
+        </button>
+        <button 
+          onClick={() => {
+            handleTextChange("Need 5 content production projects for employer branding and product campaigns. Please move quickly. We would like to stay with WPP Performance Media if possible.");
+            setActiveReqId("REQ-000012");
+          }}
+          className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000012" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
+        >
+          Load Missing Info (REQ-000012)
+        </button>
       </div>
 
       {/* Progress stepper — visible while loading or done */}
