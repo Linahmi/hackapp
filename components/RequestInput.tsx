@@ -173,20 +173,20 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
       {/* Live Validation Checklist */}
       {value.trim() && (
         <div className="flex flex-wrap items-center gap-5 bg-gray-50/80 dark:bg-white/[0.02] px-4 py-3 rounded-xl border border-gray-200 dark:border-white/5 animate-fade-slide-up no-print">
-          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/\\b\\d+\\b/i.test(value) || /\\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats)\\b/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
-            {/\\b\\d+\\b/i.test(value) || /\\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats)\\b/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/\b\d+\b/i.test(value) || /\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats)\b/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {/\b\d+\b/i.test(value) || /\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats)\b/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             Quantity
           </div>
-          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(budget|k\\b|m\\b|chf|eur|usd|£|\\$|€|\\b\\d+\\s*(k|m)\\b)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
-            {/(budget|k\\b|m\\b|chf|eur|usd|£|\\$|€|\\b\\d+\\s*(k|m)\\b)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(budget|\bk\b|\bm\b|chf|eur|usd|£|\$|€|\b\d+\s*(k|m)\b)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {/(budget|\bk\b|\bm\b|chf|eur|usd|£|\$|€|\b\d+\s*(k|m)\b)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             Budget
           </div>
-          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(geneva|kigali|europe|emea|de\\b|berlin|uk\\b|london|paris|fr\\b|us\\b|office|site)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
-            {/(geneva|kigali|europe|emea|de\\b|berlin|uk\\b|london|paris|fr\\b|us\\b|office|site)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(geneva|kigali|europe|emea|\bde\b|berlin|\buk\b|london|paris|\bfr\b|\bus\b|office|site)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {/(geneva|kigali|europe|emea|\bde\b|berlin|\buk\b|london|paris|\bfr\b|\bus\b|office|site)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             Location
           </div>
-          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(weeks?|days?|months?|years?|asap|by\\b|urgent|q[1-4]|202[0-9]|soon)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
-            {/(weeks?|days?|months?|years?|asap|by\\b|urgent|q[1-4]|202[0-9]|soon)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(weeks?|days?|months?|years?|asap|\bby\b|urgent|q[1-4]|202[0-9]|soon)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {/(weeks?|days?|months?|years?|asap|\bby\b|urgent|q[1-4]|202[0-9]|soon)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             Timeline
           </div>
         </div>
