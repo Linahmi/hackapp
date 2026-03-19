@@ -131,7 +131,7 @@ export default function Home() {
             escalations={result.escalations ?? []}
             confidence={result.confidence_score}
           />
-          <AuditTrail auditTrail={result.audit_trail} />
+          <AuditTrail result={result} />
         </>
       )}
 
