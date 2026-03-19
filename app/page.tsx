@@ -7,11 +7,8 @@ import RequestInterpretation from "@/components/RequestInterpretation";
 import PolicyCheck           from "@/components/PolicyCheck";
 import SupplierComparison    from "@/components/SupplierComparison";
 import DecisionCard          from "@/components/DecisionCard";
-<<<<<<< HEAD
 import AuditTrail            from "@/components/AuditTrail";
-=======
 import DecisionRow           from "@/components/agent/DecisionRow";
->>>>>>> 1a8564b (add decision row)
 
 type Stage = "idle" | "intake" | "processing" | "done" | "error";
 
