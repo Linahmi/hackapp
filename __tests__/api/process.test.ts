@@ -85,6 +85,39 @@ describe("422 — cannot_proceed", () => {
   });
 });
 
+// ── 400 — malformed body ──────────────────────────────────────────────────
+
+describe("400 — malformed / missing JSON body", () => {
+  it("returns 400 when the body is not valid JSON", async () => {
+    const badReq = new Request("http://localhost/api/process", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    "this is not json",
+    });
+
+    const res = await POST(badReq);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body).toEqual({ error: "Invalid or missing JSON body" });
+    expect(mockValidateOrder).not.toHaveBeenCalled();
+    expect(mockDecide).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when the body is empty", async () => {
+    const emptyReq = new Request("http://localhost/api/process", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    "",
+    });
+
+    const res = await POST(emptyReq);
+
+    expect(res.status).toBe(400);
+    expect(mockValidateOrder).not.toHaveBeenCalled();
+  });
+});
+
 // ── 500 ───────────────────────────────────────────────────────────────────
 
 describe("500 — unhandled exception", () => {
@@ -111,3 +144,4 @@ describe("500 — unhandled exception", () => {
     expect(body).toEqual({ error: "Internal server error" });
   });
 });
+

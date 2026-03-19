@@ -78,5 +78,5 @@ export function validateOrder(order: unknown): ValidationResult {
   }
 
   // At this point parsed.success is guaranteed true
-  return { valid: true, data: (parsed as z.SafeParseSuccess<OrderPayload>).data };
+  return { valid: true, data: (parsed as z.ZodSafeParseSuccess<OrderPayload>).data };
 }
