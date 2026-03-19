@@ -17,32 +17,34 @@ interface Props {
   };
 }
 
-type Status = "ok" | "violated" | "human";
+type Status = "pass" | "critical" | "high" | "human";
 
 const STATUS_CFG: Record<Status, { symbol: string; color: string; bg: string; badge: string }> = {
-  ok:       { symbol: "✓", color: "#dc2626", bg: "rgba(220,38,38,0.06)",  badge: "Pass"   },
-  violated: { symbol: "✗", color: "#dc2626", bg: "rgba(220,38,38,0.10)",  badge: "Fail"   },
+  pass:     { symbol: "✓", color: "#22c55e", bg: "rgba(34,197,94,0.06)",  badge: "Pass" },
+  critical: { symbol: "✗", color: "#dc2626", bg: "rgba(220,38,38,0.10)",  badge: "Critical" },
+  high:     { symbol: "⚠", color: "#f59e0b", bg: "rgba(245,158,11,0.10)", badge: "High" },
   human:    { symbol: "!", color: "var(--text-main)", bg: "rgba(255,255,255,0.04)", badge: "Review" },
 };
 
 function toStatus(severity: string): Status {
-  if (severity === "critical" || severity === "high") return "violated";
+  if (severity === "critical") return "critical";
+  if (severity === "high") return "high";
   if (severity === "medium") return "human";
-  return "ok";
+  return "pass";
 }
 
 export default function PolicyCheck({ validation }: Props) {
   const [count, setCount] = useState(0);
 
-  const issues = validation?.issues_detected ?? [];
+  const issues = validation?.issues_detected || (validation as any)?.issues || [];
   const items: { label: string; detail: string; status: Status }[] =
     issues.length > 0
-      ? issues.map((iss) => ({
+      ? issues.map((iss: Issue) => ({
           label:  iss.type || iss.issue_id,
           detail: iss.description,
           status: toStatus(iss.severity),
         }))
-      : [{ label: "All checks passed", detail: "Request is complete and policy-compliant", status: "ok" }];
+      : [{ label: "All checks passed", detail: "Request is complete and policy-compliant", status: "pass" }];
 
   useEffect(() => {
     if (count >= items.length) return;

@@ -31,6 +31,7 @@ interface Props {
     };
   };
   escalations?: Escalation[];
+  confidence?: number;
 }
 
 const CFG: Record<RecStatus, { bg: string; border: string; badgeBg: string; badgeColor: string; icon: string; label: string }> = {
@@ -51,7 +52,7 @@ const CFG: Record<RecStatus, { bg: string; border: string; badgeBg: string; badg
   },
 };
 
-export default function DecisionCard({ recommendation, policyEvaluation, escalations = [] }: Props) {
+export default function DecisionCard({ recommendation, policyEvaluation, escalations = [], confidence }: Props) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
@@ -83,12 +84,20 @@ export default function DecisionCard({ recommendation, policyEvaluation, escalat
           <div className="flex items-center gap-2.5">
              <span className="text-xl" style={{ color: cfg.badgeColor }}>{cfg.icon}</span>
              <span className="text-[color:var(--text-main)] font-bold text-base">Decision</span>
-             <span
+              <span
                 className="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide ml-2"
                 style={{ backgroundColor: cfg.badgeBg, color: cfg.badgeColor }}
              >
                 {cfg.label}
              </span>
+             {confidence != null && (
+               <span
+                 className="text-xs font-bold px-2 py-0.5 rounded-full ml-2"
+                 style={{ backgroundColor: "rgba(34,197,94,0.15)", color: "#22c55e" }}
+               >
+                 Confidence: {confidence}%
+               </span>
+             )}
           </div>
 
           <button
@@ -167,10 +176,10 @@ export default function DecisionCard({ recommendation, policyEvaluation, escalat
               <div
                 key={e.escalation_id || `escalation-${index}`}
                 className="rounded-lg px-4 py-3"
-                style={{ backgroundColor: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)" }}
+                style={{ backgroundColor: "rgba(220,38,38,0.04)", border: "1px solid rgba(220,38,38,0.3)" }}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold" style={{ color: "#f59e0b" }}>⚠ Blocking</span>
+                  <span className="text-xs font-bold text-red-500">⚠ Blocking</span>
                   <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{e.rule}</span>
                 </div>
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>{e.trigger}</p>

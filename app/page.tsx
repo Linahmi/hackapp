@@ -44,6 +44,9 @@ export default function Home() {
       const dataIntake = await resIntake.json();
       if (!resIntake.ok) throw new Error(dataIntake.error || "Intake failed");
 
+      // Artificial delay to allow 'Parsing' animation
+      await new Promise(r => setTimeout(r, 1400));
+
       setStage("processing");
       const resProcess = await fetch("/api/process", {
         method: "POST",
@@ -52,6 +55,9 @@ export default function Home() {
       });
       const dataProcess = await resProcess.json();
       if (!resProcess.ok) throw new Error(dataProcess.error || "Processing failed");
+
+      // Artificial delay to allow processing animations
+      await new Promise(r => setTimeout(r, 2200));
 
       setResult(dataProcess);
       setStage("done");
@@ -99,7 +105,6 @@ export default function Home() {
         <>
           <RequestInterpretation
             interpretation={result.request_interpretation}
-            confidence={result.confidence_score}
           />
           <PolicyCheck
             validation={result.validation}
@@ -113,6 +118,7 @@ export default function Home() {
             recommendation={result.recommendation}
             policyEvaluation={result.policy_evaluation}
             escalations={result.escalations ?? []}
+            confidence={result.confidence_score}
           />
           <AuditTrail auditTrail={result.audit_trail} />
         </>

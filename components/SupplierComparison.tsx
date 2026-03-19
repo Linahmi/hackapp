@@ -15,6 +15,7 @@ interface Supplier {
   incumbent?: boolean;
   recommendation_note?: string;
   currency?: string;
+  score_breakdown?: Record<string, number>;
 }
 
 interface Excluded {
@@ -133,9 +134,9 @@ export default function SupplierComparison({ shortlist = [], excluded = [], curr
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Total</span>
+                    <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Total Price</span>
                     <span className="text-sm font-bold text-[color:var(--text-main)] tabular-nums">
                       {cur} {Number(s.total_price).toLocaleString()}
                     </span>
@@ -147,6 +148,16 @@ export default function SupplierComparison({ shortlist = [], excluded = [], curr
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Score</span>
                     <ScoreBar value={s.composite_score} />
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Breakdown</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {s.score_breakdown && Object.entries(s.score_breakdown).map(([k, v]) => (
+                        <span key={k} className="text-[10px] px-1 py-0.5 rounded" style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-main)" }}>
+                          {k}: {Math.round(Number(v) * 100)}%
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

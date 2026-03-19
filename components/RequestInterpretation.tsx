@@ -16,10 +16,9 @@ interface Interpretation {
 
 interface Props {
   interpretation?: Interpretation;
-  confidence?: number;
 }
 
-export default function RequestInterpretation({ interpretation, confidence }: Props) {
+export default function RequestInterpretation({ interpretation }: Props) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
@@ -53,9 +52,6 @@ export default function RequestInterpretation({ interpretation, confidence }: Pr
     },
   ];
 
-  const confColor =
-    (confidence ?? 0) >= 80 ? "#22c55e" : (confidence ?? 0) >= 50 ? "#f59e0b" : "#dc2626";
-
   return (
     <div
       className="w-full max-w-2xl transition-all duration-500 ease-out"
@@ -75,11 +71,6 @@ export default function RequestInterpretation({ interpretation, confidence }: Pr
             </svg>
             <span className="text-[color:var(--text-main)] text-sm font-semibold">Request Interpreted</span>
           </div>
-          {confidence != null && (
-            <span className="text-xs font-semibold" style={{ color: confColor }}>
-              {confidence}% confidence
-            </span>
-          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
