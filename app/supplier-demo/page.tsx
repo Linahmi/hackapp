@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   SupplierComparisonTable,
   Supplier,
@@ -51,7 +51,7 @@ const CONFLICTS: ConflictWarning[] = [
 ];
 
 const AUDIT_TRAIL: AuditEntry[] = [
-  { text: 'Parsed request: "Find a supplier in Geneva under 400k ASAP"',   status: "approved"  },
+  { text: 'Parsed request: "Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF, prefer Dell"', status: "approved" },
   { text: "Supplier list filtered by region: EU / Geneva compliant",        status: "approved"  },
   { text: "Supplier X matched restricted list — rule R-14 triggered",       status: "blocked"   },
   { text: "Delivery timeline conflict flagged — escalated for review",      status: "escalated" },
@@ -167,6 +167,13 @@ function WhyPanel({ text }: { text: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SupplierDemoPage() {
+  const [buyerRequest, setBuyerRequest] = useState("Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF, prefer Dell");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("buyer_request");
+    if (saved) setBuyerRequest(saved);
+  }, []);
+
   const [priceWeight,    setPriceWeight]    = useState(25);
   const [riskWeight,     setRiskWeight]     = useState(40);
   const [deliveryWeight, setDeliveryWeight] = useState(20);
@@ -256,7 +263,7 @@ export default function SupplierDemoPage() {
             User request
           </span>
           <p className="mt-0.5 text-sm font-medium text-gray-200">
-            "Find a supplier in Geneva under 400k ASAP"
+            "{buyerRequest}"
           </p>
         </div>
       </div>

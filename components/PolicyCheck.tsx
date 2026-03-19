@@ -36,7 +36,7 @@ function toStatus(severity: string): Status {
 export default function PolicyCheck({ validation }: Props) {
   const [count, setCount] = useState(0);
 
-  const issues = validation?.issues_detected || (validation as any)?.issues || [];
+  const issues = (validation as any)?.issues ?? validation?.issues_detected ?? [];
   const items: { label: string; detail: string; status: Status }[] =
     issues.length > 0
       ? issues.map((iss: Issue) => ({
