@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Fragment } from "react";
+import React from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,7 +20,6 @@ export type Supplier = {
 export type SourceTag      = { label: string; source: string; method: "stated" | "inferred" };
 export type ConflictWarning = { message: string };
 export type AuditEntry     = { text: string; status: "approved" | "blocked" | "escalated" };
-export type SensitivityFactor = { label: string; impact: number };
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -84,37 +83,6 @@ function ScoreBar({ label, value, accent }: { label: string; value: number; acce
   );
 }
 
-function SensitivityAnalysis({ factors }: { factors: SensitivityFactor[] }) {
-  const max = Math.max(...factors.map((f) => f.impact), 1);
-  return (
-    <div className="rounded-xl p-6 shadow-sm bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130]">
-      <h3 className="text-sm font-bold text-gray-900 dark:text-white">Sensitivity Analysis</h3>
-      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">
-        Relative influence of each factor on the final recommendation
-      </p>
-      <div className="mt-5 space-y-4">
-        {factors.map((f) => {
-          const pct = Math.round((f.impact / max) * 100);
-          return (
-            <div key={f.label} className="flex items-center gap-4">
-              <span className="w-32 shrink-0 text-sm font-semibold text-gray-600 dark:text-gray-300">{f.label}</span>
-              <div className="flex-1 overflow-hidden rounded-full h-2.5 bg-gray-100 dark:bg-gray-800">
-                <div
-                  className="h-full rounded-full transition-all duration-300 relative overflow-hidden"
-                  style={{ width: `${pct}%`, backgroundColor: BRAND_RED }}
-                />
-              </div>
-              <span className="w-8 text-right text-xs tabular-nums" style={{ color: "var(--text-muted)" }}>
-                {f.impact}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function SupplierComparisonTable({
@@ -122,13 +90,11 @@ export function SupplierComparisonTable({
   sourceTags,
   conflicts,
   auditTrail,
-  sensitivityFactors,
 }: {
   suppliers: Supplier[];
   sourceTags?: SourceTag[];
   conflicts?: ConflictWarning[];
   auditTrail?: AuditEntry[];
-  sensitivityFactors?: SensitivityFactor[];
 }) {
   return (
     <div className="space-y-4">
@@ -273,11 +239,6 @@ export function SupplierComparisonTable({
       <div className="text-[10px] leading-relaxed px-1 mt-2" style={{ color: "var(--text-muted)" }}>
         TCO = base cost + reliability buffer + lead-time risk + operational risk premium. Unit price alone does not reflect total procurement cost.
       </div>
-
-      {/* Sensitivity analysis */}
-      {sensitivityFactors && sensitivityFactors.length > 0 && (
-        <SensitivityAnalysis factors={sensitivityFactors} />
-      )}
 
       {/* Audit trail */}
       {auditTrail && auditTrail.length > 0 && (
