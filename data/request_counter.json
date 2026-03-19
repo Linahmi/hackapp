@@ -1,5 +1,5 @@
 {
-  "counter": 48,
+  "counter": 49,
   "requests": [
     {
       "id": "R-0001",
@@ -359,6 +359,14 @@
       "category": "IT > Smartphones",
       "quantity": 30,
       "budget": 22800,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0049",
+      "timestamp": "2026-03-19T22:15:49.680Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
       "status": "cannot_proceed"
     }
   ]
