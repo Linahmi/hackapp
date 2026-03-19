@@ -21,13 +21,14 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
   const [speechSupported, setSpeechSupported] = useState(true);
   const recognitionRef = useRef<any>(null);
   const valueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
+  const isRecordingRef = useRef(false);
 
   const [validations, setValidations] = useState({ quantity: false, budget: false, location: false, timeline: false });
   const [isValidating, setIsValidating] = useState(false);
 
-  useEffect(() => {
-    valueRef.current = value;
-  }, [value]);
+  useEffect(() => { valueRef.current = value; }, [value]);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
   useEffect(() => {
     if (!value.trim()) {
@@ -60,63 +61,68 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
     return () => clearTimeout(handler);
   }, [value]);
 
+  // Created once on mount — refs keep onChange/value current without recreating the instance
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = false;
-        
-        recognition.onresult = (event: any) => {
-          let transcript = '';
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              transcript += event.results[i][0].transcript;
-            }
-          }
-          if (transcript) {
-            const currentVal = valueRef.current;
-            const newVal = currentVal + (currentVal.endsWith(" ") || currentVal === "" ? "" : " ") + transcript;
-            onChange(newVal);
-          }
-        };
+    if (typeof window === "undefined") return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) { setSpeechSupported(false); return; }
 
-        recognition.onerror = (event: any) => {
-          console.error("Speech recognition error", event.error);
-          setIsRecording(false);
-        };
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
 
-        recognition.onend = () => {
-          setIsRecording(false);
-        };
-        recognitionRef.current = recognition;
-      } else {
-        setSpeechSupported(false);
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) transcript += event.results[i][0].transcript;
       }
-    }
-  }, [onChange]);
+      if (transcript) {
+        const cur = valueRef.current;
+        onChangeRef.current(cur + (cur.endsWith(" ") || cur === "" ? "" : " ") + transcript);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      // "aborted" fires on a normal .stop() call — not a real error
+      if (event.error === "aborted") return;
+      console.error("Speech recognition error", event.error);
+      isRecordingRef.current = false;
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      isRecordingRef.current = false;
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    return () => { try { recognition.stop(); } catch {} };
+  }, []);
 
   const toggleRecording = () => {
     if (!speechSupported || !recognitionRef.current) return;
-    if (isRecording) {
+    if (isRecordingRef.current) {
       recognitionRef.current.stop();
+      isRecordingRef.current = false;
       setIsRecording(false);
     } else {
       try {
         recognitionRef.current.start();
+        isRecordingRef.current = true;
         setIsRecording(true);
       } catch (err) {
         console.error("Voice start error", err);
       }
     }
   };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSubmit(file);
     }
   };
+
   return (
     <div className="w-full max-w-2xl flex flex-col gap-4 no-print">
       <div className="flex flex-col gap-1 text-center md:text-left">
@@ -129,36 +135,28 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
       <div className="relative">
         <textarea
           className="w-full rounded-xl px-5 py-4 text-sm leading-relaxed resize-none outline-none transition-all duration-300 animate-pulse-border bg-white dark:bg-[#12151f] text-gray-900 dark:text-white border border-gray-200 dark:border-[#1e2130] focus:border-red-600 focus:ring-[3px] focus:ring-red-600/10 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-          style={{
-            minHeight: "160px",
-            paddingBottom: "48px"
-          }}
+          style={{ minHeight: "160px", paddingBottom: "48px" }}
           placeholder="Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF..."
           rows={7}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          onFocus={(e) => {
-            e.currentTarget.classList.remove("animate-pulse-border");
-          }}
-          onBlur={(e) => {
-          }}
+          onFocus={(e) => { e.currentTarget.classList.remove("animate-pulse-border"); }}
+          onBlur={() => {}}
         />
 
         {/* Action Icons Overlay */}
         <div className="absolute bottom-4 right-4 flex items-center gap-1.5">
           {/* File Attachment */}
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept=".pdf,.csv,.xlsx,.txt" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".pdf,.csv,.xlsx,.txt"
             onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                setFile(e.target.files[0]);
-              }
-            }} 
+              if (e.target.files && e.target.files[0]) setFile(e.target.files[0]);
+            }}
           />
           <button
             type="button"
@@ -174,8 +172,8 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
           <button
             type="button"
             className={`p-2 rounded-lg transition-colors ${
-              isRecording 
-                ? "text-red-600 bg-red-100 dark:bg-red-900/30 animate-pulse-slow border border-red-200 dark:border-red-800" 
+              isRecording
+                ? "text-red-600 bg-red-100 dark:bg-red-900/30 animate-pulse-slow border border-red-200 dark:border-red-800"
                 : "text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800"
             }`}
             title={speechSupported ? (isRecording ? "Stop recording" : "Start voice input") : "Voice input not supported in this browser"}
@@ -193,8 +191,8 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
           <Paperclip className="h-3.5 w-3.5 opacity-70" />
           <span className="truncate max-w-[200px]" title={file.name}>{file.name}</span>
           <div className="w-px h-3 bg-white/20 ml-1"></div>
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => setFile(null)}
             className="ml-1 text-gray-400 hover:text-red-400 transition-colors"
             title="Remove attachment"
