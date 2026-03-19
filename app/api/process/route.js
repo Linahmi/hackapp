@@ -11,10 +11,10 @@ import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
 
 // Local proxy functions to bridge the requested step-by-step logic 
 // with the existing merged Backend-A native module signatures dynamically.
-function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq) {
+function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required) {
   const eligible = getEligibleSuppliers(l1, l2, countries, qty, currency);
   const fakePolicy = { restricted_suppliers: {} };
-  const mockReq = { quantity: qty, currency, days_until_required: 10, incumbent_supplier: originalReq?.incumbent_supplier };
+  const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier };
   const { shortlist } = newScoreSuppliers(eligible, fakePolicy, mockReq);
   return shortlist;
 }
@@ -71,7 +71,8 @@ export async function POST(req) {
       enrichedRequest.delivery_countries || [], 
       enrichedRequest.quantity || 1, 
       enrichedRequest.currency || 'EUR',
-      originalRequest
+      originalRequest,
+      enrichedRequest.days_until_required
     );
     
     // mark incumbent
