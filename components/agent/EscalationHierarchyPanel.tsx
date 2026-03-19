@@ -34,32 +34,32 @@ type RecipientMeta = { name: string; dept: string; action: string; responseTime:
 const RULE_RECIPIENTS: Array<{ pattern: RegExp } & RecipientMeta> = [
   {
     pattern: /budget/i,
-    name: "Sarah Chen", dept: "CFO Office",
-    action: "Review the budget shortfall and authorize an exception or reallocate funds.",
+    name: "Procurement Manager", dept: "Sourcing Team",
+    action: "Review budget gap with requester and negotiate revised quantity or budget increase.",
     responseTime: "Response needed within 24–48 hours", responseEmoji: "📋",
   },
   {
     pattern: /restrict|compliance|sanction|legal/i,
-    name: "Compliance Team", dept: "Legal Dept",
-    action: "Verify the supplier's compliance status and approve or block their use.",
+    name: "Compliance Team", dept: "Legal & Risk",
+    action: "Verify supplier restriction status and approve exception if justified.",
     responseTime: "Response needed within 4 hours", responseEmoji: "⚡",
   },
   {
     pattern: /lead.?time|delivery|timeline|feasib/i,
-    name: "Marcus Wei", dept: "Head of Category IT",
-    action: "Confirm whether the delivery timeline can be extended or an emergency source approved.",
+    name: "Category Manager", dept: "IT Procurement",
+    action: "Identify emergency sourcing options or negotiate deadline extension with requester.",
     responseTime: "Response needed within 4 hours", responseEmoji: "⚡",
   },
   {
     pattern: /missing|incomplete|info|detail|unknown/i,
-    name: "Intern / Sourcing Agent", dept: "Procurement",
-    action: "Contact the requester today to gather the missing specification details.",
+    name: "Sourcing Agent", dept: "Procurement",
+    action: "Contact requester to collect missing fields before resubmission.",
     responseTime: "Contact requester today", responseEmoji: "📞",
   },
   {
     pattern: /no.?supplier|supplier.?not.?found|unavailable|no.?vendor/i,
-    name: "Head of Category", dept: "Regional Lead",
-    action: "Identify alternative suppliers or approve extending the sourcing region.",
+    name: "Head of Category", dept: "Regional Sourcing",
+    action: "Expand supplier search to alternative regions or approve new vendor onboarding.",
     responseTime: "Response needed within 4 hours", responseEmoji: "⚡",
   },
 ];
