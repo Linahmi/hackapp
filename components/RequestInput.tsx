@@ -1,58 +1,75 @@
 "use client";
 
-import { useState } from "react";
+const EXAMPLE =
+  "Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception.";
 
 interface Props {
-  onAnalyze: () => void;
+  value: string;
+  onChange: (v: string) => void;
+  onSubmit: () => void;
+  disabled?: boolean;
 }
 
-export default function RequestInput({ onAnalyze }: Props) {
-  const [value, setValue] = useState("");
-
+export default function RequestInput({ value, onChange, onSubmit, disabled = false }: Props) {
   return (
-    <div className="w-full max-w-2xl flex flex-col gap-5">
-      {/* Heading */}
+    <div className="w-full max-w-2xl flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h1 className="text-white text-2xl font-bold tracking-tight">
-          New Procurement Request
-        </h1>
-        <p className="text-gray-500 text-sm">
-          Describe your need in plain language — quantity, location, timeline, budget.
+        <h2 className="text-white text-xl font-bold tracking-tight">New Purchase Request</h2>
+        <p className="text-sm" style={{ color: "#6b7280" }}>
+          Describe your procurement need in plain language — any format, no constraints.
         </p>
       </div>
 
-      {/* Textarea */}
       <textarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF..."
-        rows={10}
-        className="w-full resize-none rounded-lg px-5 py-4 text-white text-base leading-relaxed placeholder-gray-600 outline-none transition-all duration-200"
+        className="w-full rounded-xl px-5 py-4 text-sm leading-relaxed resize-none outline-none transition-all duration-200"
         style={{
-          backgroundColor: "#13161f",
-          border: "1px solid #2a2f42",
-          boxShadow: "none",
+          backgroundColor: "#12151f",
+          color: "#e5e7eb",
+          border: "1px solid #1e2130",
+          minHeight: "160px",
         }}
+        placeholder="Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF..."
+        rows={7}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
         onFocus={(e) => {
-          e.currentTarget.style.border = "1px solid #ef4444";
-          e.currentTarget.style.boxShadow = "0 0 0 3px rgba(239,68,68,0.12)";
+          e.currentTarget.style.border = "1px solid #dc2626";
+          e.currentTarget.style.boxShadow = "0 0 0 3px rgba(220,38,38,0.12)";
         }}
         onBlur={(e) => {
-          e.currentTarget.style.border = "1px solid #2a2f42";
+          e.currentTarget.style.border = "1px solid #1e2130";
           e.currentTarget.style.boxShadow = "none";
         }}
       />
 
-      {/* Submit */}
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex items-center justify-between">
         <button
-          onClick={() => { console.log(value); onAnalyze(); }}
-          className="w-full rounded-lg bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold text-base py-3 transition-colors duration-150 tracking-wide"
+          type="button"
+          onClick={() => onChange(EXAMPLE)}
+          disabled={disabled}
+          className="text-xs underline underline-offset-2 transition-opacity disabled:opacity-40"
+          style={{ color: "#dc2626" }}
         >
-          Analyze Request
+          Load example
         </button>
-        <p className="text-gray-600 text-xs">Powered by ProcureTrace AI</p>
+
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={disabled || !value.trim()}
+          className="rounded-xl px-6 py-2.5 text-sm font-semibold text-white transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ backgroundColor: "#dc2626" }}
+          onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.backgroundColor = "#b91c1c"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#dc2626"; }}
+        >
+          {disabled ? "Analysing…" : "Analyze Request"}
+        </button>
       </div>
+
+      <p className="text-center text-xs" style={{ color: "#4b5563" }}>
+        Powered by ProcureTrace AI
+      </p>
     </div>
   );
 }

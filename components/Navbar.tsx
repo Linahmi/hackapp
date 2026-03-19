@@ -1,24 +1,56 @@
+"use client";
+
+import { useState } from "react";
+
 export default function Navbar() {
+  const [demoOn, setDemoOn] = useState(false);
+
+  const toggleDemo = () => {
+    const nextState = !demoOn;
+    setDemoOn(nextState);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("toggleDemo", { detail: nextState }));
+    }
+  };
+
   return (
-    <nav className="w-full px-6 py-3 flex items-center gap-3" style={{ backgroundColor: "#0f1117", borderBottom: "1px solid #1e2130" }}>
-      {/* Product name */}
-      <span className="text-white font-bold text-lg tracking-tight">
-        ProcureTrace
-      </span>
-
-      {/* Divider */}
-      <span className="text-gray-600 select-none">|</span>
-
-      {/* Agent status */}
-      <div className="flex items-center gap-2">
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+    <nav
+      className="w-full flex items-center justify-between px-6 py-3"
+      style={{ backgroundColor: "#0f1117", borderBottom: "1px solid #1a1d27" }}
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-white font-bold text-lg tracking-tight select-none">
+          ProcureTrace
         </span>
-        <span className="text-red-500 text-sm font-medium tracking-wide">
-          Agent ready
-        </span>
+        <span style={{ color: "#374151" }}>|</span>
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span
+              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+              style={{ backgroundColor: "#dc2626" }}
+            />
+            <span
+              className="relative inline-flex h-2 w-2 rounded-full"
+              style={{ backgroundColor: "#dc2626" }}
+            />
+          </span>
+          <span className="text-sm font-medium" style={{ color: "#dc2626" }}>
+            Agent ready
+          </span>
+        </div>
       </div>
+
+      <button
+        onClick={toggleDemo}
+        className="text-xs px-3 py-1.5 rounded-full font-semibold transition-colors border"
+        style={{
+          backgroundColor: demoOn ? "rgba(220,38,38,0.15)" : "transparent",
+          color: demoOn ? "#ef4444" : "#9ca3af",
+          borderColor: demoOn ? "rgba(220,38,38,0.4)" : "#374151"
+        }}
+      >
+        Demo Mode: {demoOn ? "ON" : "OFF"}
+      </button>
     </nav>
   );
 }
