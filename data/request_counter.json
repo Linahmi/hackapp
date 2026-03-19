@@ -328,6 +328,14 @@
       "quantity": 500,
       "budget": null,
       "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0045",
+      "timestamp": "2026-03-19T21:35:06.270Z",
+      "category": "IT > Autodesk Maya licenses",
+      "quantity": 20,
+      "budget": 45000,
+      "status": "cannot_proceed"
     }
   ]
 }
