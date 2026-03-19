@@ -14,9 +14,9 @@ const STEP_INDEX: Record<string, number> = {
 };
 
 const SCENARIOS = [
-  { icon: Laptop, title: "Standard Demo", desc: "IT hardware request with matching specs.", text: "Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception." },
-  { icon: Package, title: "Edge Case", desc: "Complex logistics with partial budget constraints.", text: "Required 50 specialized medical transport coolers to Kigali by end of month. Budget 12k USD, unsure about import duties." },
-  { icon: AlertTriangle, title: "IT Project", desc: "High value software licensing request.", text: "Need to renew Autodesk Maya licenses for 15 designers and add 5 new seats. Total budget 45k." },
+  { icon: Laptop, title: "Standard Demo", desc: "REQ-000004 · IT docking station order with strict specs.", text: "Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception." },
+  { icon: Package, title: "Fleet Refresh", desc: "REQ-000038 · Large-scale laptop procurement.", text: "Need 500 laptops for fleet refresh & onboarding across all EU offices. Delivery within 3 weeks to Geneva, Zurich and Berlin. Budget 400k CHF. Prefer Dell but open to alternatives. Must include 3-year warranty and next-business-day support." },
+  { icon: AlertTriangle, title: "Edge Case", desc: "Complex logistics with partial budget constraints.", text: "Required 50 specialized medical transport coolers to Kigali by end of month. Budget 12k USD, unsure about import duties." },
   { icon: Search, title: "Missing Info", desc: "Vague request requiring interpretation.", text: "Need more screens for the newly hired analysts. Send them ASAP." }
 ];
 

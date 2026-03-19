@@ -370,8 +370,21 @@
       "status": "cannot_proceed"
     },
     {
+<<<<<<< HEAD
       "id": "R-0050",
       "timestamp": "2026-03-19T22:32:36.226Z",
+=======
+      "id": "R-0049",
+      "timestamp": "2026-03-19T22:15:49.680Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0050",
+      "timestamp": "2026-03-19T22:49:50.233Z",
+>>>>>>> 5532bc80f6045601056bd7265fbdf463774498fa
       "category": "null > null",
       "quantity": null,
       "budget": null,
@@ -379,7 +392,11 @@
     },
     {
       "id": "R-0051",
+<<<<<<< HEAD
       "timestamp": "2026-03-19T22:34:33.791Z",
+=======
+      "timestamp": "2026-03-19T22:52:53.672Z",
+>>>>>>> 5532bc80f6045601056bd7265fbdf463774498fa
       "category": "null > null",
       "quantity": null,
       "budget": null,
@@ -387,7 +404,11 @@
     },
     {
       "id": "R-0052",
+<<<<<<< HEAD
       "timestamp": "2026-03-19T22:35:03.621Z",
+=======
+      "timestamp": "2026-03-19T22:58:46.510Z",
+>>>>>>> 5532bc80f6045601056bd7265fbdf463774498fa
       "category": "null > null",
       "quantity": null,
       "budget": null,
@@ -395,11 +416,16 @@
     },
     {
       "id": "R-0053",
+<<<<<<< HEAD
       "timestamp": "2026-03-19T22:35:46.457Z",
+=======
+      "timestamp": "2026-03-19T23:10:19.757Z",
+>>>>>>> 5532bc80f6045601056bd7265fbdf463774498fa
       "category": "null > null",
       "quantity": null,
       "budget": null,
       "status": "cannot_proceed"
+<<<<<<< HEAD
     },
     {
       "id": "R-0054",
@@ -472,6 +498,8 @@
       "quantity": 240,
       "budget": 25199.55,
       "status": "cannot_proceed"
+=======
+>>>>>>> 5532bc80f6045601056bd7265fbdf463774498fa
     }
   ]
 }

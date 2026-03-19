@@ -674,6 +674,11 @@ export default function SupplierDemoPage() {
               note="Potential savings identified, but human validation is needed"
               estimatedSavings={savingsStr}
               approver="Procurement Manager"
+              recipientName="Michael Torres"
+              recipientDept="Procurement Office"
+              actionRequired="Approve or reject the bundle consolidation to unlock potential cost savings before orders are placed separately."
+              responseTime="Response needed within 24–48 hours"
+              responseEmoji="📋"
             />
           ) : null}
         </div>
