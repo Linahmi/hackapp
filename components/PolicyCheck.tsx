@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 interface Issue {
   issue_id: string;
-  severity: "critical" | "high" | "medium" | "low";
+  severity: "critical" | "high" | "medium" | "low" | "warning";
   type: string;
   description: string;
   action_required?: string;
@@ -17,18 +17,20 @@ interface Props {
   };
 }
 
-type Status = "pass" | "critical" | "high" | "human";
+type Status = "pass" | "critical" | "high" | "human" | "warning";
 
 const STATUS_CFG: Record<Status, { symbol: string; color: string; bg: string; badge: string }> = {
   pass:     { symbol: "✓", color: "#22c55e", bg: "rgba(34,197,94,0.06)",  badge: "Pass" },
   critical: { symbol: "✗", color: "#dc2626", bg: "rgba(220,38,38,0.10)",  badge: "Critical" },
   high:     { symbol: "⚠", color: "#f59e0b", bg: "rgba(245,158,11,0.10)", badge: "High" },
+  warning:  { symbol: "?", color: "#a78bfa", bg: "rgba(167,139,250,0.10)", badge: "Contradiction" },
   human:    { symbol: "!", color: "var(--text-main)", bg: "rgba(255,255,255,0.04)", badge: "Review" },
 };
 
 function toStatus(severity: string): Status {
   if (severity === "critical") return "critical";
   if (severity === "high") return "high";
+  if (severity === "warning") return "warning";
   if (severity === "medium") return "human";
   return "pass";
 }

@@ -2,17 +2,17 @@ import { getData, getEligibleSuppliers } from '@/lib/dataLoader';
 import { parseRequest, fillGapsFromHistory } from '@/lib/intakeAgent';
 import { checkApprovalTier, checkPreferredSupplier, checkCategoryRules, checkGeographyRules } from '@/lib/policyEngine';
 import { scoreSuppliers as newScoreSuppliers } from '@/lib/supplierScorer';
-import { buildEscalations } from '@/lib/escalationRouter';
+import { routeEscalations } from '@/lib/escalationRouter';
 import { computeConfidence as newComputeConfidence } from '@/lib/confidenceScorer';
 import { findHistoricalContext } from '@/lib/historicalLookup';
 import { generateDecision } from '@/lib/decisionEngine';
 import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
 import { getNextRequestId, logRequest } from '@/lib/requestCounter';
 
-function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required) {
+function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required, historicalContext) {
   const eligible = getEligibleSuppliers(l1, l2, countries, qty, currency);
   const fakePolicy = { restricted_suppliers: {} };
-  const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier };
+  const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, historicalContext };
   const { shortlist } = newScoreSuppliers(eligible, fakePolicy, mockReq);
   return shortlist;
 }
@@ -60,8 +60,10 @@ export async function POST(req) {
           send('step', { step: 'parsing', status: 'active', pct: 10, requestId: reqId, thinking: parsingThinking });
         });
         
-        const historicalContext = findHistoricalContext(structuredRequest.category_l2, structuredRequest.delivery_countries || []);
-        const enrichedRequest = fillGapsFromHistory(structuredRequest, historicalContext, structuredRequest.currency || 'EUR');
+        const historicalLookupResult = findHistoricalContext(structuredRequest.category_l2, structuredRequest.delivery_countries || [], originalRequest?.business_unit);
+        const historicalContext = historicalLookupResult.records;
+        const awardedRecords = historicalContext.filter(r => r.awarded);
+        const enrichedRequest = fillGapsFromHistory(structuredRequest, awardedRecords, structuredRequest.currency || 'EUR');
 
         const parsed = {
           category: `${enrichedRequest.category_l1 || '?'} › ${enrichedRequest.category_l2 || '?'}`,
@@ -76,9 +78,11 @@ export async function POST(req) {
         send('step', { step: 'rules', status: 'active', pct: 25, thinking: 'Running compliance engine — checking approval tiers, supplier restrictions, budget sufficiency, lead-time feasibility…' });
 
         const issues = [];
-        if (!enrichedRequest.quantity) issues.push({ id:'V-001', severity:'critical', type:'missing_quantity', description:'Quantity not specified', action:'Provide quantity' });
+        if (structuredRequest.demand_reframe_flag) issues.push({ id:'V-000', severity:'warning', type:'contradictory_request', description:'Request contains contradictory or unreasonable information — AI flagged this for review', action:'Clarify the request before proceeding' });
+        if (!enrichedRequest.quantity || enrichedRequest.quantity <= 0) issues.push({ id:'V-001', severity:'critical', type:'missing_quantity', description:'Quantity not specified or invalid (must be > 0)', action:'Provide a valid quantity' });
         if (!enrichedRequest.budget_amount) issues.push({ id:'V-002', severity:'critical', type:'missing_budget', description:'Budget not specified', action:'Provide budget' });
-        if (enrichedRequest.days_until_required !== null && enrichedRequest.days_until_required < 10) issues.push({ id:'V-003', severity:'high', type:'lead_time_critical', description:'Delivery deadline is extremely tight', action:'Confirm if deadline is flexible' });
+        if (enrichedRequest.days_until_required !== null && enrichedRequest.days_until_required < 0) issues.push({ id:'V-003', severity:'critical', type:'deadline_passed', description:`Requested delivery date is in the past (${Math.abs(enrichedRequest.days_until_required)} days ago)`, action:'Provide a valid future delivery date' });
+        else if (enrichedRequest.days_until_required !== null && enrichedRequest.days_until_required < 10) issues.push({ id:'V-003', severity:'high', type:'lead_time_critical', description:'Delivery deadline is extremely tight', action:'Confirm if deadline is flexible' });
 
         const totalValue = enrichedRequest.budget_amount || 0;
         const approvalTier = checkApprovalTier(totalValue, enrichedRequest.currency);
@@ -98,8 +102,8 @@ export async function POST(req) {
         const rankedSuppliers = scoreSuppliersLocal(
           enrichedRequest.category_l1, enrichedRequest.category_l2,
           enrichedRequest.delivery_countries || [],
-          enrichedRequest.quantity || 1, enrichedRequest.currency || 'EUR',
-          originalRequest, enrichedRequest.days_until_required
+          (enrichedRequest.quantity > 0 ? enrichedRequest.quantity : 1), enrichedRequest.currency || 'EUR',
+          originalRequest, enrichedRequest.days_until_required, historicalContext
         );
         rankedSuppliers.forEach(s => {
           if (s.supplier_id === originalRequest?.incumbent_supplier) s.incumbent = true;
@@ -127,32 +131,38 @@ export async function POST(req) {
         await delay(800);
         send('step', { step: 'decision', status: 'active', pct: 65, thinking: 'Generating AI-powered sourcing recommendation — weighing compliance, pricing, risk, and delivery feasibility…' });
 
-        const triggers = [];
-        if (issues.find(i => i.type === 'missing_budget' || i.type === 'missing_quantity')) triggers.push({ rule:'ER-001', reason:'Missing required info', blocking:true });
-        if (issues.find(i => i.type === 'budget_insufficient')) triggers.push({ rule:'ER-001', reason:`Budget insufficient. Min required: ${minimumRequired?.toFixed(2)} ${enrichedRequest.currency}`, blocking:true });
-
-        if (approvalTier && approvalTier.tier >= 2 && enrichedRequest.preferred_supplier_stated) {
-          const requestText = (originalRequest?.request_text || text || '').toLowerCase();
-          if (requestText.includes('no exception') || requestText.includes('only') || requestText.includes('must use')) {
-            triggers.push({ rule:'ER-002', reason:`Policy AT-00${approvalTier.tier} requires ${approvalTier.quotes_required} quotes. Single-supplier instruction cannot override.`, blocking:true });
-          }
-        }
-
+        // Enrich validation issues with lead-time infeasibility (needs rankedSuppliers)
         if (enrichedRequest.days_until_required && rankedSuppliers.length > 0) {
           const fastestExpedited = Math.min(...rankedSuppliers.map(s => s.expedited_lead_time_days || 999));
           if (fastestExpedited > enrichedRequest.days_until_required) {
-            triggers.push({ rule:'ER-004', reason:`Required in ${enrichedRequest.days_until_required} days but fastest is ${fastestExpedited} days.`, blocking:true });
+            issues.push({ id:'V-005', severity:'critical', type:'lead_time_infeasible', description:`Required in ${enrichedRequest.days_until_required} days but fastest supplier delivers in ${fastestExpedited} days.`, action:'Negotiate expedited delivery or revise deadline' });
+          }
+        }
+        // Policy conflict (single-supplier override attempt)
+        if (approvalTier && approvalTier.tier >= 2 && enrichedRequest.preferred_supplier_stated) {
+          const requestText = (originalRequest?.request_text || text || '').toLowerCase();
+          if (requestText.includes('no exception') || requestText.includes('only') || requestText.includes('must use')) {
+            issues.push({ id:'V-006', severity:'high', type:'policy_conflict', description:`Policy AT-00${approvalTier.tier} requires ${approvalTier.quotes_required} quotes. Single-supplier instruction cannot override.` });
           }
         }
 
-        if (preferredCheck?.is_restricted) triggers.push({ rule:'ER-002', reason:'Preferred supplier restricted', blocking:true });
-        if (rankedSuppliers.length === 0) triggers.push({ rule:'ER-004', reason:'No compliant supplier found', blocking:true });
-        if (originalRequest?.data_residency_constraint && geoRules.length > 0) triggers.push({ rule:'ER-005', reason:'Data residency constraint', blocking:true });
+        const enrichedForEscalation = {
+          ...enrichedRequest,
+          data_residency_constraint: originalRequest?.data_residency_constraint,
+          esg_requirement: originalRequest?.esg_requirement,
+        };
+
+        const escalations = routeEscalations(
+          { ...validationResult, issues_detected: issues },
+          policyResult,
+          rankedSuppliers,
+          enrichedForEscalation
+        );
 
         const estimatedSavings = enrichedRequest.budget_amount && rankedSuppliers[0]
           ? Math.max(0, Math.round(enrichedRequest.budget_amount - rankedSuppliers[0].total_price))
           : null;
-        const escalations = buildEscalations(triggers, estimatedSavings);
+        escalations.forEach(e => { e.estimated_savings = estimatedSavings; });
 
         let decisionThinking = `Evaluating ${rankedSuppliers.length} suppliers against ${issues.length} issues and ${escalations.length} escalations...\n\n`;
         send('step', { step: 'decision', status: 'active', pct: 65, thinking: decisionThinking });
@@ -194,9 +204,11 @@ export async function POST(req) {
           recommendation: { ...decision, is_auto_approved: isAutoApproved },
           audit_trail: {
             policies_checked: ['AT-001','AT-002','AT-003','AT-004','AT-005','ER-001','ER-002','ER-004','ER-005'],
-            suppliers_evaluated: rankedSuppliers.map(s => s.supplier_id),
+            supplier_ids_evaluated: rankedSuppliers.map(s => s.supplier_id),
             data_sources_used: ['requests.json','suppliers.csv','pricing.csv','policies.json','historical_awards.csv'],
             historical_awards_consulted: historicalContext.length > 0,
+            historical_records: historicalContext,
+            client_scope_used: historicalLookupResult.match_level,
             assumptions: enrichedRequest.assumptions || [],
             inference_applied: enrichedRequest.assumptions && enrichedRequest.assumptions.length > 0,
             generated_at: new Date().toISOString()

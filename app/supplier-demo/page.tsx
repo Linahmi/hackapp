@@ -12,6 +12,8 @@ import {
 } from "@/components/agent/SupplierComparisonTable";
 import { DecisionRow } from "@/components/agent/DecisionRow";
 import { EscalationRow } from "@/components/agent/EscalationRow";
+import { DecisionJustification } from "@/components/agent/DecisionJustification";
+import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
 import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 import { SupplierRadarChart } from "@/components/supplier-radar-chart";
 
@@ -266,13 +268,10 @@ export default function SupplierDemoPage() {
   // ─── Decision & escalation data ───────────────────────────────────────────
 
   const realEscalations        = (apiResult?.escalations as any[]) ?? [];
-  const blockingEscalations    = realEscalations.filter(e => e.blocking);
-  const nonBlockingEscalations = realEscalations.filter(e => !e.blocking);
-  const hasBlocking            = blockingEscalations.length > 0;
+  const hasBlocking = realEscalations.some((e: any) => e.blocking);
   const isAutoApproved         = apiResult?.recommendation?.is_auto_approved
     ?? (bestName !== "" && meta[bestName]?.risk === "Low");
 
-  const firstNB    = nonBlockingEscalations[0];
   const anySavings = realEscalations.find((e: any) => (e.estimated_savings ?? 0) > 0);
   const savingsStr = anySavings?.estimated_savings
     ? formatAmount(anySavings.estimated_savings, apiResult?.request_interpretation?.currency ?? "CHF")
@@ -381,16 +380,30 @@ export default function SupplierDemoPage() {
         escalations={realEscalations}
       />
 
-      {/* Show EscalationRow for non-blocking escalations (real mode) or always in demo mode */}
-      {(!isFromApi || nonBlockingEscalations.length > 0) && (
-        <EscalationRow
-          label={firstNB?.rule ?? "Escalation required"}
-          title={firstNB ? "Manual review required" : "Bundle opportunity detected"}
-          description={firstNB?.trigger ?? "Manager approval required to combine compatible orders"}
-          note={firstNB ? `Escalate to: ${firstNB.escalate_to}` : "Potential savings identified, but human validation is needed"}
-          estimatedSavings={savingsStr}
+      {isFromApi && (
+        <DecisionJustification
+          recommendation={apiResult?.recommendation ?? null}
+          topSupplier={apiResult?.supplier_shortlist?.[0] ?? null}
+          runnerUp={apiResult?.supplier_shortlist?.[1] ?? null}
+          currency={apiResult?.request_interpretation?.currency ?? "EUR"}
         />
       )}
+
+      {/* Hierarchy panel for API results, legacy EscalationRow for demo */}
+      {isFromApi && realEscalations.length > 0 ? (
+        <EscalationHierarchyPanel
+          escalations={realEscalations}
+          currency={apiResult?.request_interpretation?.currency ?? "EUR"}
+        />
+      ) : !isFromApi ? (
+        <EscalationRow
+          label="Escalation required"
+          title="Bundle opportunity detected"
+          description="Manager approval required to combine compatible orders"
+          note="Potential savings identified, but human validation is needed"
+          estimatedSavings={savingsStr}
+        />
+      ) : null}
 
       {/* ── Market Intelligence (Tavily) ────────────────────────────────── */}
       <div className="mt-6">
