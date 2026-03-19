@@ -22,9 +22,9 @@ export default function Navbar() {
       <div className="flex items-center gap-3">
         <button 
           onClick={handleLogoClick}
-          className="text-white font-bold text-xl tracking-tight select-none cursor-pointer hover:text-red-500 transition-colors"
+          className="text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 font-bold text-xl tracking-tight select-none cursor-pointer transition-colors"
         >
-          ProcureTrace
+          ProcureTrace <span className="text-sm font-medium">by ChainIQ</span>
         </button>
       </div>
 

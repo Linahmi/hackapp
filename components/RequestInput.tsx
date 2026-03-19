@@ -258,7 +258,7 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
       </div>
 
       <p className="text-center text-xs text-gray-400 dark:text-gray-500 transition-colors duration-300">
-        Powered by ProcureTrace AI
+        Powered by ProcureTrace by ChainIQ
       </p>
     </div>
   );
