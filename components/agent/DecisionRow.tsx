@@ -30,9 +30,9 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, st
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#1A1D27] shadow-sm mt-4">
+    <div className="rounded-xl shadow-sm mt-4" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
       {/* Header row */}
-      <div className="flex justify-between items-center px-5 py-3.5 border-b border-white/10">
+      <div className="flex justify-between items-center px-5 py-3.5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
         <div className="flex items-center gap-2.5">
           <span className="inline-flex items-center rounded-full border border-[#C8102E]/50 bg-[#C8102E]/20 px-2.5 py-0.5 text-xs font-semibold text-[#C8102E]">
             Urgent procurement request
@@ -41,7 +41,7 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, st
 
         {/* Decision status indicator — non-interactive */}
         <div className="flex flex-col items-end gap-0.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-600">
+          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
             Decision status
           </span>
           {approved ? (
@@ -62,7 +62,7 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, st
               </span>
             )
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-0.5 text-xs font-medium text-gray-500">
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-xs font-medium" style={{ backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-card)", color: "var(--text-muted)" }}>
               No decision
             </span>
           )}
@@ -85,8 +85,8 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, st
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white">Supplier approved</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Workflow started successfully · {bestName}</p>
+                  <p className="text-sm font-bold" style={{ color: "var(--text-main)" }}>Supplier approved</p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Workflow started successfully · {bestName}</p>
                 </div>
               </div>
             </div>
@@ -105,8 +105,8 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, st
                     <p className="text-xs font-semibold uppercase tracking-wider mb-0.5 text-red-500">
                       Cannot proceed
                     </p>
-                    <p className="text-base font-bold text-white">Blocking Issues Detected</p>
-                    <p className="text-sm text-gray-400 mt-0.5 mb-2">Manual intervention required before sourcing can proceed</p>
+                    <p className="text-base font-bold" style={{ color: "var(--text-main)" }}>Blocking Issues Detected</p>
+                    <p className="text-sm mt-0.5 mb-2" style={{ color: "var(--text-muted)" }}>Manual intervention required before sourcing can proceed</p>
                     {escalations && escalations.length > 0 && (
                       <div className="flex flex-col gap-1.5 mt-2">
                         {escalations.filter(e => e.blocking).map((e, i) => (
@@ -121,7 +121,7 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, st
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
                   <button
                     onClick={handleReview}
-                    className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-300 transition-colors hover:bg-white/10"
+                    className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors" style={{ backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-card)", color: "var(--text-main)" }}
                   >
                     Review details
                   </button>
@@ -162,9 +162,9 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, st
                     <p className={`text-xs font-semibold uppercase tracking-wider mb-0.5 ${isAutoApproved ? "text-emerald-500" : "text-amber-500"}`}>
                       {isAutoApproved ? "Auto-approved" : "Requires review"}
                     </p>
-                    <p className="text-base font-bold text-white">{bestName} selected</p>
-                    <p className="text-sm text-gray-400 mt-0.5">You can proceed with this supplier</p>
-                    <p className="text-xs text-gray-600 mt-1.5">
+                    <p className="text-base font-bold" style={{ color: "var(--text-main)" }}>{bestName} selected</p>
+                    <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>You can proceed with this supplier</p>
+                    <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>
                       {isAutoApproved
                         ? "Auto-approved based on your priorities · All conditions are met"
                         : "Conflict detected — manual validation required"}
@@ -186,7 +186,7 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, st
                   </button>
                   <button
                     onClick={handleReview}
-                    className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-300 transition-colors hover:bg-white/10"
+                    className="rounded-lg px-4 py-2 text-sm font-semibold transition-colors" style={{ backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-card)", color: "var(--text-main)" }}
                   >
                     Review details
                   </button>
@@ -195,11 +195,11 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, st
             </div>
           )
         ) : (
-          <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3">
-            <svg className="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="flex items-center gap-3 rounded-lg px-4 py-3" style={{ backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-card)" }}>
+            <svg className="h-4 w-4 shrink-0" style={{ color: "var(--text-muted)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
             </svg>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm" style={{ color: "var(--text-muted)" }}>
               No eligible supplier with current weight configuration.
             </span>
           </div>

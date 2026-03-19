@@ -323,16 +323,16 @@ export default function SupplierDemoPage() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen bg-[#0F1117] px-6 py-10 md:px-12 md:py-14">
+    <main className="min-h-screen px-6 py-10 md:px-12 md:py-14" style={{ backgroundColor: "var(--bg-app)" }}>
 
       {/* Page header */}
-      <div className="mb-8 border-b border-white/10 pb-6 flex items-end justify-between">
+      <div className="mb-8 border-b pb-6 flex items-end justify-between" style={{ borderColor: "var(--border-subtle)" }}>
         <div>
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#C8102E]">
             Procurement Intelligence
           </p>
           <h1 className="text-2xl font-bold text-[color:var(--text-main)]">Supplier Comparison</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
             AI-generated recommendation
             {ri?.delivery_countries?.[0] ? ` · ${ri.delivery_countries[0]} region` : " · Geneva region"}
             {ri?.category_l1 ? ` · ${ri.category_l1} category` : " · Hardware category"}
@@ -340,7 +340,7 @@ export default function SupplierDemoPage() {
         </div>
         {confidence !== null && (
           <div className="flex flex-col items-end gap-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-600">AI Confidence</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>AI Confidence</span>
             <span className={`text-2xl font-bold tabular-nums ${confidence >= 70 ? "text-emerald-400" : confidence >= 40 ? "text-amber-400" : "text-red-400"}`}>
               {confidence}%
             </span>
@@ -349,27 +349,27 @@ export default function SupplierDemoPage() {
       </div>
 
       {/* User request context */}
-      <div className="mb-5 flex items-start gap-3 rounded-xl border border-white/10 bg-[#1A1D27] px-5 py-4">
+      <div className="mb-5 flex items-start gap-3 rounded-xl px-5 py-4" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
         <svg className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">User request</span>
-          <p className="mt-0.5 text-sm font-medium text-gray-200">"{buyerRequest}"</p>
+          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>User request</span>
+          <p className="mt-0.5 text-sm font-medium" style={{ color: "var(--text-main)" }}>"{buyerRequest}"</p>
         </div>
       </div>
 
       {/* Weight sliders */}
-      <div className="mb-5 rounded-xl border border-white/10 bg-[#1A1D27] px-6 py-5">
-        <h2 className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-gray-400">Decision weights</h2>
-        <p className="mb-5 text-xs text-gray-600">Drag sliders to recompute scores — ranking and recommendation update live</p>
+      <div className="mb-5 rounded-xl px-6 py-5" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+        <h2 className="mb-0.5 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Decision weights</h2>
+        <p className="mb-5 text-xs" style={{ color: "var(--text-muted)" }}>Drag sliders to recompute scores — ranking and recommendation update live</p>
         <div className="grid grid-cols-2 gap-x-8 gap-y-5 md:grid-cols-4">
           <WeightSlider label="Price"    value={priceWeight}    onChange={setPriceWeight}    />
           <WeightSlider label="Risk"     value={riskWeight}     onChange={setRiskWeight}     />
           <WeightSlider label="Delivery" value={deliveryWeight} onChange={setDeliveryWeight} />
           <WeightSlider label="ESG"      value={esgWeight}      onChange={setEsgWeight}      />
         </div>
-        <div className="mt-5 flex flex-wrap gap-2 border-t border-white/5 pt-4">
+        <div className="mt-5 flex flex-wrap gap-2 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
           {[
             { label: "Price",    value: priceWeight    },
             { label: "Risk",     value: riskWeight     },
@@ -379,7 +379,7 @@ export default function SupplierDemoPage() {
             const total = priceWeight + riskWeight + deliveryWeight + esgWeight;
             const pct   = total > 0 ? Math.round((value / total) * 100) : 0;
             return (
-              <span key={label} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-400">
+              <span key={label} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs" style={{ backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-card)", color: "var(--text-muted)" }}>
                 {label}
                 <span className="font-bold text-[color:var(--text-main)]">{pct}%</span>
               </span>

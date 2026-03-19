@@ -22,10 +22,10 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#1A1D27] shadow-sm mt-4 overflow-hidden">
+    <div className="rounded-xl shadow-sm mt-4 overflow-hidden" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
 
       {/* Header row */}
-      <div className="flex justify-between items-center px-5 py-3.5 border-b border-white/10">
+      <div className="flex justify-between items-center px-5 py-3.5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
         <div className="flex items-center gap-2.5">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-600/50 bg-orange-600/15 px-2.5 py-0.5 text-xs font-semibold text-orange-400">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -36,7 +36,7 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
         </div>
 
         <div className="flex flex-col items-end gap-0.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-600">
+          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
             Decision status
           </span>
           {sent ? (
@@ -76,8 +76,8 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-bold text-white">Request sent for approval</p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-sm font-bold" style={{ color: "var(--text-main)" }}>Request sent for approval</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                   Escalated to manager · awaiting decision
                 </p>
               </div>
@@ -106,8 +106,8 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
                   <p className="text-xs font-semibold uppercase tracking-wider mb-1 text-orange-500">
                     Manual review needed
                   </p>
-                  <p className="text-base font-bold text-white">{title}</p>
-                  <p className="text-sm text-gray-400 mt-1 leading-relaxed">{description}</p>
+                  <p className="text-base font-bold" style={{ color: "var(--text-main)" }}>{title}</p>
+                  <p className="text-sm mt-1 leading-relaxed" style={{ color: "var(--text-muted)" }}>{description}</p>
 
                   <div className="mt-2.5 flex flex-wrap items-center gap-3">
                     {estimatedSavings && (
@@ -115,7 +115,7 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
                         Estimated savings: {estimatedSavings}
                       </span>
                     )}
-                    <span className="text-xs text-gray-600">{note}</span>
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>{note}</span>
                   </div>
 
                   <button
@@ -136,7 +136,7 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
                 </button>
                 <button
                   onClick={scrollToTable}
-                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-300 transition-all duration-150 hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98]"
+                  className="rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]" style={{ backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-card)", color: "var(--text-main)" }}
                 >
                   Review details
                 </button>

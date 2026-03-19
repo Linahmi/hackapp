@@ -13,10 +13,7 @@ type Stage = "idle" | "intake" | "processing" | "done" | "error";
 
 export default function Home() {
   const router = useRouter();
-  const [text,   setText]   = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem("buyer_request") ?? "";
-    return "";
-  });
+  const [text, setText] = useState("");
   const [activeReqId, setActiveReqId] = useState("REQ-000004");
   const [stage,  setStage]  = useState<Stage>("idle");
   const [error,  setError]  = useState<string | null>(null);
@@ -26,6 +23,11 @@ export default function Home() {
     setText(val);
     localStorage.setItem("buyer_request", val);
   }
+
+  useEffect(() => {
+    const saved = localStorage.getItem("buyer_request");
+    if (saved) setText(saved);
+  }, []);
 
   useEffect(() => {
     const handleDemo = (e: any) => {
