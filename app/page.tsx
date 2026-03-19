@@ -13,6 +13,7 @@ export default function Home() {
     if (typeof window !== "undefined") return localStorage.getItem("buyer_request") ?? "";
     return "";
   });
+  const [activeReqId, setActiveReqId] = useState("REQ-000004");
   const [stage,  setStage]  = useState<Stage>("idle");
   const [error,  setError]  = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
@@ -58,7 +59,7 @@ export default function Home() {
       const res = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, request_id: "REQ-000004" })
+        body: JSON.stringify({ text, request_id: activeReqId })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Processing failed");
@@ -87,6 +88,28 @@ export default function Home() {
         onLoadExample={handleLoadExample}
         disabled={isLoading}
       />
+
+      {/* Dynamic Demo Toggle Buttons */}
+      <div className="flex gap-4 w-full max-w-2xl px-2">
+        <button 
+          onClick={() => {
+            handleTextChange("Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20. Budget capped at 25199.55 EUR. Please use Dell Enterprise Europe with no exception.");
+            setActiveReqId("REQ-000004");
+          }}
+          className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000004" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
+        >
+          Load Edge Case (REQ-000004)
+        </button>
+        <button 
+          onClick={() => {
+            handleTextChange("Need IT Project Management Services for the Q3 migration initiative.");
+            setActiveReqId("REQ-000001");
+          }}
+          className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000001" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
+        >
+          Load Standard Demo (REQ-000001)
+        </button>
+      </div>
 
       {/* Progress stepper — visible while loading or done */}
       {stage !== "idle" && stage !== "error" && (
