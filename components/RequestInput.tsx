@@ -173,8 +173,8 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
       {/* Live Validation Checklist */}
       {value.trim() && (
         <div className="flex flex-wrap items-center gap-5 bg-gray-50/80 dark:bg-white/[0.02] px-4 py-3 rounded-xl border border-gray-200 dark:border-white/5 animate-fade-slide-up no-print">
-          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/\b\d+\b/i.test(value) || /\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats)\b/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
-            {/\b\d+\b/i.test(value) || /\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats)\b/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|dozen|hundred|thousand)\b/i.test(value) && /\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats|desks|keyboards|mice|monitors|cables|docks?|phones?|devices?|licenses?|servers?|switches?|routers?)\b/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|dozen|hundred|thousand)\b/i.test(value) && /\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats|desks|keyboards|mice|monitors|cables|docks?|phones?|devices?|licenses?|servers?|switches?|routers?)\b/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             Quantity
           </div>
           <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(budget|\bk\b|\bm\b|chf|eur|usd|£|\$|€|\b\d+\s*(k|m)\b)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
