@@ -1,0 +1,20 @@
+
+=== SCENARIO: Test 1: REQ-000004 (Edge Case) ===
+Interpretation: {"category_l1":"IT","category_l2":"Docking Stations","quantity":240,"budget_amount":25199.55,"currency":"EUR","delivery_countries":["DE"],"required_by_date":"2026-03-20","days_until_required":45,"preferred_supplier_stated":"Dell Enterprise Europe","detected_language":"en","gaps":[],"demand_reframe_flag":false,"original_gaps":[],"remaining_gaps":[],"assumptions":[],"field_sources":{"category_l1":"stated","category_l2":"stated","quantity":"stated","budget_amount":"stated","currency":"stated","delivery_countries":"stated","required_by_date":"stated","days_until_required":"stated","preferred_supplier_stated":"stated","detected_language":"stated"}}
+Assumptions: []
+Inference Applied: false
+Validation / Escalations Impact: 1 escalations
+  - Budget of 25199.55 EUR is insufficient. Minimum required: 35712.00 EUR
+
+=== SCENARIO: Test 2: REQ-000039 (Missing Budget, auto-refills or blocks) ===
+Interpretation: {"category_l1":"IT","category_l2":"Smartphones","quantity":30,"budget_amount":30030,"currency":"EUR","delivery_countries":["NL"],"required_by_date":"2026-03-01","days_until_required":45,"preferred_supplier_stated":"Apple Business Channel","detected_language":"en","gaps":[],"demand_reframe_flag":false,"original_gaps":[],"remaining_gaps":[],"assumptions":["Inferred budget of 30030 EUR from 1 historical awards.","Inferred preferred supplier 'Apple Business Channel' based on historical awards."],"field_sources":{"category_l1":"stated","category_l2":"stated","quantity":"stated","currency":"stated","delivery_countries":"stated","required_by_date":"stated","days_until_required":"stated","detected_language":"stated","budget_amount":"inferred","preferred_supplier_stated":"inferred"}}
+Assumptions: ["Inferred budget of 30030 EUR from 1 historical awards.","Inferred preferred supplier 'Apple Business Channel' based on historical awards."]
+Inference Applied: true
+Validation / Escalations Impact: 0 escalations
+
+=== SCENARIO: Test 3: REQ-000099 (Missing Budget) ===
+Interpretation: {"category_l1":"IT","category_l2":"Docking Stations","quantity":1000,"budget_amount":null,"currency":"EUR","delivery_countries":["NL"],"required_by_date":"2026-04-11","days_until_required":45,"preferred_supplier_stated":"Dell Enterprise Europe","detected_language":"en","gaps":["budget_amount"],"demand_reframe_flag":false,"original_gaps":[],"remaining_gaps":["budget_amount"],"assumptions":["Historical avg budget 145000 exceeds safe auto-fill limit of 100000. Explicit budget required."],"field_sources":{"category_l1":"stated","category_l2":"stated","quantity":"stated","currency":"stated","delivery_countries":"stated","required_by_date":"stated","days_until_required":"stated","preferred_supplier_stated":"stated","detected_language":"stated","budget_amount":"missing"}}
+Assumptions: ["Historical avg budget 145000 exceeds safe auto-fill limit of 100000. Explicit budget required."]
+Inference Applied: true
+Validation / Escalations Impact: 1 escalations
+  - Missing required info
