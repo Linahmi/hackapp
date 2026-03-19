@@ -525,9 +525,10 @@ export default function SupplierDemoPage() {
             <EscalationRow
               label="Escalation required"
               title="Bundle opportunity detected"
-              description="Manager approval required to combine compatible orders"
+              description="Procurement Manager approval required to combine compatible orders"
               note="Potential savings identified, but human validation is needed"
               estimatedSavings={savingsStr}
+              approver="Procurement Manager"
             />
           ) : null}
         </div>
