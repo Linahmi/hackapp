@@ -9,7 +9,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Invalid or missing JSON body" },
+      { status: 400 },
+    );
   }
 
   // Step 2: validate

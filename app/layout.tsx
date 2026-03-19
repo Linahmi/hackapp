@@ -13,8 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Procurement Intelligence",
-  description: "AI-powered procurement request analysis",
+
+  title: "ProcureTrace",
+  description: "Autonomous AI sourcing agent by ChainIQ",
+
 };
 
 export default function RootLayout({

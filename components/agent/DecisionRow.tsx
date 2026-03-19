@@ -91,22 +91,20 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved }: 
           ) : (
             /* ── Default decision card ── */
             <div
-              className={`rounded-lg border px-5 py-4 ${
-                isAutoApproved
+              className={`rounded-lg border px-5 py-4 ${isAutoApproved
                   ? "border-emerald-700/50 bg-emerald-900/15"
                   : "border-amber-700/30 bg-amber-900/10"
-              }`}
+                }`}
               style={{ borderLeft: `3px solid ${isAutoApproved ? "#10B981" : "#F59E0B"}` }}
             >
               <div className="flex items-start justify-between gap-4">
                 {/* Left: decision content */}
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
-                      isAutoApproved
+                    className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${isAutoApproved
                         ? "border-emerald-700/50 bg-emerald-900/60"
                         : "border-amber-700/50 bg-amber-900/40"
-                    }`}
+                      }`}
                   >
                     {isAutoApproved ? (
                       <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -136,11 +134,10 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved }: 
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
                   <button
                     onClick={handleApprove}
-                    className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors ${
-                      isAutoApproved
+                    className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors ${isAutoApproved
                         ? "bg-emerald-600 hover:bg-emerald-500"
                         : "bg-amber-600 hover:bg-amber-500"
-                    }`}
+                      }`}
                   >
                     Approve supplier
                   </button>
