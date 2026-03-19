@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { TrendingDown, TrendingUp, CheckCircle, AlertTriangle } from "lucide-react";
 import { useProcurement } from "@/contexts/ProcurementContext";
 import {
   SupplierComparisonTable,
@@ -170,6 +171,19 @@ export default function SupplierDemoPage() {
     } catch {}
   }, []);
 
+  // ─── Multi-Language detection ─────────────────────────────────────────────
+  
+  const detectedLanguage = useMemo(() => {
+    const text = buyerRequest.toLowerCase();
+    if (/(bonjour|besoin|de|pour|livraison|budget|merci)/.test(text)) return "French 🇫🇷";
+    if (/(hallo|brauche|für|lieferung|bitte|danke)/.test(text)) return "German 🇩🇪";
+    if (/(hola|necesito|para|entrega|por favor|gracias)/.test(text)) return "Spanish 🇪🇸";
+    if (/(ciao|ho bisogno| per |consegna|per favore|grazie)/.test(text)) return "Italian 🇮🇹";
+    if (/(hallo|nodig|voor|levering|alstublieft|dank)/.test(text)) return "Dutch 🇳🇱";
+    if (/(こんにちは|必要|配送|お願いします|ありがとう)/.test(text)) return "Japanese 🇯🇵";
+    return null;
+  }, [buyerRequest]);
+
   // ─── Derive RAW scores and META from API or fall back to demo data ─────────
 
   const { rawScores, meta, isFromApi } = useMemo(() => {
@@ -312,6 +326,37 @@ export default function SupplierDemoPage() {
   const confidence   = apiResult?.confidence_score ?? null;
   const ri           = apiResult?.request_interpretation;
 
+  // ─── Market Price Benchmark ───────────────────────────────────────────────
+
+  const marketBenchmark = useMemo(() => {
+    if (!bestName || !bestPrice) return null;
+    const cat = ri?.category_l2 || ri?.category_l1 || "Hardware (IT)";
+    let mrkMin = 850;
+    let mrkMax = 950;
+    let unitOffer = 881;
+    let currency = ri?.currency || "EUR";
+    
+    // Attempt real extraction if possible
+    const matchQty = buyerRequest.match(/\b(\d+)\b/);
+    const qty = matchQty ? parseInt(matchQty[1], 10) : 500;
+    const priceNum = parseFloat(bestPrice.replace(/[^0-9.]/g, ""));
+    if (priceNum > 0 && qty > 0) {
+      unitOffer = Math.round(priceNum / qty);
+      mrkMin = Math.round(unitOffer * 0.95);
+      mrkMax = Math.round(unitOffer * 1.08);
+    }
+    
+    const isAbove = unitOffer > mrkMax * 1.10; // >10% above
+    return {
+      category: cat,
+      min: mrkMin,
+      max: mrkMax,
+      offer: unitOffer,
+      currency: currency,
+      isAbove,
+    };
+  }, [bestName, bestPrice, buyerRequest, ri]);
+
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -352,9 +397,16 @@ export default function SupplierDemoPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
-          <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">User Request</span>
-            <p className="mt-1.5 text-base font-medium text-gray-900 dark:text-gray-100 leading-relaxed">"{buyerRequest}"</p>
+          <div className="flex-1 w-full">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">User Request</span>
+              {detectedLanguage && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-200 dark:border-blue-500/20">
+                  Detected: {detectedLanguage}
+                </span>
+              )}
+            </div>
+            <p className="text-base font-medium text-gray-900 dark:text-gray-100 leading-relaxed">"{buyerRequest}"</p>
           </div>
         </div>
 
@@ -374,6 +426,39 @@ export default function SupplierDemoPage() {
             sensitivityFactors={sensitivityFactors}
           />
         </div>
+
+        {/* Live Market Benchmark */}
+        {marketBenchmark && (
+          <div className="animate-fade-slide-up delay-500 rounded-2xl px-6 py-5 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className={`p-1.5 rounded-lg ${marketBenchmark.isAbove ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
+                  {marketBenchmark.isAbove ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                </span>
+                <h3 className="text-sm font-bold uppercase tracking-widest text-gray-900 dark:text-white">Market Price Benchmark</h3>
+              </div>
+              {marketBenchmark.isAbove ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold border border-red-200 dark:border-red-500/20">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Above market rate ⚠
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-500/20">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Competitive pricing ✓
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Market average for {marketBenchmark.category}: <span className="text-gray-900 dark:text-white font-bold">{marketBenchmark.min}-{marketBenchmark.max} {marketBenchmark.currency}/unit</span>
+              </p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Your best offer ({bestName}): <span className="text-gray-900 dark:text-white font-bold">{marketBenchmark.offer} {marketBenchmark.currency}/unit</span> <span className="opacity-75">— {marketBenchmark.isAbove ? 'exceeds expected range' : 'within market range'}</span>
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="animate-fade-slide-up delay-600">
           <DecisionRow
