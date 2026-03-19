@@ -3,7 +3,6 @@ import { parseRequest, fillGapsFromHistory } from '@/lib/intakeAgent';
 import { checkApprovalTier, checkPreferredSupplier, checkCategoryRules, checkGeographyRules } from '@/lib/policyEngine';
 import { scoreSuppliers as newScoreSuppliers } from '@/lib/supplierScorer';
 import { routeEscalations } from '@/lib/escalationRouter';
-import { computeConfidence as newComputeConfidence } from '@/lib/confidenceScorer';
 import { findHistoricalContext } from '@/lib/historicalLookup';
 import { generateDecision } from '@/lib/decisionEngine';
 import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
@@ -17,20 +16,31 @@ function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days
   return shortlist;
 }
 
-function computeConfidenceLocal(issues, suppliers, preferredAvailable, historicalMatch, escalations, preferredStatedButUnresolved = false) {
-  let score = 100;
-  if (issues && issues.length > 0) score -= (20 * issues.length);
-  if (!suppliers || suppliers.length === 0) score -= 20;
-  const hasBlocking = escalations && escalations.some(e => e.blocking);
-  if (hasBlocking) score -= 30;
-  if (preferredAvailable) score += 10;
-  if (historicalMatch) score += 10;
-  // Penalty when buyer stated a preferred supplier but it could not be resolved
-  if (preferredStatedButUnresolved) score -= 15;
-  return Math.min(100, Math.max(0, score));
+const HARD_BLOCK_CASE_TYPES = ['FAILED_IMPOSSIBLE_DATE', 'MORE_INFO_REQUIRED', 'NO_SUPPLIER_AVAILABLE'];
+
+function computeConfidenceLocal(caseType, escalations, issues, preferredAvailable, historicalMatch, preferredStatedButUnresolved = false) {
+  // Hard blocks are deterministic: the agent is certain about why the request cannot proceed
+  if (HARD_BLOCK_CASE_TYPES.includes(caseType)) return 95;
+
+  // Escalation-required: resolution depends on human judgment — moderate confidence
+  const hasBlocking = escalations?.some(e => e.blocking);
+  if (hasBlocking) {
+    let score = 70;
+    if (historicalMatch) score += 5;
+    if (preferredAvailable) score += 5;
+    return Math.min(80, score); // 70–80
+  }
+
+  // Forward path with tradeoffs: heuristic scoring
+  let score = 85;
+  if (issues?.length > 0) score -= issues.length * 5;
+  if (preferredStatedButUnresolved) score -= 10;
+  if (preferredAvailable) score += 5;
+  if (historicalMatch) score += 5;
+  return Math.min(95, Math.max(50, score));
 }
 
-const delay = (ms) => new Promise(r => setTimeout(r, 0)); // Artificial UI delays removed!
+const delay = () => new Promise(r => setTimeout(r, 0)); // Artificial UI delays removed!
 
 export async function POST(req) {
   const body = await req.json();
@@ -195,6 +205,15 @@ export async function POST(req) {
           });
         }
 
+        // ── Priority enforcement ──────────────────────────────────────
+        // Hard blocks are mutually exclusive with optimization signals.
+        // On a hard block: keep only the blocking escalations that caused it;
+        // suppress all non-blocking noise (approvals, savings, bundling).
+        const isHardBlock = HARD_BLOCK_CASE_TYPES.includes(case_type);
+        if (isHardBlock) {
+          escalations.splice(0, escalations.length, ...escalations.filter(e => e.blocking));
+        }
+
         let decisionThinking = `Evaluating ${rankedSuppliers.length} suppliers against ${issues.length} issues and ${escalations.length} escalations...\n\n`;
         send('step', { step: 'decision', status: 'active', pct: 65, thinking: decisionThinking });
 
@@ -202,8 +221,11 @@ export async function POST(req) {
           decisionThinking += chunk;
           send('step', { step: 'decision', status: 'active', pct: 75, thinking: decisionThinking });
         });
-        
-        const bundlingOpportunity = detectBundlingOpportunity(enrichedRequest, rankedSuppliers);
+
+        // Bundling requires a valid shortlist — never run when no compliant supplier exists
+        const bundlingOpportunity = (!isHardBlock && rankedSuppliers.length > 0)
+          ? detectBundlingOpportunity(enrichedRequest, rankedSuppliers)
+          : null;
 
         send('step', { step: 'decision', status: 'done', pct: 85, thinking: decision.status === 'recommended' ? `Recommending ${decision.preferred_supplier_if_resolved || rankedSuppliers[0]?.supplier_name || 'top supplier'}` : 'Cannot auto-approve — escalation required' });
 
@@ -213,9 +235,11 @@ export async function POST(req) {
 
         const preferredStatedButUnresolved = !!enrichedRequest.preferred_supplier_stated && !preferredCheck;
         const confidence = computeConfidenceLocal(
-          validationResult.issues, rankedSuppliers,
+          case_type,
+          escalations,
+          issues,
           preferredCheck?.is_preferred && !preferredCheck?.is_restricted,
-          historicalContext.length > 0, escalations,
+          historicalContext.length > 0,
           preferredStatedButUnresolved
         );
         // Auto-approve ONLY when: tier 1, no escalations, no critical validation issues
