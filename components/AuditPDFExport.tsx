@@ -27,6 +27,8 @@ export default function AuditPDFExport({ data }: Props) {
       Quality: s.quality_score ?? "N/A",
       Risk: s.risk_score ?? "N/A",
       ESG: s.esg_score ?? "N/A",
+      "Historical Delta": s.score_breakdown?.historical ?? 0,
+      "Historical Flags": (s.historical_flags || []).join(", "),
       "Score (%)": s.composite_score_pct ?? s.composite_score ?? "N/A",
       "Policy Compliant": s.policy_compliant ? "Yes" : "No",
       Notes: s.recommendation_note || ""
@@ -59,6 +61,10 @@ export default function AuditPDFExport({ data }: Props) {
       { Item: "Policies Checked", Value: (data.audit_trail?.policies_checked || []).join(", ") || "None" },
       { Item: "Suppliers Evaluated", Value: (data.audit_trail?.suppliers_evaluated || []).join(", ") || "None" },
       { Item: "Data Sources", Value: (data.audit_trail?.data_sources_used || []).join(", ") || "None" },
+      { Item: "Historical Awards Consulted", Value: data.audit_trail?.historical_awards_consulted ? "Yes" : "No" },
+      { Item: "Client Filter Scope", Value: data.audit_trail?.client_scope_used || "N/A" },
+      { Item: "Assumptions", Value: (data.audit_trail?.assumptions || []).join(", ") || "None" },
+      { Item: "Inference Applied", Value: data.audit_trail?.inference_applied ? "Yes" : "No" },
       { Item: "Generated At", Value: data.processed_at || new Date().toISOString() }
     ];
     const wsAudit = XLSX.utils.json_to_sheet(auditRows);
@@ -75,19 +81,19 @@ export default function AuditPDFExport({ data }: Props) {
     <div id="audit-document" className="hidden print:block text-black font-serif p-0 m-0" style={{ background: "white" }}>
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          #audit-document { 
-            display: block !important; 
-            padding: 1.5cm; 
-            max-width: 100%; 
-            width: 100%; 
-            font-family: Georgia, serif; 
-            font-size: 10pt; 
-            line-height: 1.5; 
-            box-sizing: border-box; 
+          #audit-document {
+            display: block !important;
+            padding: 1.5cm;
+            max-width: 100%;
+            width: 100%;
+            font-family: Georgia, serif;
+            font-size: 10pt;
+            line-height: 1.5;
+            box-sizing: border-box;
           }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           @page { margin: 0; size: A4 portrait; }
-          
+
           .audit-section-title {
             text-transform: uppercase;
             font-weight: bold;

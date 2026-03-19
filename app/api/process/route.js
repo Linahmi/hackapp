@@ -9,12 +9,12 @@ import { findHistoricalContext } from '@/lib/historicalLookup';
 import { generateDecision } from '@/lib/decisionEngine';
 import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
 
-// Local proxy functions to bridge the requested step-by-step logic 
+// Local proxy functions to bridge the requested step-by-step logic
 // with the existing merged Backend-A native module signatures dynamically.
-function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required, budget_amount) {
+function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required, budget_amount, historicalContext) {
   const eligible = getEligibleSuppliers(l1, l2, countries, qty, currency);
   const fakePolicy = { restricted_suppliers: {} };
-  const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, budget_amount };
+  const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, budget_amount, historicalContext };
   const { shortlist } = newScoreSuppliers(eligible, fakePolicy, mockReq);
   return shortlist;
 }
@@ -23,7 +23,7 @@ function computeConfidenceLocal(issues, suppliers, preferredAvailable, historica
   let score = 100;
   if (issues && issues.length > 0) score -= (20 * issues.length);
   if (!suppliers || suppliers.length === 0) score -= 20;
-  
+
   const hasBlocking = escalations && escalations.some(e => e.blocking);
   if (hasBlocking) score -= 30;
 
@@ -36,7 +36,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const { text, request_id } = body;
-    
+
     // 2. Original Request
     const data = getData();
     const originalRequest = (data.requests || []).find(r => r.request_id === request_id) || {};
@@ -45,10 +45,11 @@ export async function POST(req) {
     const structuredRequest = await parseRequest(text, originalRequest);
 
     // 4. Historical (Moved UP)
-    const historicalContext = findHistoricalContext(structuredRequest.category_l2, structuredRequest.delivery_countries || []);
-
-    // 4b. Enriched Gap Filling
-    const enrichedRequest = fillGapsFromHistory(structuredRequest, historicalContext, structuredRequest.currency || 'EUR');
+    const historicalLookupResult = findHistoricalContext(structuredRequest.category_l2, structuredRequest.delivery_countries || [], originalRequest?.business_unit);
+    const historicalContext = historicalLookupResult.records;
+    const awardedRecords = historicalContext.filter(r => r.awarded);
+    // 4b. Enriched Gap Filling (uses only awarded records)
+    const enrichedRequest = fillGapsFromHistory(structuredRequest, awardedRecords, structuredRequest.currency || 'EUR');
 
     // 5. Validate (Initial)
     const issues = [];
@@ -66,16 +67,17 @@ export async function POST(req) {
 
     // 7. Score
     const rankedSuppliers = scoreSuppliersLocal(
-      enrichedRequest.category_l1, 
-      enrichedRequest.category_l2, 
-      enrichedRequest.delivery_countries || [], 
-      enrichedRequest.quantity || 1, 
+      enrichedRequest.category_l1,
+      enrichedRequest.category_l2,
+      enrichedRequest.delivery_countries || [],
+      enrichedRequest.quantity || 1,
       enrichedRequest.currency || 'EUR',
       originalRequest,
       enrichedRequest.days_until_required,
-      enrichedRequest.budget_amount
+      enrichedRequest.budget_amount,
+      historicalContext
     );
-    
+
     // mark incumbent
     rankedSuppliers.forEach(s => {
       if (s.supplier_id === originalRequest?.incumbent_supplier) s.incumbent = true;
@@ -103,22 +105,22 @@ export async function POST(req) {
     // 8. Triggers
     const triggers = [];
     if (issues.find(i => i.type === 'missing_budget' || i.type === 'missing_quantity')) triggers.push({ rule:'ER-001', reason:'Missing required info', blocking:true });
-    
+
     if (issues.find(i => i.type === 'budget_insufficient')) {
-      triggers.push({ 
-        rule: 'ER-001', 
-        reason: `Budget of ${enrichedRequest.budget_amount} ${enrichedRequest.currency} is insufficient. Minimum required: ${minimumRequired?.toFixed(2)} ${enrichedRequest.currency}`, 
-        blocking: true 
+      triggers.push({
+        rule: 'ER-001',
+        reason: `Budget of ${enrichedRequest.budget_amount} ${enrichedRequest.currency} is insufficient. Minimum required: ${minimumRequired?.toFixed(2)} ${enrichedRequest.currency}`,
+        blocking: true
       });
     }
 
     if (approvalTier && approvalTier.tier >= 2 && enrichedRequest.preferred_supplier_stated) {
       const requestText = (originalRequest?.request_text || text || '').toLowerCase();
       if (requestText.includes('no exception') || requestText.includes('only') || requestText.includes('must use')) {
-        triggers.push({ 
-          rule: 'ER-002', 
-          reason: `Policy AT-00${approvalTier.tier} requires ${approvalTier.quotes_required} quotes. Requester single-supplier instruction cannot override this policy.`, 
-          blocking: true 
+        triggers.push({
+          rule: 'ER-002',
+          reason: `Policy AT-00${approvalTier.tier} requires ${approvalTier.quotes_required} quotes. Requester single-supplier instruction cannot override this policy.`,
+          blocking: true
         });
       }
     }
@@ -126,10 +128,10 @@ export async function POST(req) {
     if (enrichedRequest.days_until_required && rankedSuppliers.length > 0) {
       const fastestExpedited = Math.min(...rankedSuppliers.map(s => s.expedited_lead_time_days || 999));
       if (fastestExpedited > enrichedRequest.days_until_required) {
-        triggers.push({ 
-          rule: 'ER-004', 
-          reason: `Required delivery in ${enrichedRequest.days_until_required} days but fastest expedited lead time is ${fastestExpedited} days. No supplier can meet this deadline.`, 
-          blocking: true 
+        triggers.push({
+          rule: 'ER-004',
+          reason: `Required delivery in ${enrichedRequest.days_until_required} days but fastest expedited lead time is ${fastestExpedited} days. No supplier can meet this deadline.`,
+          blocking: true
         });
       }
     }
@@ -137,7 +139,7 @@ export async function POST(req) {
     if (preferredCheck?.is_restricted) triggers.push({ rule:'ER-002', reason:'Preferred supplier restricted', blocking:true });
     if (rankedSuppliers.length === 0) triggers.push({ rule:'ER-004', reason:'No compliant supplier found', blocking:true });
     if (originalRequest?.data_residency_constraint && geoRules.length > 0) triggers.push({ rule:'ER-005', reason:'Data residency constraint', blocking:true });
-    
+
     const estimatedSavings = enrichedRequest.budget_amount && rankedSuppliers[0]
       ? Math.max(0, Math.round(enrichedRequest.budget_amount - rankedSuppliers[0].total_price))
       : null;
@@ -151,9 +153,9 @@ export async function POST(req) {
 
     // 10. Confidence
     const confidence = computeConfidenceLocal(
-      validationResult.issues, 
-      rankedSuppliers, 
-      preferredCheck?.is_preferred && !preferredCheck?.is_restricted, 
+      validationResult.issues,
+      rankedSuppliers,
+      preferredCheck?.is_preferred && !preferredCheck?.is_restricted,
       historicalContext.length > 0,
       escalations
     );
@@ -190,6 +192,8 @@ export async function POST(req) {
         supplier_ids_evaluated: rankedSuppliers.map(s => s.supplier_id),
         data_sources_used: ['requests.json','suppliers.csv','pricing.csv','policies.json','historical_awards.csv'],
         historical_awards_consulted: historicalContext.length > 0,
+        historical_records: historicalContext,
+        client_scope_used: historicalLookupResult.match_level,
         assumptions: enrichedRequest.assumptions || [],
         inference_applied: enrichedRequest.assumptions && enrichedRequest.assumptions.length > 0,
         generated_at: new Date().toISOString()
