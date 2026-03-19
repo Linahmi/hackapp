@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useProcurement } from "@/contexts/ProcurementContext";
 import RequestInput          from "@/components/RequestInput";
 import ProgressStepper       from "@/components/ProgressStepper";
 import BundlingOpportunityCard from "@/components/BundlingOpportunityCard";
@@ -11,16 +10,23 @@ import RequestInterpretation from "@/components/RequestInterpretation";
 import PolicyCheck           from "@/components/PolicyCheck";
 import { ProcurementAnalyticsWidget } from "@/components/ProcurementAnalyticsWidget";
 
-type Stage = "idle" | "intake" | "processing" | "done" | "error";
+type Stage = "idle" | "streaming" | "done" | "error";
+
+const STEP_INDEX: Record<string, number> = {
+  parsing: 0, rules: 1, scoring: 2, decision: 3, logged: 4,
+};
 
 export default function Home() {
   const router = useRouter();
-  const { result: contextResult, setResult: setContextResult } = useProcurement();
   const [text, setText] = useState("");
-  const [activeReqId, setActiveReqId] = useState("REQ-000004");
   const [stage,  setStage]  = useState<Stage>("idle");
   const [error,  setError]  = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
+
+  // Real-time pipeline state
+  const [activeStep, setActiveStep]       = useState(0);
+  const [thinkingText, setThinkingText]   = useState("");
+  const [progressPct, setProgressPct]     = useState(0);
 
   function handleTextChange(val: string) {
     setText(val);
@@ -28,31 +34,18 @@ export default function Home() {
   }
 
   useEffect(() => {
-    // Always clear sessionStorage on page load/refresh — clean slate
-    sessionStorage.removeItem("procure_result");
-    sessionStorage.removeItem("session_active");
-
     const savedText = localStorage.getItem("buyer_request");
     if (savedText) setText(savedText);
 
-    // Restore result from context if navigating back from supplier (context
-    // survives SPA navigation but is reset on browser refresh)
-    if (contextResult) {
-      setResult(contextResult);
-      setStage("done");
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleDemo = (e: any) => {
-      if (e.detail) {
-        handleTextChange("Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF, prefer Dell");
-      } else {
-        handleTextChange("");
+    try {
+      if (sessionStorage.getItem("session_active") === "true") {
+        const savedResult = sessionStorage.getItem("procure_result");
+        if (savedResult) {
+          setResult(JSON.parse(savedResult));
+          setStage("done");
+        }
       }
-    };
-    window.addEventListener("toggleDemo", handleDemo);
-    return () => window.removeEventListener("toggleDemo", handleDemo);
+    } catch {}
   }, []);
 
   async function handleLoadExample() {
@@ -62,7 +55,7 @@ export default function Home() {
       const demos = await res.json();
       if (demos?.[0]?.request_text) handleTextChange(demos[0].request_text);
     } catch {
-      // silently ignore — demo endpoint unavailable
+      // silently ignore
     }
   }
 
@@ -70,34 +63,93 @@ export default function Home() {
     if (!text.trim()) return;
     setError(null);
     setResult(null);
+    setActiveStep(0);
+    setThinkingText("");
+    setProgressPct(0);
+    setStage("streaming");
 
     try {
-      setStage("intake");
-      await new Promise(r => setTimeout(r, 800));
-
-      setStage("processing");
-      const res = await fetch("/api/process", {
+      const res = await fetch("/api/process-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, request_id: activeReqId })
+        body: JSON.stringify({ text }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Processing failed");
 
-      await new Promise(r => setTimeout(r, 800));
+      if (!res.ok || !res.body) {
+        throw new Error("Stream connection failed");
+      }
 
-      setResult(data);
-      setContextResult(data);
-      sessionStorage.setItem("procure_result", JSON.stringify(data));
-      sessionStorage.setItem("session_active", "true");
-      setStage("done");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE events from buffer
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() || ""; // keep incomplete chunk
+
+        for (const part of parts) {
+          const lines = part.split("\n");
+          let eventType = "";
+          let eventData = "";
+
+          for (const line of lines) {
+            if (line.startsWith("event: ")) eventType = line.slice(7);
+            if (line.startsWith("data: ")) eventData = line.slice(6);
+          }
+
+          if (!eventType || !eventData) continue;
+
+          try {
+            const payload = JSON.parse(eventData);
+
+            if (eventType === "step") {
+              const idx = STEP_INDEX[payload.step] ?? 0;
+              if (payload.status === "active") {
+                setActiveStep(idx);
+              } else if (payload.status === "done") {
+                setActiveStep(idx + 1);
+              }
+              if (payload.thinking) {
+                setThinkingText(payload.thinking);
+              }
+              if (payload.pct !== undefined) {
+                setProgressPct(payload.pct);
+              }
+            }
+
+            if (eventType === "result") {
+              setResult(payload);
+              sessionStorage.setItem("procure_result", JSON.stringify(payload));
+              sessionStorage.setItem("session_active", "true");
+              setStage("done");
+            }
+
+            if (eventType === "error") {
+              throw new Error(payload.message || "Pipeline error");
+            }
+          } catch (parseErr: any) {
+            if (eventType === "error") throw parseErr;
+          }
+        }
+      }
+
+      // If we got here without a result event, fall back
+      if (stage !== "done" && !result) {
+        setStage("done");
+      }
     } catch (err: any) {
       setError(err.message ?? "Unknown error");
       setStage("error");
     }
   }
 
-  const isLoading = stage === "intake" || stage === "processing";
+  const isLoading = stage === "streaming";
 
   return (
     <div
@@ -114,50 +166,14 @@ export default function Home() {
         disabled={isLoading}
       />
 
-      {/* Dynamic Demo Toggle Buttons */}
-      <div className="flex gap-4 w-full max-w-2xl px-2 no-print">
-        <button 
-          onClick={() => {
-            handleTextChange("Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception.");
-            setActiveReqId("REQ-000004");
-          }}
-          className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000004" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
-        >
-          Load Edge Case (REQ-000004)
-        </button>
-        <button 
-          onClick={() => {
-            handleTextChange("Need 500 laptops for fleet refresh  onboarding  and warranty replacement. Delivery required by 2026-04-06. Budget is approximately 490 000.00 EUR.");
-            setActiveReqId("REQ-000038");
-          }}
-          className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000038" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
-        >
-          Load Standard Demo (REQ-000038)
-        </button>
-        <button 
-          onClick={() => {
-            // Use the full text for REQ-000001 so the agent doesn't have to guess
-            handleTextChange("Need 400 consulting days of IT project management support starting next month. Delivery required by 2026-05-17. Budget is approximately 400 000.00 EUR. Prefer Accenture Advisory Europe if commercially competitive.");
-            setActiveReqId("REQ-000001");
-          }}
-          className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000001" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
-        >
-          Load IT Project (REQ-000001)
-        </button>
-        <button 
-          onClick={() => {
-            handleTextChange("Need 5 content production projects for employer branding and product campaigns. Please move quickly. We would like to stay with WPP Performance Media if possible.");
-            setActiveReqId("REQ-000012");
-          }}
-          className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000012" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
-        >
-          Load Missing Info (REQ-000012)
-        </button>
-      </div>
-
-      {/* Progress stepper — visible while loading or done */}
-      {stage !== "idle" && stage !== "error" && (
-        <ProgressStepper stage={stage === "done" ? "done" : stage} />
+      {/* Real-time progress stepper */}
+      {(stage === "streaming" || stage === "done") && (
+        <ProgressStepper
+          activeStep={stage === "done" ? 5 : activeStep}
+          thinkingText={thinkingText}
+          done={stage === "done"}
+          pct={stage === "done" ? 100 : progressPct}
+        />
       )}
 
       {/* Error */}
