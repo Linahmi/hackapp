@@ -16,6 +16,10 @@ interface Supplier {
   recommendation_note?: string;
   currency?: string;
   score_breakdown?: Record<string, number>;
+  tco?: number;
+  tco_breakdown?: { base_cost: number; reliability_cost: number; lead_time_risk: number; risk_premium: number };
+  tco_note?: string;
+  tco_vs_budget_pct?: number | null;
 }
 
 interface Excluded {
@@ -134,12 +138,34 @@ export default function SupplierComparison({ shortlist = [], excluded = [], curr
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-5 gap-3">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Total Price</span>
                     <span className="text-sm font-bold text-[color:var(--text-main)] tabular-nums">
                       {cur} {Number(s.total_price).toLocaleString()}
                     </span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>TCO Est.</span>
+                    {s.tco != null ? (
+                      <>
+                        <span className="text-sm font-bold tabular-nums" style={{ color: "var(--text-main)", fontFamily: "monospace" }}>
+                          {cur} {Number(s.tco).toLocaleString()}
+                        </span>
+                        {s.tco_vs_budget_pct != null && (
+                          <span className="text-[10px] font-semibold tabular-nums" style={{ color: s.tco_vs_budget_pct >= 0 ? "#22c55e" : "#ef4444", fontFamily: "monospace" }}>
+                            {s.tco_vs_budget_pct >= 0 ? "▼" : "▲"} {Math.abs(s.tco_vs_budget_pct).toFixed(1)}% {s.tco_vs_budget_pct >= 0 ? "under" : "over"} budget
+                          </span>
+                        )}
+                        {s.tco_breakdown && (
+                          <span className="text-[10px] leading-tight" style={{ color: "var(--text-muted)" }}>
+                            Base {cur} {s.tco_breakdown.base_cost.toLocaleString()} · Rel. {cur} {s.tco_breakdown.reliability_cost.toLocaleString()} · LT {cur} {s.tco_breakdown.lead_time_risk.toLocaleString()} · Risk {cur} {s.tco_breakdown.risk_premium.toLocaleString()}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>—</span>
+                    )}
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Lead Time</span>
@@ -182,6 +208,14 @@ export default function SupplierComparison({ shortlist = [], excluded = [], curr
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+        {/* TCO note */}
+        {shortlist.some(s => s.tco != null) && (
+          <div className="px-5 py-3" style={{ borderTop: "1px solid var(--border-card)" }}>
+            <p className="text-[10px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              TCO = base cost + reliability buffer + lead-time risk + operational risk premium. Unit price alone does not reflect total procurement cost.
+            </p>
           </div>
         )}
       </div>

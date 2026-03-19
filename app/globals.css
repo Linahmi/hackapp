@@ -30,6 +30,24 @@ body {
 }
 
 @media print {
+  html, body {
+    background: white !important;
+    color: black !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+  body > *:not(#audit-document) {
+    display: none !important;
+  }
+  #audit-document {
+    display: block !important;
+    position: static !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white !important;
+  }
   .no-print {
     display: none !important;
   }

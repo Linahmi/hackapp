@@ -270,6 +270,11 @@ export function SupplierComparisonTable({
         </table>
       </div>
 
+      {/* TCO explanatory note */}
+      <div className="text-[10px] leading-relaxed px-1 mt-2" style={{ color: "var(--text-muted)" }}>
+        TCO = base cost + reliability buffer + lead-time risk + operational risk premium. Unit price alone does not reflect total procurement cost.
+      </div>
+
       {/* Sensitivity analysis */}
       {sensitivityFactors && sensitivityFactors.length > 0 && (
         <SensitivityAnalysis factors={sensitivityFactors} />

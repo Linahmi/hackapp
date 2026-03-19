@@ -28,6 +28,8 @@ type MetaEntry = {
   risk: "Low" | "Med" | "High"; esg: "A" | "B" | "C" | "D";
   blocked: boolean; blockedReason?: string;
   preferred?: boolean; incumbent?: boolean;
+  tcoBreakdown?: { base_cost: number; reliability_cost: number; lead_time_risk: number; risk_premium: number } | null;
+  tcoVsBudgetPct?: number | null;
 };
 
 const DEMO_META: Record<string, MetaEntry> = {
@@ -203,12 +205,14 @@ export default function SupplierDemoPage() {
       };
       meta[s.supplier_name] = {
         price:    formatAmount(s.total_price, currency),
-        tco:      formatAmount(Math.round(s.expedited_total ?? s.total_price * 1.06), currency),
+        tco:      s.tco ? formatAmount(s.tco, currency) : formatAmount(Math.round(s.total_price * 1.06), currency),
         risk:     riskLabel(s.risk_score ?? 50),
         esg:      esgLabel(s.esg_score  ?? 50),
         blocked:  false,
         preferred: s.preferred,
         incumbent: s.incumbent,
+        tcoBreakdown: s.tco_breakdown ?? null,
+        tcoVsBudgetPct: s.tco_vs_budget_pct ?? null,
       };
     });
     return { rawScores, meta, isFromApi: true };
