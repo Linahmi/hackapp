@@ -137,5 +137,17 @@ body {
   .delay-1000 { animation-delay: 1000ms; }
   .delay-1100 { animation-delay: 1100ms; }
   .delay-1200 { animation-delay: 1200ms; }
+
+  .animate-wiggle {
+    animation: wiggle 2.5s ease-in-out infinite;
+  }
 }
 
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(-6deg); }
+  20% { transform: rotate(6deg); }
+  30% { transform: rotate(-4deg); }
+  40% { transform: rotate(4deg); }
+  50% { transform: rotate(0deg); }
+}
