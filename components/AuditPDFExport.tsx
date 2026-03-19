@@ -26,6 +26,8 @@ export default function AuditPDFExport({ data }: Props) {
       Quality: s.quality_score ?? "N/A",
       Risk: s.risk_score ?? "N/A",
       ESG: s.esg_score ?? "N/A",
+      "Historical Delta": s.score_breakdown?.historical ?? 0,
+      "Historical Flags": (s.historical_flags || []).join(", "),
       "Score (%)": s.composite_score_pct ?? s.composite_score ?? "N/A",
       "Policy Compliant": s.policy_compliant ? "Yes" : "No",
       Notes: s.recommendation_note || ""
@@ -58,6 +60,10 @@ export default function AuditPDFExport({ data }: Props) {
       { Item: "Policies Checked", Value: (data.audit_trail?.policies_checked || []).join(", ") || "None" },
       { Item: "Suppliers Evaluated", Value: (data.audit_trail?.suppliers_evaluated || []).join(", ") || "None" },
       { Item: "Data Sources", Value: (data.audit_trail?.data_sources_used || []).join(", ") || "None" },
+      { Item: "Historical Awards Consulted", Value: data.audit_trail?.historical_awards_consulted ? "Yes" : "No" },
+      { Item: "Client Filter Scope", Value: data.audit_trail?.client_scope_used || "N/A" },
+      { Item: "Assumptions", Value: (data.audit_trail?.assumptions || []).join(", ") || "None" },
+      { Item: "Inference Applied", Value: data.audit_trail?.inference_applied ? "Yes" : "No" },
       { Item: "Generated At", Value: data.processed_at || new Date().toISOString() }
     ];
     const wsAudit = XLSX.utils.json_to_sheet(auditRows);
@@ -255,10 +261,43 @@ export default function AuditPDFExport({ data }: Props) {
           )}
         </div>
 
-        {/* ─── 5. ESCALATIONS ─── */}
+        {/* ─── 5. HISTORICAL CONTEXT ─── */}
+        {data.audit_trail?.historical_records?.length > 0 && (
+          <div className="pdf-section">
+            <div className="pdf-section-title">5. Historical Context & Award Pattern</div>
+            <div style={{ fontSize: "8pt", color: "#6b7280", marginBottom: "8pt" }}>
+              Identified historical performance for category: "{interp?.category_l2}" 
+              (Match Scope: {data.audit_trail.client_scope_used})
+            </div>
+            <table>
+              <thead>
+                <tr style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                  <th style={{ fontSize: "8pt" }}>Date</th>
+                  <th style={{ fontSize: "8pt" }}>Supplier</th>
+                  <th style={{ fontSize: "8pt" }}>Awarded</th>
+                  <th style={{ fontSize: "8pt", textAlign: "right" }}>Value</th>
+                  <th style={{ fontSize: "8pt", textAlign: "right" }}>Savings</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.audit_trail.historical_records.map((h: any, i: number) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}>
+                    <td>{h.award_date}</td>
+                    <td style={{ fontWeight: 600 }}>{h.supplier_name}</td>
+                    <td style={{ color: h.awarded ? "#166534" : "#991b1b", fontWeight: 700 }}>{h.awarded ? "YES" : "NO"}</td>
+                    <td style={{ textAlign: "right" }}>{h.total_value?.toLocaleString()}</td>
+                    <td style={{ textAlign: "right" }}>{h.savings_pct}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ─── 6. ESCALATIONS ─── */}
         {data.escalations?.length > 0 && (
           <div className="pdf-section">
-            <div className="pdf-section-title">5. Escalations</div>
+            <div className="pdf-section-title">6. Escalations</div>
             <table>
               <thead>
                 <tr style={{ backgroundColor: "#fef2f2", borderBottom: "1px solid #fca5a5" }}>
@@ -282,9 +321,9 @@ export default function AuditPDFExport({ data }: Props) {
           </div>
         )}
 
-        {/* ─── 6. AI RATIONALE ─── */}
+        {/* ─── 7. AI RATIONALE ─── */}
         <div className="pdf-section">
-          <div className="pdf-section-title">{data.escalations?.length > 0 ? "6" : "5"}. AI Decision Rationale</div>
+          <div className="pdf-section-title">7. AI Decision Rationale</div>
           <div style={{ fontSize: "9pt", lineHeight: 1.6, padding: "10pt 12pt", backgroundColor: "#f9fafb", border: "1px solid #e5e7eb" }}>
             <div style={{ marginBottom: "8pt" }}>
               <strong>Status:</strong>{" "}
@@ -309,6 +348,7 @@ export default function AuditPDFExport({ data }: Props) {
         <div style={{ marginTop: "16pt", paddingTop: "8pt", borderTop: "1px solid #e5e7eb", fontSize: "7.5pt", color: "#9ca3af" }}>
           <div><strong>Policies:</strong> {data.audit_trail?.policies_checked?.join(", ")}</div>
           <div><strong>Data sources:</strong> {data.audit_trail?.data_sources_used?.join(", ")}</div>
+          <div><strong>Historical analytics:</strong> {data.audit_trail?.historical_awards_consulted ? `Yes (Scope: ${data.audit_trail.client_scope_used})` : "No"}</div>
           <div><strong>Inference applied:</strong> {data.audit_trail?.inference_applied ? "Yes" : "No"}</div>
         </div>
 

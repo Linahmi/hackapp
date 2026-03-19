@@ -16,6 +16,7 @@ interface Supplier {
   recommendation_note?: string;
   currency?: string;
   score_breakdown?: Record<string, number>;
+  historical_flags?: string[];
 }
 
 interface Excluded {
@@ -115,6 +116,15 @@ export default function SupplierComparison({ shortlist = [], excluded = [], curr
                             incumbent
                           </span>
                         )}
+                        {s.historical_flags?.map(flag => {
+                          const isNegative = flag.startsWith("-");
+                          return (
+                            <span key={flag} className="text-[10px] px-1.5 py-0.5 rounded font-semibold tracking-wider" 
+                                  style={{ backgroundColor: isNegative ? "rgba(220,38,38,0.12)" : "rgba(59,130,246,0.10)", color: isNegative ? "#dc2626" : "#3b82f6" }}>
+                              {flag}
+                            </span>
+                          );
+                        })}
                         {s.recommendation_note && (
                           <span className="text-xs" style={{ color: "var(--text-muted)" }}>{s.recommendation_note}</span>
                         )}
@@ -154,7 +164,7 @@ export default function SupplierComparison({ shortlist = [], excluded = [], curr
                     <div className="flex flex-wrap gap-1 mt-1">
                       {s.score_breakdown && Object.entries(s.score_breakdown).map(([k, v]) => (
                         <span key={k} className="text-[10px] px-1 py-0.5 rounded" style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-main)" }}>
-                          {k}: {Math.round(Number(v) * 100)}%
+                          {k}: {k === "historical" ? `${Number(v) >= 0 ? "+" : ""}${Number(v)} pts` : `${Math.round(Number(v) * 100)}%`}
                         </span>
                       ))}
                     </div>

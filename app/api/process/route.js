@@ -11,10 +11,10 @@ import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
 
 // Local proxy functions to bridge the requested step-by-step logic 
 // with the existing merged Backend-A native module signatures dynamically.
-function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required) {
+function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required, historicalContext) {
   const eligible = getEligibleSuppliers(l1, l2, countries, qty, currency);
   const fakePolicy = { restricted_suppliers: {} };
-  const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier };
+  const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, historicalContext };
   const { shortlist } = newScoreSuppliers(eligible, fakePolicy, mockReq);
   return shortlist;
 }
@@ -45,10 +45,11 @@ export async function POST(req) {
     const structuredRequest = await parseRequest(text, originalRequest);
 
     // 4. Historical (Moved UP)
-    const historicalContext = findHistoricalContext(structuredRequest.category_l2, structuredRequest.delivery_countries || []);
-
-    // 4b. Enriched Gap Filling
-    const enrichedRequest = fillGapsFromHistory(structuredRequest, historicalContext, structuredRequest.currency || 'EUR');
+    const historicalLookupResult = findHistoricalContext(structuredRequest.category_l2, structuredRequest.delivery_countries || [], originalRequest?.business_unit);
+    const historicalContext = historicalLookupResult.records;
+    const awardedRecords = historicalContext.filter(r => r.awarded);
+    // 4b. Enriched Gap Filling (uses only awarded records)
+    const enrichedRequest = fillGapsFromHistory(structuredRequest, awardedRecords, structuredRequest.currency || 'EUR');
 
     // 5. Validate (Initial)
     const issues = [];
@@ -72,7 +73,8 @@ export async function POST(req) {
       enrichedRequest.quantity || 1, 
       enrichedRequest.currency || 'EUR',
       originalRequest,
-      enrichedRequest.days_until_required
+      enrichedRequest.days_until_required,
+      historicalContext
     );
     
     // mark incumbent
@@ -189,6 +191,8 @@ export async function POST(req) {
         supplier_ids_evaluated: rankedSuppliers.map(s => s.supplier_id),
         data_sources_used: ['requests.json','suppliers.csv','pricing.csv','policies.json','historical_awards.csv'],
         historical_awards_consulted: historicalContext.length > 0,
+        historical_records: historicalContext,
+        client_scope_used: historicalLookupResult.match_level,
         assumptions: enrichedRequest.assumptions || [],
         inference_applied: enrichedRequest.assumptions && enrichedRequest.assumptions.length > 0,
         generated_at: new Date().toISOString()
