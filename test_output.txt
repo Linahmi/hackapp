@@ -1,0 +1,114 @@
+(node:22556) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/linah/hackapp/lib/policyEngine.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\linah\hackapp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+=== TEST 1: Approval Tier ===
+{ tier: 2, quotes_required: 2, approver: 'Procurement Manager' }
+=== TEST 2: Supplier Scoring ===
+[
+  {
+    rank: 1,
+    supplier_id: 'SUP-0001',
+    supplier_name: 'Dell Enterprise Europe',
+    preferred: true,
+    incumbent: false,
+    unit_price: 155,
+    total_price: 37200,
+    expedited_unit_price: 167.4,
+    expedited_total: 40176,
+    standard_lead_time_days: 22,
+    expedited_lead_time_days: 17,
+    quality_score: 85,
+    risk_score: 15,
+    esg_score: 73,
+    composite_score: 0.9165,
+    score_breakdown: { price: 0.95, lead_time: 1, quality: 0.85, risk: 0.85, esg: 0.73 },
+    policy_compliant: true
+  },
+  {
+    rank: 2,
+    supplier_id: 'SUP-0002',
+    supplier_name: 'HP Enterprise Devices',
+    preferred: true,
+    incumbent: false,
+    unit_price: 153.45,
+    total_price: 36828,
+    expedited_unit_price: 165.73,
+    expedited_total: 39775.2,
+    standard_lead_time_days: 23,
+    expedited_lead_time_days: 19,
+    quality_score: 83,
+    risk_score: 26,
+    esg_score: 66,
+    composite_score: 0.885,
+    score_breakdown: {
+      price: 0.96,
+      lead_time: 0.96,
+      quality: 0.83,
+      risk: 0.74,
+      esg: 0.66
+    },
+    policy_compliant: true
+  },
+  {
+    rank: 3,
+    supplier_id: 'SUP-0007',
+    supplier_name: 'Bechtle Workplace Solutions',
+    preferred: true,
+    incumbent: false,
+    unit_price: 148.8,
+    total_price: 35712,
+    expedited_unit_price: 160.7,
+    expedited_total: 38568,
+    standard_lead_time_days: 26,
+    expedited_lead_time_days: 18,
+    quality_score: 82,
+    risk_score: 19,
+    esg_score: 72,
+    composite_score: 0.8794,
+    score_breakdown: {
+      price: 0.99,
+      lead_time: 0.85,
+      quality: 0.82,
+      risk: 0.81,
+      esg: 0.72
+    },
+    policy_compliant: true
+  }
+]
+=== TEST 3: Escalation Router ===
+[
+  {
+    id: 'ESC-001',
+    rule: 'ER-001',
+    trigger: 'System generated trigger',
+    escalate_to: 'Requester',
+    action: 'Request clarification or additional budget',
+    blocking: true
+  },
+  {
+    id: 'ESC-002',
+    rule: 'ER-002',
+    trigger: 'System generated trigger',
+    escalate_to: 'Procurement Manager',
+    action: 'Review and approve exception',
+    blocking: true
+  },
+  {
+    id: 'ESC-003',
+    rule: 'ER-004',
+    trigger: 'System generated trigger',
+    escalate_to: 'Head of Category',
+    action: 'Category strategy review',
+    blocking: true
+  }
+]
+=== TEST 4: Confidence Score ===
+90
+=== TEST 5: Preferred Supplier ===
+{
+  name: 'Dell Enterprise Europe',
+  is_preferred: true,
+  is_restricted: false,
+  covers_delivery_country: true
+}
