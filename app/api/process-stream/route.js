@@ -185,10 +185,26 @@ export async function POST(req) {
           preferredCheck?.is_preferred && !preferredCheck?.is_restricted,
           historicalContext.length > 0, escalations
         );
-        const isAutoApproved = escalations.length === 0 && confidence > 70 && (rankedSuppliers[0]?.risk_score || 100) < 30;
+        // Auto-approve ONLY for Tier 1 (low-value, self-service) with no escalations
+        const isAutoApproved =
+          approvalTier?.tier === 1 &&
+          escalations.length === 0 &&
+          confidence > 70 &&
+          (rankedSuppliers[0]?.risk_score || 100) < 30;
+
+        // Determine required approver based on the highest escalation level, or fall back to the approval tier
+        let requiredApprover = null;
+        if (!isAutoApproved) {
+          if (escalations.length > 0) {
+            const sorted = [...escalations].sort((a, b) => (b.hierarchy_level || 0) - (a.hierarchy_level || 0));
+            requiredApprover = sorted[0].escalate_to;
+          } else {
+            requiredApprover = approvalTier?.approver || 'Procurement Manager';
+          }
+        }
 
         await delay(500);
-        send('step', { step: 'logged', status: 'done', pct: 100, thinking: `Confidence: ${confidence}%. ${isAutoApproved ? 'Auto-approved ✓' : 'Requires human review'}` });
+        send('step', { step: 'logged', status: 'done', pct: 100, thinking: `Confidence: ${confidence}%. ${isAutoApproved ? 'Auto-approved ✓' : `Requires approval from ${requiredApprover}`}` });
 
         // ── Final result ─────────────────────────────────────────────
         const result = {
@@ -201,7 +217,7 @@ export async function POST(req) {
           supplier_shortlist: rankedSuppliers.map(s => ({ ...s, composite_score_pct: Math.round(s.composite_score * 100) })),
           escalations,
           bundling_opportunity: bundlingOpportunity,
-          recommendation: { ...decision, is_auto_approved: isAutoApproved },
+          recommendation: { ...decision, is_auto_approved: isAutoApproved, required_approver: requiredApprover },
           audit_trail: {
             policies_checked: ['AT-001','AT-002','AT-003','AT-004','AT-005','ER-001','ER-002','ER-004','ER-005'],
             supplier_ids_evaluated: rankedSuppliers.map(s => s.supplier_id),

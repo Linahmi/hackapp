@@ -160,7 +160,25 @@ export async function POST(req) {
       escalations
     );
 
-    const isAutoApproved = escalations.length === 0 && confidence > 70 && (rankedSuppliers[0]?.risk_score || 100) < 30;
+    // Auto-approve ONLY for Tier 1 (low-value, self-service) with no escalations
+    const isAutoApproved =
+      approvalTier?.tier === 1 &&
+      escalations.length === 0 &&
+      confidence > 70 &&
+      (rankedSuppliers[0]?.risk_score || 100) < 30;
+
+    // Determine required approver based on the highest escalation level, or fall back to the approval tier
+    let requiredApprover = null;
+    if (!isAutoApproved) {
+      if (escalations.length > 0) {
+        // Pick the highest-level escalation's role
+        const sorted = [...escalations].sort((a, b) => (b.hierarchy_level || 0) - (a.hierarchy_level || 0));
+        requiredApprover = sorted[0].escalate_to;
+      } else {
+        // No escalation fired, but tier requires sign-off
+        requiredApprover = approvalTier?.approver || 'Procurement Manager';
+      }
+    }
 
     // 11. Return structure
     return NextResponse.json({
@@ -185,7 +203,8 @@ export async function POST(req) {
       bundling_opportunity: bundlingOpportunity,
       recommendation: {
         ...decision,
-        is_auto_approved: isAutoApproved
+        is_auto_approved: isAutoApproved,
+        required_approver: requiredApprover,
       },
       audit_trail: {
         policies_checked: ['AT-001','AT-002','AT-003','AT-004','AT-005','ER-001','ER-002','ER-004','ER-005'],
