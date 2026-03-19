@@ -47,13 +47,19 @@ export async function POST(req) {
         const reqId = getNextRequestId();
 
         // ── Step 1: Parsing (20%) ────────────────────────────────────
-        send('step', { step: 'parsing', status: 'active', pct: 0, requestId: reqId, thinking: `[${reqId}] Reading your request and extracting product details, quantities, budget, delivery dates…` });
+        let parsingThinking = `[${reqId}] Analyzing request context...\n`;
+        send('step', { step: 'parsing', status: 'active', pct: 0, requestId: reqId, thinking: parsingThinking });
 
         const data = getData();
         const originalRequest = request_id
           ? (data.requests || []).find(r => r.request_id === request_id) || {}
           : {};
-        const structuredRequest = await parseRequest(text, originalRequest);
+          
+        const structuredRequest = await parseRequest(text, originalRequest, (chunk) => {
+          parsingThinking += chunk;
+          send('step', { step: 'parsing', status: 'active', pct: 10, requestId: reqId, thinking: parsingThinking });
+        });
+        
         const historicalContext = findHistoricalContext(structuredRequest.category_l2, structuredRequest.delivery_countries || []);
         const enrichedRequest = fillGapsFromHistory(structuredRequest, historicalContext, structuredRequest.currency || 'EUR');
 
@@ -148,7 +154,14 @@ export async function POST(req) {
           : null;
         const escalations = buildEscalations(triggers, estimatedSavings);
 
-        const decision = await generateDecision(enrichedRequest, validationResult, policyResult, rankedSuppliers, escalations, historicalContext);
+        let decisionThinking = `Evaluating ${rankedSuppliers.length} suppliers against ${issues.length} issues and ${escalations.length} escalations...\n\n`;
+        send('step', { step: 'decision', status: 'active', pct: 65, thinking: decisionThinking });
+
+        const decision = await generateDecision(enrichedRequest, validationResult, policyResult, rankedSuppliers, escalations, historicalContext, (chunk) => {
+          decisionThinking += chunk;
+          send('step', { step: 'decision', status: 'active', pct: 75, thinking: decisionThinking });
+        });
+        
         const bundlingOpportunity = detectBundlingOpportunity(enrichedRequest, rankedSuppliers);
 
         send('step', { step: 'decision', status: 'done', pct: 85, thinking: decision.status === 'recommended' ? `Recommending ${decision.preferred_supplier_if_resolved || rankedSuppliers[0]?.supplier_name || 'top supplier'}` : 'Cannot auto-approve — escalation required' });
