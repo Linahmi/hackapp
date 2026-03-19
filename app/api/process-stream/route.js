@@ -17,7 +17,7 @@ function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days
   return shortlist;
 }
 
-function computeConfidenceLocal(issues, suppliers, preferredAvailable, historicalMatch, escalations) {
+function computeConfidenceLocal(issues, suppliers, preferredAvailable, historicalMatch, escalations, preferredStatedButUnresolved = false) {
   let score = 100;
   if (issues && issues.length > 0) score -= (20 * issues.length);
   if (!suppliers || suppliers.length === 0) score -= 20;
@@ -25,6 +25,8 @@ function computeConfidenceLocal(issues, suppliers, preferredAvailable, historica
   if (hasBlocking) score -= 30;
   if (preferredAvailable) score += 10;
   if (historicalMatch) score += 10;
+  // Penalty when buyer stated a preferred supplier but it could not be resolved
+  if (preferredStatedButUnresolved) score -= 15;
   return Math.min(100, Math.max(0, score));
 }
 
@@ -180,10 +182,12 @@ export async function POST(req) {
         await delay(600);
         send('step', { step: 'logged', status: 'active', pct: 90, thinking: 'Writing audit trail and computing confidence score…' });
 
+        const preferredStatedButUnresolved = !!enrichedRequest.preferred_supplier_stated && !preferredCheck;
         const confidence = computeConfidenceLocal(
           validationResult.issues, rankedSuppliers,
           preferredCheck?.is_preferred && !preferredCheck?.is_restricted,
-          historicalContext.length > 0, escalations
+          historicalContext.length > 0, escalations,
+          preferredStatedButUnresolved
         );
         // Auto-approve ONLY for Tier 1 (low-value, self-service) with no escalations
         const isAutoApproved =
