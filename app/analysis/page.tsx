@@ -77,12 +77,12 @@ export default function AnalysisPage() {
         <AuditPDFExport data={result} />
 
         <div className="w-full mt-8 animate-fade-slide-up delay-600">
-          {!intelFetched && !intelLoading && result?.supplier_shortlist?.length > 0 && (
+          {!intelFetched && !intelLoading && result && (
             <button
               onClick={async () => {
                 setIntelLoading(true);
                 try {
-                  const names = result.supplier_shortlist.map((s: any) => s.supplier_name);
+                  const names = (result.supplier_shortlist || []).map((s: any) => s.supplier_name);
                   const category = result.request_interpretation?.category_l2 ?? result.request_interpretation?.category_l1 ?? "enterprise hardware";
                   const region = result.request_interpretation?.delivery_countries?.[0] ?? "Europe";
                   const res = await fetch("/api/supplier-intel", {
