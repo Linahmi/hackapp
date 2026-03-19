@@ -1,6 +1,6 @@
 {
   "request_id": "REQ-000004",
-  "processed_at": "2026-03-19T02:13:47.295Z",
+  "processed_at": "2026-03-19T04:07:50.073Z",
   "confidence_score": 50,
   "steps": [
     {
@@ -41,9 +41,8 @@
     "required_by_date": "2026-03-20",
     "days_until_required": 6,
     "preferred_supplier_stated": "Dell Enterprise Europe",
-    "detected_language": "en",
     "gaps": [],
-    "demand_reframe_flag": false
+    "detected_language": "en"
   },
   "validation": {
     "completeness": "fail",
@@ -253,6 +252,6 @@
     ],
     "historical_awards_consulted": true,
     "assumptions": [],
-    "generated_at": "2026-03-19T02:13:47.295Z"
+    "generated_at": "2026-03-19T04:07:50.073Z"
   }
 }

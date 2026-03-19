@@ -1,21 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import RequestInput          from "@/components/RequestInput";
-import ProgressStepper       from "@/components/ProgressStepper";
+import RequestInput from "@/components/RequestInput";
+import ProgressStepper from "@/components/ProgressStepper";
 import RequestInterpretation from "@/components/RequestInterpretation";
-import PolicyCheck           from "@/components/PolicyCheck";
-import SupplierComparison    from "@/components/SupplierComparison";
-import DecisionCard          from "@/components/DecisionCard";
-import AuditTrail            from "@/components/AuditTrail";
-import { DecisionRow }       from "@/components/agent/DecisionRow";
+import PolicyCheck from "@/components/PolicyCheck";
+import SupplierComparison from "@/components/SupplierComparison";
+import DecisionCard from "@/components/DecisionCard";
+import AuditTrail from "@/components/AuditTrail";
+import { DecisionRow } from "@/components/agent/DecisionRow";
 
 type Stage = "idle" | "intake" | "processing" | "done" | "error";
 
 export default function Home() {
-  const [text,   setText]   = useState("");
-  const [stage,  setStage]  = useState<Stage>("idle");
-  const [error,  setError]  = useState<string | null>(null);
+  const [text, setText] = useState("");
+  const [stage, setStage] = useState<Stage>("idle");
+  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
 
   useEffect(() => {
@@ -37,30 +37,23 @@ export default function Home() {
 
     try {
       setStage("intake");
-      const resIntake = await fetch("/api/intake", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
-      });
-      const dataIntake = await resIntake.json();
-      if (!resIntake.ok) throw new Error(dataIntake.error || "Intake failed");
-
-      // Artificial delay to allow 'Parsing' animation
-      await new Promise(r => setTimeout(r, 1400));
-
+      await new Promise(r => setTimeout(r, 800));
+      
       setStage("processing");
-      const resProcess = await fetch("/api/process", {
+      const res = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataIntake)
+        body: JSON.stringify({ 
+          text, 
+          request_id: "REQ-000004" 
+        })
       });
-      const dataProcess = await resProcess.json();
-      if (!resProcess.ok) throw new Error(dataProcess.error || "Processing failed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Processing failed");
 
-      // Artificial delay to allow processing animations
-      await new Promise(r => setTimeout(r, 2200));
+      await new Promise(r => setTimeout(r, 800));
 
-      setResult(dataProcess);
+      setResult(data);
       setStage("done");
     } catch (err: any) {
       setError(err.message ?? "Unknown error");
