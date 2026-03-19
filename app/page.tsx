@@ -29,6 +29,7 @@ export default function Home() {
   // Counters
   const [reqProcessed, setReqProcessed] = useState(0);
   const [autoApproved, setAutoApproved] = useState(0);
+  const [statsTarget, setStatsTarget] = useState({ total: 304, autoApprovedPct: 78 });
 
   // Real-time pipeline state
   const [activeStep, setActiveStep] = useState(0);
@@ -62,24 +63,32 @@ export default function Home() {
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    // Counter animation
-    const duration = 2000; // 2 seconds
-    const interval = 20;
-    const steps = duration / interval;
-    let step = 0;
-    const timer = setInterval(() => {
-      step++;
-      setReqProcessed(Math.min(304, Math.floor((304 / steps) * step)));
-      setAutoApproved(Math.min(78, Math.floor((78 / steps) * step)));
-      if (step >= steps) {
-        clearInterval(timer);
-        setReqProcessed(304);
-        setAutoApproved(78);
-      }
-    }, interval);
+    // Fetch real stats then animate to them
+    let animTimer: ReturnType<typeof setInterval> | null = null;
+    fetch("/api/stats")
+      .then((r) => r.ok ? r.json() : Promise.resolve(null))
+      .then((data) => {
+        const target = data ?? { total: 0, autoApprovedPct: 0 };
+        setStatsTarget(target);
+        const duration = 2000;
+        const intervalMs = 20;
+        const steps = duration / intervalMs;
+        let step = 0;
+        animTimer = setInterval(() => {
+          step++;
+          setReqProcessed(Math.min(target.total, Math.floor((target.total / steps) * step)));
+          setAutoApproved(Math.min(target.autoApprovedPct, Math.floor((target.autoApprovedPct / steps) * step)));
+          if (step >= steps) {
+            clearInterval(animTimer!);
+            setReqProcessed(target.total);
+            setAutoApproved(target.autoApprovedPct);
+          }
+        }, intervalMs);
+      })
+      .catch(() => {});
 
     return () => {
-      clearInterval(timer);
+      if (animTimer) clearInterval(animTimer);
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
@@ -246,7 +255,7 @@ export default function Home() {
           <div className="w-px h-16 bg-gray-300 dark:bg-gray-800 transition-colors duration-300" />
           <div className="flex flex-col items-center">
             <span className="text-5xl font-black text-gray-900 dark:text-white transition-colors duration-300">{autoApproved}%</span>
-            <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mt-2">Auto-Approved</span>
+            <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mt-2">Auto-Approved Rate</span>
           </div>
         </div>
 

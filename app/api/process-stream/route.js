@@ -131,7 +131,7 @@ export async function POST(req) {
 
         // ── Step 4: Decision (85%) ───────────────────────────────────
         await delay(800);
-        send('step', { step: 'decision', status: 'active', pct: 65, thinking: 'Generating AI-powered sourcing recommendation — weighing compliance, pricing, risk, and delivery feasibility…' });
+        send('step', { step: 'decision', status: 'active', pct: 65, thinking: 'Generating sourcing recommendation — weighing compliance, pricing, risk, and delivery feasibility…' });
 
         // Enrich validation issues with lead-time infeasibility (needs rankedSuppliers)
         if (enrichedRequest.days_until_required && rankedSuppliers.length > 0) {
@@ -147,6 +147,16 @@ export async function POST(req) {
             issues.push({ id:'V-006', severity:'high', type:'policy_conflict', description:`Policy AT-00${approvalTier.tier} requires ${approvalTier.quotes_required} quotes. Single-supplier instruction cannot override.` });
           }
         }
+
+        // ── Case type ────────────────────────────────────────────────
+        const hasImpossibleDate = issues.some(i => i.type === 'deadline_passed' || i.type === 'lead_time_infeasible');
+        const hasUnclearIntent  = structuredRequest.unclear_intent === true || (!enrichedRequest.category_l2 && !enrichedRequest.category_l1);
+        let case_type;
+        if      (hasImpossibleDate)                                            case_type = 'FAILED_IMPOSSIBLE_DATE';
+        else if (hasUnclearIntent)                                             case_type = 'MORE_INFO_REQUIRED';
+        else if (rankedSuppliers.length === 0)                                 case_type = 'NO_SUPPLIER_AVAILABLE';
+        else if (structuredRequest.demand_reframe_flag && rankedSuppliers.length > 0) case_type = 'SIMILAR_NOT_EXACT_MATCH';
+        else                                                                   case_type = 'READY_FOR_VALIDATION';
 
         const enrichedForEscalation = {
           ...enrichedRequest,
@@ -240,6 +250,7 @@ export async function POST(req) {
           supplier_shortlist: rankedSuppliers.map(s => ({ ...s, composite_score_pct: Math.round(s.composite_score * 100) })),
           escalations,
           bundling_opportunity: bundlingOpportunity,
+          case_type,
           recommendation: { ...decision, is_auto_approved: isAutoApproved, required_approver: requiredApprover },
           audit_trail: {
             policies_checked: ['AT-001','AT-002','AT-003','AT-004','AT-005','ER-001','ER-002','ER-004','ER-005'],

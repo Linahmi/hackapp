@@ -83,6 +83,8 @@ function ScoreBar({ label, value, accent }: { label: string; value: number; acce
   );
 }
 
+
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function SupplierComparisonTable({
