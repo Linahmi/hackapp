@@ -23,11 +23,15 @@ function computeConfidenceLocal(issues, suppliers, preferredAvailable, historica
   if (!suppliers || suppliers.length === 0) score -= 20;
   const hasBlocking = escalations && escalations.some(e => e.blocking);
   if (hasBlocking) score -= 30;
+
   if (preferredAvailable) score += 10;
   if (historicalMatch) score += 10;
   // Penalty when buyer stated a preferred supplier but it could not be resolved
   if (preferredStatedButUnresolved) score -= 15;
-  return Math.min(100, Math.max(0, score));
+
+  const nonBlockingCount = escalations ? escalations.filter(e => !e.blocking).length : 0;
+  const cappedMax = nonBlockingCount > 0 ? 90 : 100;
+  return Math.min(cappedMax, Math.max(0, score));
 }
 
 const delay = (ms) => new Promise(r => setTimeout(r, 0)); // Artificial UI delays removed!
@@ -91,7 +95,7 @@ export async function POST(req) {
         const preferredCheck = enrichedRequest.preferred_supplier_stated ? checkPreferredSupplier(enrichedRequest.preferred_supplier_stated, enrichedRequest.category_l2, enrichedRequest.delivery_countries?.[0] || 'DE') : null;
         const categoryRules = checkCategoryRules(enrichedRequest.category_l1, enrichedRequest.category_l2);
         const geoRules = checkGeographyRules(enrichedRequest.delivery_countries || [], originalRequest?.data_residency_constraint || false);
-        const policyResult = { approval_tier: approvalTier, preferred_supplier: preferredCheck, category_rules: categoryRules, geography_rules: geoRules, violations: [] };
+        const policyResult = { approval_threshold: approvalTier, preferred_supplier: preferredCheck, category_rules: categoryRules, geography_rules: geoRules, violations: [] };
 
         await delay(800);
         const rulesSummary = issues.length === 0 ? 'All compliance checks passed ✓' : `Found ${issues.length} issue(s): ${issues.map(i => i.type).join(', ')}`;
@@ -125,7 +129,7 @@ export async function POST(req) {
 
         await delay(800);
         const scoringSummary = rankedSuppliers.length > 0
-          ? `Ranked ${rankedSuppliers.length} suppliers. Top: ${rankedSuppliers[0].supplier_name} (score ${rankedSuppliers[0].composite_score}/100, ${rankedSuppliers[0].unit_price} ${enrichedRequest.currency || 'EUR'}/unit)`
+          ? `Ranked ${rankedSuppliers.length} suppliers. Top: ${rankedSuppliers[0].supplier_name} (score ${Math.round(rankedSuppliers[0].composite_score * 100)}/100, ${rankedSuppliers[0].unit_price} ${enrichedRequest.currency || 'EUR'}/unit)`
           : 'No eligible suppliers found for this configuration';
         send('step', { step: 'scoring', status: 'done', pct: 60, thinking: scoringSummary });
 
