@@ -15,6 +15,7 @@ import { DecisionRow } from "@/components/agent/DecisionRow";
 import { EscalationRow } from "@/components/agent/EscalationRow";
 import { DecisionJustification } from "@/components/agent/DecisionJustification";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
+import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
 // ─── Demo fallback data (used when no API result is in sessionStorage) ────────
 
@@ -150,6 +151,10 @@ export default function SupplierDemoPage() {
   const [apiResult,    setApiResult]    = useState<any>(null);
   const [buyerRequest, setBuyerRequest] = useState(DEMO_REQUEST);
   const [mounted, setMounted] = useState(false);
+  const [marketIntel, setMarketIntel] = useState<SupplierIntelResult[]>([]);
+  const [intelLoading, setIntelLoading] = useState(false);
+  const [intelFetched, setIntelFetched] = useState(false);
+  const [intelError, setIntelError] = useState(false);
 
   // Prefer context result (survives SPA navigation, reset on refresh).
   // Fall back to sessionStorage for direct page loads where context may be empty.
@@ -169,6 +174,27 @@ export default function SupplierDemoPage() {
     } catch {}
   }, [contextResult]);
 
+
+  // ─── Market Intelligence auto-trigger ────────────────────────────────────
+
+  useEffect(() => {
+    if (!apiResult?.supplier_shortlist?.length || intelFetched || intelLoading) return;
+    const validSuppliers = apiResult.supplier_shortlist.filter((s: any) => s?.supplier_id);
+    if (!validSuppliers.length) return;
+    setIntelLoading(true);
+    const names = validSuppliers.map((s: any) => s.supplier_name);
+    const category = apiResult.request_interpretation?.category_l2 ?? apiResult.request_interpretation?.category_l1 ?? "enterprise hardware";
+    const region = apiResult.request_interpretation?.delivery_countries?.[0] ?? "Europe";
+    fetch("/api/supplier-intel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ suppliers: names, category, region }),
+    })
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((data) => setMarketIntel(data.results ?? []))
+      .catch(() => setIntelError(true))
+      .finally(() => { setIntelLoading(false); setIntelFetched(true); });
+  }, [apiResult?.supplier_shortlist]);
 
   // ─── Multi-Language detection ─────────────────────────────────────────────
   
@@ -652,6 +678,17 @@ export default function SupplierDemoPage() {
           ) : null}
         </div>
 
+
+        {(intelLoading || intelFetched) && !intelError && (
+          <div className="animate-fade-slide-up delay-900">
+            <MarketIntelCard results={marketIntel} loading={intelLoading} />
+          </div>
+        )}
+        {intelFetched && intelError && (
+          <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-5 py-4 text-sm font-medium text-amber-700 dark:text-amber-400 animate-fade-slide-up">
+            Live market intelligence unavailable — Exa.ai search could not be reached.
+          </div>
+        )}
 
       </div>
       </div>
