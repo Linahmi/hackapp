@@ -2,62 +2,98 @@
 
 import { useEffect, useState } from "react";
 
-const MOCK = [
-  { icon: "🖥️", label: "Product", value: "Laptops" },
-  { icon: "📦", label: "Quantity", value: "500 units" },
-  { icon: "📍", label: "Location", value: "Geneva" },
-  { icon: "💰", label: "Budget", value: "400k CHF" },
-];
+interface Interpretation {
+  category_l1?: string;
+  category_l2?: string;
+  quantity?: number;
+  unit_of_measure?: string;
+  budget_amount?: number;
+  currency?: string;
+  delivery_countries?: string[];
+  required_by_date?: string;
+  preferred_supplier_stated?: string;
+}
 
-export default function RequestInterpretation() {
+interface Props {
+  interpretation?: Interpretation;
+  confidence?: number;
+}
+
+export default function RequestInterpretation({ interpretation, confidence }: Props) {
   const [visible, setVisible] = useState(false);
-
-  // Trigger fade-in on mount
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(id);
   }, []);
 
+  if (!interpretation) return null;
+
+  const { category_l1, category_l2, quantity, unit_of_measure, budget_amount, currency, delivery_countries } = interpretation;
+
+  const chips = [
+    {
+      icon: "🖥️",
+      label: "Product",
+      value: [category_l1, category_l2].filter(Boolean).join(" › ") || "—",
+    },
+    {
+      icon: "📦",
+      label: "Quantity",
+      value: quantity != null ? `${quantity}${unit_of_measure ? " " + unit_of_measure : ""}` : "—",
+    },
+    {
+      icon: "📍",
+      label: "Location",
+      value: delivery_countries?.length ? delivery_countries.join(", ") : "—",
+    },
+    {
+      icon: "💰",
+      label: "Budget",
+      value: budget_amount != null ? `${currency ?? ""} ${Number(budget_amount).toLocaleString()}`.trim() : "—",
+    },
+  ];
+
+  const confColor =
+    (confidence ?? 0) >= 80 ? "#22c55e" : (confidence ?? 0) >= 50 ? "#f59e0b" : "#dc2626";
+
   return (
     <div
-      className={`w-full max-w-2xl mx-auto transition-all duration-500 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
-        }`}
+      className="w-full max-w-2xl transition-all duration-500 ease-out"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(12px)",
+      }}
     >
       <div
-        className="rounded-xl p-6 flex flex-col gap-5"
-        style={{ backgroundColor: "#1e2130", border: "1px solid #2a2f42" }}
+        className="rounded-xl p-5 flex flex-col gap-4"
+        style={{ backgroundColor: "#12151f", border: "1px solid #1e2130" }}
       >
-        {/* Title */}
-        <div className="flex items-center gap-2">
-          <svg
-            className="w-5 h-5 text-red-500 shrink-0"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span className="text-white font-semibold text-base tracking-tight">
-            Request Interpreted
-          </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 shrink-0" style={{ color: "#dc2626" }} viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+            </svg>
+            <span className="text-white text-sm font-semibold">Request Interpreted</span>
+          </div>
+          {confidence != null && (
+            <span className="text-xs font-semibold" style={{ color: confColor }}>
+              {confidence}% confidence
+            </span>
+          )}
         </div>
 
-        {/* Chips */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {MOCK.map(({ icon, label, value }) => (
+          {chips.map(({ icon, label, value }) => (
             <div
               key={label}
-              className="flex flex-col gap-1 rounded-lg px-4 py-3"
-              style={{ backgroundColor: "#13161f", border: "1px solid #2a2f42" }}
+              className="flex flex-col gap-1.5 rounded-lg px-4 py-3"
+              style={{ backgroundColor: "#0f1117", border: "1px solid #1a1d27" }}
             >
               <span className="text-lg leading-none">{icon}</span>
-              <span className="text-gray-500 text-xs uppercase tracking-wider mt-1">
+              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "#6b7280" }}>
                 {label}
               </span>
-              <span className="text-white text-sm font-semibold">{value}</span>
+              <span className="text-sm font-semibold text-white leading-tight">{value}</span>
             </div>
           ))}
         </div>

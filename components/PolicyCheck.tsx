@@ -2,86 +2,113 @@
 
 import { useEffect, useState } from "react";
 
-type Status = "ok" | "violated" | "human";
-
-interface CheckItem {
-  status: Status;
-  label: string;
-  detail: string;
+interface Issue {
+  issue_id: string;
+  severity: "critical" | "high" | "medium" | "low";
+  type: string;
+  description: string;
+  action_required?: string;
 }
 
-const CHECKS: CheckItem[] = [
-  { status: "ok",       label: "Budget threshold",        detail: "Within approved limit"          },
-  { status: "ok",       label: "Preferred supplier",      detail: "Dell on preferred vendor list"  },
-  { status: "violated", label: "Delivery timeline",       detail: "2 weeks below 30-day minimum"   },
-  { status: "human",    label: "Approval level",          detail: "Requires VP sign-off >250k CHF" },
-  { status: "ok",       label: "Restricted supplier check", detail: "No sanctions matches found"   },
-  { status: "violated", label: "Single-source rule",      detail: "3 quotes required above 100k"  },
-];
+interface Props {
+  validation?: {
+    completeness: "pass" | "fail";
+    issues_detected: Issue[];
+  };
+}
 
-const ICON: Record<Status, { symbol: string; color: string }> = {
-  ok:       { symbol: "✓", color: "text-red-500"  },
-  violated: { symbol: "✗", color: "text-red-500"  },
-  human:    { symbol: "!", color: "text-white"     },
+type Status = "ok" | "violated" | "human";
+
+const STATUS_CFG: Record<Status, { symbol: string; color: string; bg: string; badge: string }> = {
+  ok:       { symbol: "✓", color: "#dc2626", bg: "rgba(220,38,38,0.06)",  badge: "Pass"   },
+  violated: { symbol: "✗", color: "#dc2626", bg: "rgba(220,38,38,0.10)",  badge: "Fail"   },
+  human:    { symbol: "!", color: "#ffffff", bg: "rgba(255,255,255,0.04)", badge: "Review" },
 };
 
-export default function PolicyCheck() {
-  const [revealed, setRevealed] = useState(0);
+function toStatus(severity: string): Status {
+  if (severity === "critical" || severity === "high") return "violated";
+  if (severity === "medium") return "human";
+  return "ok";
+}
+
+export default function PolicyCheck({ validation }: Props) {
+  const [count, setCount] = useState(0);
+
+  const issues = validation?.issues_detected ?? [];
+  const items: { label: string; detail: string; status: Status }[] =
+    issues.length > 0
+      ? issues.map((iss) => ({
+          label:  iss.type || iss.issue_id,
+          detail: iss.description,
+          status: toStatus(iss.severity),
+        }))
+      : [{ label: "All checks passed", detail: "Request is complete and policy-compliant", status: "ok" }];
 
   useEffect(() => {
-    if (revealed >= CHECKS.length) return;
-    const id = setTimeout(() => setRevealed((n) => n + 1), 180);
+    if (count >= items.length) return;
+    const id = setTimeout(() => setCount((c) => c + 1), 220);
     return () => clearTimeout(id);
-  }, [revealed]);
+  }, [count, items.length]);
+
+  if (!validation) return null;
+
+  const pass = validation.completeness === "pass";
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-2xl">
       <div
-        className="rounded-xl p-6 flex flex-col gap-4"
-        style={{ backgroundColor: "#1e2130", border: "1px solid #2a2f42" }}
+        className="rounded-xl p-5 flex flex-col gap-4"
+        style={{ backgroundColor: "#12151f", border: "1px solid #1e2130" }}
       >
-        {/* Title */}
-        <div className="flex items-center gap-2">
-          <svg
-            className="w-5 h-5 text-red-500 shrink-0"
-            viewBox="0 0 20 20"
-            fill="currentColor"
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 shrink-0" style={{ color: "#dc2626" }} viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+            </svg>
+            <span className="text-white text-sm font-semibold">Compliance Checks</span>
+          </div>
+          <span
+            className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+            style={{
+              backgroundColor: pass ? "rgba(34,197,94,0.12)" : "rgba(220,38,38,0.12)",
+              color: pass ? "#22c55e" : "#dc2626",
+            }}
           >
-            <path
-              fillRule="evenodd"
-              d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span className="text-white font-semibold text-base tracking-tight">
-            Compliance Checks
+            {pass ? "Pass" : "Fail"}
           </span>
         </div>
 
-        {/* Check list */}
         <div className="flex flex-col gap-2">
-          {CHECKS.map((item, i) => {
-            const { symbol, color } = ICON[item.status];
-            const isVisible = i < revealed;
+          {items.map(({ label, detail, status }, i) => {
+            const cfg  = STATUS_CFG[status];
+            const show = i < count;
             return (
               <div
-                key={item.label}
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-all duration-300 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-                }`}
-                style={{ backgroundColor: "#13161f", border: "1px solid #2a2f42" }}
+                key={i}
+                className="flex items-center gap-3 rounded-lg px-4 py-3 transition-all duration-300"
+                style={{
+                  backgroundColor: cfg.bg,
+                  border: "1px solid rgba(255,255,255,0.04)",
+                  opacity: show ? 1 : 0,
+                  transform: show ? "translateX(0)" : "translateX(-8px)",
+                }}
               >
-                <span className={`font-bold text-base w-4 shrink-0 ${color}`}>
-                  {symbol}
+                <span
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                  style={{ backgroundColor: "rgba(255,255,255,0.05)", color: cfg.color }}
+                >
+                  {cfg.symbol}
                 </span>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-white text-sm font-medium leading-tight">
-                    {item.label}
-                  </span>
-                  <span className="text-gray-500 text-xs mt-0.5 truncate">
-                    {item.detail}
-                  </span>
+                <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                  <span className="text-sm font-medium text-white">{label}</span>
+                  <span className="text-xs truncate" style={{ color: "#6b7280" }}>{detail}</span>
                 </div>
+                <span
+                  className="text-xs font-semibold px-2 py-0.5 rounded shrink-0"
+                  style={{ color: cfg.color, backgroundColor: "rgba(255,255,255,0.04)" }}
+                >
+                  {cfg.badge}
+                </span>
               </div>
             );
           })}
