@@ -202,7 +202,7 @@ export default function Home() {
     <div className="relative min-h-[calc(100vh-65px)] flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-[#0f1117] transition-colors duration-300">
       {/* Pure CSS Mesh Animated Background */}
       <div
-        className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-gradient-to-b from-white to-gray-100 dark:from-[#0f1117] dark:to-[#161a25] transition-colors duration-1000"
+        className="absolute inset-0 z-0 overflow-hidden pointer-events-none transition-colors duration-1000"
         style={{
           transform: `translateY(-${scrollY * 0.4}px)`,
           opacity: Math.max(0, 1 - scrollY / 600)
@@ -223,6 +223,8 @@ export default function Home() {
             WebkitMaskImage: `radial-gradient(ellipse at 50% 30%, black 40%, transparent 80%)`
           }}
         />
+        {/* Smooth gradient fade to page background */}
+        <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-gray-50 dark:from-[#0f1117] to-transparent" />
       </div>
 
       <div className="relative z-10 w-full max-w-5xl flex flex-col items-center mt-8 mb-16">
