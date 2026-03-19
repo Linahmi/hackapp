@@ -1,21 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogoClick = () => {
+    sessionStorage.clear();
+    localStorage.removeItem("buyer_request");
+    window.location.href = "/";
+  };
 
   return (
     <nav
-      className="w-full flex items-center justify-between px-6 py-3"
+      className="w-full flex items-center justify-between px-6 py-3 sticky top-0 z-50 backdrop-blur-md bg-opacity-90"
       style={{ backgroundColor: "var(--bg-app)", borderBottom: "1px solid var(--border-subtle)" }}
     >
       <div className="flex items-center gap-3">
-        <span className="text-[color:var(--text-main)] font-bold text-lg tracking-tight select-none">
+        <button 
+          onClick={handleLogoClick}
+          className="text-white font-bold text-xl tracking-tight select-none cursor-pointer hover:text-red-500 transition-colors"
+        >
           ProcureTrace
-        </span>
+        </button>
       </div>
 
       {/* Navigation Links */}

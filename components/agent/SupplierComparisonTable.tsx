@@ -87,20 +87,20 @@ function ScoreBar({ label, value, accent }: { label: string; value: number; acce
 function SensitivityAnalysis({ factors }: { factors: SensitivityFactor[] }) {
   const max = Math.max(...factors.map((f) => f.impact), 1);
   return (
-    <div className="rounded-xl p-5 shadow-sm" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
-      <h3 className="text-sm font-semibold text-[color:var(--text-main)]">Sensitivity Analysis</h3>
-      <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
+    <div className="rounded-xl p-6 shadow-sm bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130]">
+      <h3 className="text-sm font-bold text-gray-900 dark:text-white">Sensitivity Analysis</h3>
+      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">
         Relative influence of each factor on the final recommendation
       </p>
-      <div className="mt-4 space-y-3">
+      <div className="mt-5 space-y-4">
         {factors.map((f) => {
           const pct = Math.round((f.impact / max) * 100);
           return (
-            <div key={f.label} className="flex items-center gap-3">
-              <span className="w-32 shrink-0 text-sm" style={{ color: "var(--text-muted)" }}>{f.label}</span>
-              <div className="flex-1 overflow-hidden rounded-full h-2.5" style={{ backgroundColor: "var(--border-subtle)" }}>
+            <div key={f.label} className="flex items-center gap-4">
+              <span className="w-32 shrink-0 text-sm font-semibold text-gray-600 dark:text-gray-300">{f.label}</span>
+              <div className="flex-1 overflow-hidden rounded-full h-2.5 bg-gray-100 dark:bg-gray-800">
                 <div
-                  className="h-full rounded-full transition-all duration-300"
+                  className="h-full rounded-full transition-all duration-300 relative overflow-hidden"
                   style={{ width: `${pct}%`, backgroundColor: BRAND_RED }}
                 />
               </div>
@@ -156,15 +156,15 @@ export function SupplierComparisonTable({
 
       {/* Source tags */}
       {sourceTags && sourceTags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Sources:</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-2 text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Sources:</span>
           {sourceTags.map((t, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs" style={{ backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-card)", color: "var(--text-muted)" }}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5 text-gray-600 dark:text-gray-400"
             >
-              <span className="font-medium" style={{ color: "var(--text-main)" }}>{t.label}</span>
-              <span style={{ color: "var(--text-muted)" }}>·</span>
+              <span className="font-bold text-gray-900 dark:text-gray-200">{t.label}</span>
+              <span className="opacity-50">·</span>
               <span>{t.source}</span>
               <span className={`rounded px-1 py-0.5 text-[10px] font-semibold tracking-wide ${
                 t.method === "stated" ? "bg-slate-700 text-slate-300" : "bg-indigo-900/60 text-indigo-300"
@@ -177,21 +177,21 @@ export function SupplierComparisonTable({
       )}
 
       {/* Supplier table */}
-      <div className="overflow-hidden rounded-xl shadow-sm" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+      <div className="overflow-hidden rounded-xl shadow-sm bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b" style={{ backgroundColor: "var(--bg-hover)", borderColor: "var(--border-subtle)" }}>
+            <tr className="border-b bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/5">
               {["Supplier", "Price → TCO", "Risk", "ESG", "Score"].map((h) => (
                 <th
                   key={h}
-                  className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}
+                  className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400"
                 >
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y" style={{ borderColor: "var(--border-subtle)" }}>
+          <tbody className="divide-y divide-gray-100 dark:divide-white/5">
             {suppliers.map((s) => {
               const isBest    = s.badge === "best";
               const isBlocked = s.badge === "blocked";
@@ -213,23 +213,23 @@ export function SupplierComparisonTable({
                     className={`${rowBg} transition hover:bg-white/5`}
                     style={leftBorder}
                   >
-                    <td className="px-5 py-3.5 align-top">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-[color:var(--text-main)]">{s.name}</span>
+                    <td className="px-6 py-4 align-top">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-bold text-base text-gray-900 dark:text-white">{s.name}</span>
                         <Badge type={s.badge} />
                       </div>
                       {isBlocked && s.blockedReason && (
-                        <p className="mt-1 text-xs text-red-400/80">
+                        <p className="max-w-xs text-xs font-medium text-red-600 dark:text-red-400/80 mt-1">
                           Rule violation: {s.blockedReason}
                         </p>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 align-top">
-                      <span className="font-medium" style={{ color: "var(--text-main)" }}>{s.price}</span>
-                      <span className="mx-1.5" style={{ color: "var(--text-muted)" }}>→</span>
-                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>TCO {s.tco}</span>
+                    <td className="px-6 py-4 align-top">
+                      <span className="font-bold text-gray-900 dark:text-gray-200">{s.price}</span>
+                      <span className="mx-2 text-gray-400 dark:text-gray-500">→</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">TCO {s.tco}</span>
                     </td>
-                    <td className="px-5 py-3.5 align-top">
+                    <td className="px-6 py-4 align-top">
                       <Chip className={riskChip[s.risk]}>{s.risk}</Chip>
                     </td>
                     <td className="px-5 py-3.5 align-top">
@@ -282,14 +282,14 @@ export function SupplierComparisonTable({
 
       {/* Audit trail */}
       {auditTrail && auditTrail.length > 0 && (
-        <div className="rounded-xl px-5 py-4 shadow-sm" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
-          <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+        <div className="rounded-xl px-6 py-5 shadow-sm bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130]">
+          <h3 className="mb-5 text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
             Audit Trail
           </h3>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {auditTrail.map((entry, i) => (
               <li key={i} className="flex items-start gap-3">
-                <div className="flex flex-col items-center shrink-0 pt-1">
+                <div className="flex flex-col items-center shrink-0 pt-1.5">
                   <span className={`h-2 w-2 rounded-full ${auditDot[entry.status]}`} />
                   {i < auditTrail.length - 1 && (
                     <span className="mt-1 block w-px" style={{ height: 16, backgroundColor: "var(--border-subtle)" }} />

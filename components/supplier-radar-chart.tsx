@@ -30,16 +30,16 @@ export function SupplierRadarChart() {
     <div className="h-[400px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={supplierData}>
-          <PolarGrid stroke="#2d3140" strokeWidth={1} />
+          <PolarGrid stroke="var(--border-card)" strokeWidth={1} />
           <PolarAngleAxis
             dataKey="axis"
-            tick={{ fill: "#ffffff", fontSize: 13, fontWeight: 500 }}
+            tick={{ fill: "var(--text-main)", fontSize: 13, fontWeight: 600 }}
             tickLine={false}
           />
           <PolarRadiusAxis
             angle={90}
             domain={[0, 100]}
-            tick={{ fill: "#9ca3af", fontSize: 11 }}
+            tick={{ fill: "var(--text-muted)", fontSize: 11 }}
             tickCount={5}
             axisLine={false}
           />
@@ -69,20 +69,22 @@ export function SupplierRadarChart() {
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "#1a1d26",
-              border: "1px solid #2d3140",
-              borderRadius: "8px",
-              color: "#ffffff",
+              backgroundColor: "var(--bg-card)",
+              border: "1px solid var(--border-card)",
+              borderRadius: "12px",
+              color: "var(--text-main)",
+              padding: "12px",
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
             }}
-            labelStyle={{ color: "#ffffff", fontWeight: 600 }}
-            itemStyle={{ color: "#9ca3af" }}
+            labelStyle={{ color: "var(--text-main)", fontWeight: 700, marginBottom: "8px" }}
+            itemStyle={{ color: "var(--text-muted)", fontWeight: 600, paddingBottom: "4px" }}
           />
           <Legend
             wrapperStyle={{
               paddingTop: "20px",
             }}
             formatter={(value) => (
-              <span style={{ color: "#ffffff", fontSize: "14px" }}>{value}</span>
+              <span className="font-semibold text-sm transition-colors duration-300" style={{ color: "var(--text-muted)" }}>{value}</span>
             )}
           />
         </RadarChart>
