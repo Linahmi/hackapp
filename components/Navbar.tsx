@@ -9,7 +9,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className="w-full flex items-center justify-between px-6 py-3 no-print"
+      className="w-full flex items-center justify-between px-6 py-3"
       style={{ backgroundColor: "var(--bg-app)", borderBottom: "1px solid var(--border-subtle)" }}
     >
       <div className="flex items-center gap-3">
@@ -26,9 +26,9 @@ export default function Navbar() {
         >
           Buyer Portal
         </Link>
-        <Link
-          href="/supplier"
-          className={`text-sm font-semibold transition-colors ${(pathname === "/supplier" || pathname?.startsWith("/supplier-demo")) ? "text-[color:var(--text-main)]" : "text-[color:var(--text-muted)] hover:opacity-70"}`}
+        <Link 
+          href="/supplier-demo" 
+          className={`text-sm font-semibold transition-colors ${pathname?.startsWith("/supplier-demo") ? "text-[color:var(--text-main)]" : "text-[color:var(--text-muted)] hover:opacity-70"}`}
         >
           Supplier Portal
         </Link>

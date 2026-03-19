@@ -178,7 +178,7 @@ export function DecisionRow({ bestName, bestScore, bestPrice, isAutoApproved, st
                     onClick={handleApprove}
                     className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors ${
                       isAutoApproved
-                        ? "bg-emerald-600 hover:bg-emerald-500"
+                        ? "bg-[#dc2626] hover:bg-[#b91c1c]"
                         : "bg-amber-600 hover:bg-amber-500"
                     }`}
                   >

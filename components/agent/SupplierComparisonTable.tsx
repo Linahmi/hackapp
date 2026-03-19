@@ -63,7 +63,7 @@ function Chip({ children, className }: { children: React.ReactNode; className: s
 
 function Badge({ type }: { type: Supplier["badge"] }) {
   if (type === "best")
-    return <Chip className="border-emerald-600 bg-emerald-900/50 text-emerald-400">Best match</Chip>;
+    return <Chip className="border-[#dc2626] bg-[#dc2626]/20 text-[#dc2626]">Best match</Chip>;
   if (type === "blocked")
     return <Chip className="border-red-700 bg-red-900/50 text-red-400">Blocked</Chip>;
   return null;
@@ -195,14 +195,14 @@ export function SupplierComparisonTable({
             {suppliers.map((s) => {
               const isBest    = s.badge === "best";
               const isBlocked = s.badge === "blocked";
-              const barAccent = isBest ? "#10B981" : isBlocked ? "#4B5563" : BRAND_RED;
+              const barAccent = isBest ? "#dc2626" : isBlocked ? "#4B5563" : BRAND_RED;
               const rowBg     = isBest
-                ? "bg-emerald-900/10"
+                ? "bg-[#dc2626]/5"
                 : isBlocked
                 ? "bg-red-900/10"
                 : "bg-transparent";
               const leftBorder = isBest
-                ? { borderLeft: "3px solid #10B981" }
+                ? { borderLeft: "3px solid #dc2626" }
                 : isBlocked
                 ? { borderLeft: "3px solid #EF4444" }
                 : { borderLeft: "3px solid transparent" };
@@ -237,7 +237,7 @@ export function SupplierComparisonTable({
                     </td>
                     <td className="px-5 py-3.5 align-top">
                       {s.score !== null ? (
-                        <span className={`font-bold tabular-nums ${isBest ? "text-emerald-400" : "text-gray-300"}`}>
+                        <span className={`font-bold tabular-nums ${isBest ? "text-[#dc2626]" : "text-gray-300"}`}>
                           <span className="text-lg">{s.score}</span>
                           <span className="text-xs font-medium opacity-60"> / 100</span>
                         </span>

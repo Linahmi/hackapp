@@ -186,7 +186,7 @@ export async function POST(req) {
       },
       audit_trail: {
         policies_checked: ['AT-001','AT-002','AT-003','AT-004','AT-005','ER-001','ER-002','ER-004','ER-005'],
-        suppliers_evaluated: rankedSuppliers.map(s => s.supplier_id),
+        supplier_ids_evaluated: rankedSuppliers.map(s => s.supplier_id),
         data_sources_used: ['requests.json','suppliers.csv','pricing.csv','policies.json','historical_awards.csv'],
         historical_awards_consulted: historicalContext.length > 0,
         assumptions: enrichedRequest.assumptions || [],

@@ -8,6 +8,7 @@ import BundlingOpportunityCard from "@/components/BundlingOpportunityCard";
 import AuditPDFExport        from "@/components/AuditPDFExport";
 import RequestInterpretation from "@/components/RequestInterpretation";
 import PolicyCheck           from "@/components/PolicyCheck";
+import { ProcurementAnalyticsWidget } from "@/components/ProcurementAnalyticsWidget";
 
 type Stage = "idle" | "streaming" | "done" | "error";
 
@@ -33,8 +34,18 @@ export default function Home() {
   }
 
   useEffect(() => {
-    const saved = localStorage.getItem("buyer_request");
-    if (saved) setText(saved);
+    const savedText = localStorage.getItem("buyer_request");
+    if (savedText) setText(savedText);
+
+    try {
+      if (sessionStorage.getItem("session_active") === "true") {
+        const savedResult = sessionStorage.getItem("procure_result");
+        if (savedResult) {
+          setResult(JSON.parse(savedResult));
+          setStage("done");
+        }
+      }
+    } catch {}
   }, []);
 
   async function handleLoadExample() {
@@ -115,6 +126,7 @@ export default function Home() {
             if (eventType === "result") {
               setResult(payload);
               sessionStorage.setItem("procure_result", JSON.stringify(payload));
+              sessionStorage.setItem("session_active", "true");
               setStage("done");
             }
 
@@ -144,6 +156,8 @@ export default function Home() {
       className="flex flex-col items-center gap-8 px-4 py-16"
       style={{ backgroundColor: "var(--bg-app)", minHeight: "calc(100vh - 49px)" }}
     >
+      <ProcurementAnalyticsWidget />
+
       <RequestInput
         value={text}
         onChange={handleTextChange}

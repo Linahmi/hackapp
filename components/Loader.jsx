@@ -1,8 +1,9 @@
 export default function Loader({ message = "Processing…" }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-zinc-500">
+    <div className="flex flex-col items-center justify-center gap-3 py-16" style={{ color: "var(--text-muted)" }}>
       <svg
-        className="h-8 w-8 animate-spin text-indigo-500"
+        className="h-8 w-8 animate-spin"
+        style={{ color: "#dc2626" }}
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"

@@ -11,32 +11,32 @@ export default function AuditTrail({ auditTrail, processedAt }) {
   } = auditTrail;
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
-      <div className="border-b border-zinc-100 px-5 py-3">
-        <h2 className="text-sm font-semibold text-zinc-800">Audit Trail</h2>
+    <div className="rounded-xl shadow-sm" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
+      <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        <h2 className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Audit Trail</h2>
       </div>
 
-      <div className="grid grid-cols-1 gap-px bg-zinc-100 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-px sm:grid-cols-2" style={{ backgroundColor: "var(--border-subtle)" }}>
         <Row label="Policies Checked">
           <Tags items={policies_checked} color="blue" />
         </Row>
         <Row label="Suppliers Evaluated">
-          <Tags items={supplier_ids_evaluated} color="zinc" />
+          <Tags items={supplier_ids_evaluated} color="muted" />
         </Row>
         <Row label="Pricing Tiers Applied">
-          <p className="text-sm text-zinc-700">{pricing_tiers_applied || "—"}</p>
+          <p className="text-sm" style={{ color: "var(--text-main)" }}>{pricing_tiers_applied || "—"}</p>
         </Row>
         <Row label="Data Sources">
-          <Tags items={data_sources_used} color="zinc" />
+          <Tags items={data_sources_used} color="muted" />
         </Row>
         <Row label="Historical Awards" className="sm:col-span-2">
-          <p className="text-sm text-zinc-700">
+          <p className="text-sm" style={{ color: "var(--text-main)" }}>
             {historical_awards_consulted ? historical_award_note ?? "Consulted." : "Not consulted."}
           </p>
         </Row>
         {processedAt && (
           <Row label="Processed At" className="sm:col-span-2">
-            <p className="text-sm text-zinc-700 font-mono">{processedAt}</p>
+            <p className="text-sm font-mono" style={{ color: "var(--text-main)" }}>{processedAt}</p>
           </Row>
         )}
       </div>
@@ -46,24 +46,25 @@ export default function AuditTrail({ auditTrail, processedAt }) {
 
 function Row({ label, children, className = "" }) {
   return (
-    <div className={`bg-white px-5 py-3 ${className}`}>
-      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-zinc-400">{label}</p>
+    <div className={`px-5 py-3 ${className}`} style={{ backgroundColor: "var(--bg-card)" }}>
+      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{label}</p>
       {children}
     </div>
   );
 }
 
-function Tags({ items, color = "zinc" }) {
-  const styles = {
-    blue: "bg-blue-50 text-blue-700",
-    zinc: "bg-zinc-100 text-zinc-600",
-  };
+function Tags({ items, color = "muted" }) {
   return (
     <div className="flex flex-wrap gap-1">
       {items.map((item) => (
         <span
           key={item}
-          className={`rounded px-1.5 py-0.5 text-xs font-mono font-medium ${styles[color] ?? styles.zinc}`}
+          className="rounded px-1.5 py-0.5 text-xs font-mono font-medium"
+          style={
+            color === "blue"
+              ? { backgroundColor: "rgba(59,130,246,0.1)", color: "#3b82f6" }
+              : { backgroundColor: "var(--bg-hover)", color: "var(--text-muted)" }
+          }
         >
           {item}
         </span>
