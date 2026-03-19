@@ -59,7 +59,7 @@ export default function AuditPDFExport({ data }: Props) {
 
     const auditRows = [
       { Item: "Policies Checked", Value: (data.audit_trail?.policies_checked || []).join(", ") || "None" },
-      { Item: "Suppliers Evaluated", Value: (data.audit_trail?.supplier_ids_evaluated || []).join(", ") || "None" },
+      { Item: "Suppliers Evaluated", Value: (data.audit_trail?.suppliers_evaluated || []).join(", ") || "None" },
       { Item: "Data Sources", Value: (data.audit_trail?.data_sources_used || []).join(", ") || "None" },
       { Item: "Historical Awards Consulted", Value: data.audit_trail?.historical_awards_consulted ? "Yes" : "No" },
       { Item: "Client Filter Scope", Value: data.audit_trail?.client_scope_used || "N/A" },
@@ -257,11 +257,11 @@ export default function AuditPDFExport({ data }: Props) {
         <tbody>
           <tr>
             <td style={{ width: "30%" }}><strong>Approval Tier</strong></td>
-            <td>Tier {data.policy_evaluation?.approval_threshold?.tier ?? "N/A"} ({data.policy_evaluation?.approval_threshold?.approver || "N/A"})</td>
+            <td>Tier {data.policy_evaluation?.approval_tier?.tier ?? "N/A"} ({data.policy_evaluation?.approval_tier?.approver || "N/A"})</td>
           </tr>
           <tr>
             <td><strong>Quotes Required</strong></td>
-            <td>{data.policy_evaluation?.approval_threshold?.quotes_required ?? "N/A"}</td>
+            <td>{data.policy_evaluation?.approval_tier?.quotes_required ?? "N/A"}</td>
           </tr>
           <tr>
             <td><strong>Preferred Supplier Check</strong></td>

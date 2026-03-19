@@ -8,17 +8,36 @@ const STEPS = [
   { id: "logged",   label: "Logged" },
 ];
 
+type PipelineStatus = "complete" | "awaiting_action" | "pending_resolution";
+
+const STATUS_CFG: Record<PipelineStatus, { label: string; color: string; pct: number }> = {
+  complete:            { label: "Pipeline complete",    color: "#22c55e", pct: 100 },
+  awaiting_action:     { label: "Awaiting action",      color: "#f59e0b", pct: 85  },
+  pending_resolution:  { label: "Pending resolution",   color: "#ef4444", pct: 85  },
+};
+
 interface Props {
   activeStep: number;
   thinkingText?: string;
   done?: boolean;
   pct?: number;
+  pipelineStatus?: PipelineStatus;
 }
 
-export default function ProgressStepper({ activeStep, thinkingText, done, pct }: Props) {
-  const percentage = done ? 100 : (pct ?? Math.round((activeStep / STEPS.length) * 100));
+export default function ProgressStepper({ activeStep, thinkingText, done, pct, pipelineStatus }: Props) {
+  const statusCfg = pipelineStatus ? STATUS_CFG[pipelineStatus] : null;
 
-  const headerLabel = done
+  const percentage = statusCfg
+    ? statusCfg.pct
+    : done
+    ? 100
+    : (pct ?? Math.round((activeStep / STEPS.length) * 100));
+
+  const barColor = statusCfg ? statusCfg.color : done ? "#22c55e" : "#dc2626";
+
+  const headerLabel = statusCfg
+    ? statusCfg.label
+    : done
     ? "Pipeline complete"
     : activeStep === 0
     ? "Parsing request…"
@@ -42,7 +61,7 @@ export default function ProgressStepper({ activeStep, thinkingText, done, pct }:
         </p>
         <span
           className="text-sm font-bold tabular-nums"
-          style={{ color: done ? "#22c55e" : "#dc2626" }}
+          style={{ color: barColor }}
         >
           {percentage}%
         </span>
@@ -57,7 +76,7 @@ export default function ProgressStepper({ activeStep, thinkingText, done, pct }:
           className="h-full rounded-full transition-all duration-700 ease-out"
           style={{
             width: `${percentage}%`,
-            backgroundColor: done ? "#22c55e" : "#dc2626",
+            backgroundColor: barColor,
           }}
         />
       </div>

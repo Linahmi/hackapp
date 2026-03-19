@@ -49,11 +49,22 @@ export default function PolicyCheck({ validation }: Props) {
         style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}
       >
         {/* Header */}
-        <div className="flex items-center gap-2.5 px-5 py-3.5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
-          <svg className="w-4 h-4 shrink-0" style={{ color: "#dc2626" }} viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-          </svg>
-          <span className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Compliance Checks</span>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+          <div className="flex items-center gap-2.5">
+            <svg className="w-4 h-4 shrink-0" style={{ color: "#dc2626" }} viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>Compliance Checks</span>
+          </div>
+          <span
+            className="text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wide"
+            style={pass
+              ? { backgroundColor: "rgba(34,197,94,0.12)", color: "#22c55e" }
+              : { backgroundColor: "rgba(220,38,38,0.12)", color: "#f87171" }
+            }
+          >
+            {pass ? "Pass" : "Fail"}
+          </span>
         </div>
 
         <div className="p-4 flex flex-col gap-3">

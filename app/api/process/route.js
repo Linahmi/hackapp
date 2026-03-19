@@ -29,10 +29,7 @@ function computeConfidenceLocal(issues, suppliers, preferredAvailable, historica
 
   if (preferredAvailable) score += 10;
   if (historicalMatch) score += 10;
-
-  const nonBlockingCount = escalations ? escalations.filter(e => !e.blocking).length : 0;
-  const cappedMax = nonBlockingCount > 0 ? 90 : 100;
-  return Math.min(cappedMax, Math.max(0, score));
+  return Math.min(100, Math.max(0, score));
 }
 
 export async function POST(req) {
@@ -58,8 +55,7 @@ export async function POST(req) {
     const issues = [];
     if (!enrichedRequest.quantity) issues.push({ id:'V-001', severity:'critical', type:'missing_quantity', description:'Quantity not specified', action:'Provide quantity' });
     if (!enrichedRequest.budget_amount) issues.push({ id:'V-002', severity:'critical', type:'missing_budget', description:'Budget not specified', action:'Provide budget' });
-    if (enrichedRequest.days_until_required !== null && enrichedRequest.days_until_required < 0) issues.push({ id:'V-003', severity:'critical', type:'deadline_passed', description:`Requested delivery date is in the past (${Math.abs(enrichedRequest.days_until_required)} days ago)`, action:'Provide a valid future delivery date' });
-    else if (enrichedRequest.days_until_required !== null && enrichedRequest.days_until_required < 10) issues.push({ id:'V-003', severity:'high', type:'lead_time_critical', description:'Delivery deadline is extremely tight', action:'Confirm if deadline is flexible' });
+    if (enrichedRequest.days_until_required !== null && enrichedRequest.days_until_required < 10) issues.push({ id:'V-003', severity:'high', type:'lead_time_critical', description:'Delivery deadline is extremely tight', action:'Confirm if deadline is flexible' });
 
     // 6. Policy
     const totalValue = enrichedRequest.budget_amount || 0;
@@ -67,7 +63,7 @@ export async function POST(req) {
     const preferredCheck = enrichedRequest.preferred_supplier_stated ? checkPreferredSupplier(enrichedRequest.preferred_supplier_stated, enrichedRequest.category_l2, enrichedRequest.delivery_countries?.[0] || 'DE') : null;
     const categoryRules = checkCategoryRules(enrichedRequest.category_l1, enrichedRequest.category_l2);
     const geoRules = checkGeographyRules(enrichedRequest.delivery_countries || [], originalRequest?.data_residency_constraint || false);
-    const policyResult = { approval_threshold: approvalTier, preferred_supplier: preferredCheck, category_rules: categoryRules, geography_rules: geoRules, violations: [] };
+    const policyResult = { approval_tier: approvalTier, preferred_supplier: preferredCheck, category_rules: categoryRules, geography_rules: geoRules, violations: [] };
 
     // 7. Score
     const rankedSuppliers = scoreSuppliersLocal(

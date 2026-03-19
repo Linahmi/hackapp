@@ -116,8 +116,13 @@ export default function AnalysisPage() {
         <ProgressStepper
           activeStep={5}
           thinkingText=""
-          done={true}
-          pct={100}
+          pipelineStatus={
+            result?.recommendation?.status === "cannot_proceed"
+              ? "pending_resolution"
+              : (result?.escalations ?? []).some((e: any) => e.blocking)
+              ? "awaiting_action"
+              : "complete"
+          }
         />
       </div>
 
@@ -140,9 +145,11 @@ export default function AnalysisPage() {
         <RequestInterpretation interpretation={result.request_interpretation} />
       </div>
 
-      <div className="w-full max-w-2xl animate-fade-slide-up delay-300">
-        <PolicyCheck validation={result.validation} />
-      </div>
+      {result.case_type === "READY_FOR_VALIDATION" && (
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-300">
+          <PolicyCheck validation={result.validation} />
+        </div>
+      )}
 
       {(result?.recommendation?.decision_summary || result?.recommendation?.rationale) && (
         <div className="w-full max-w-2xl animate-fade-slide-up delay-350">
@@ -180,9 +187,11 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      <div className="w-full max-w-2xl animate-fade-slide-up delay-450">
-        <BundlingOpportunityCard bundlingOpportunity={result.bundling_opportunity ?? null} />
-      </div>
+      {(result.case_type === 'READY_FOR_VALIDATION' || result.case_type === 'SIMILAR_NOT_EXACT_MATCH') && (
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-450">
+          <BundlingOpportunityCard bundlingOpportunity={result.bundling_opportunity ?? null} />
+        </div>
+      )}
 
       <div className="w-full max-w-2xl animate-fade-slide-up delay-600">
         <AuditPDFExport data={result} />
