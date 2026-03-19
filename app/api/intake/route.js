@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { runIntakeAgent } from "@/lib/intakeAgent";
+import { parseRequest } from "@/lib/intakeAgent";
 
 export async function POST(request) {
   let body;
@@ -19,7 +19,7 @@ export async function POST(request) {
   }
 
   try {
-    const result = await runIntakeAgent(text.trim(), context ?? {});
+    const result = await parseRequest(text.trim(), context ?? {});
     return NextResponse.json(result);
   } catch (err) {
     console.error("Intake agent error (fallback activated):", err);
