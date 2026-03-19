@@ -366,37 +366,37 @@ export default function SupplierDemoPage() {
     return (apiResult?.suppliers_excluded as any[]) ?? [];
   }, [apiResult]);
 
-  // ─── Early return for no data (MUST be after ALL hooks) ───────────────────
-  if (mounted && !apiResult) {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-[#0f1117] px-6 transition-colors duration-300">
-        <div className="flex flex-col items-center text-center max-w-lg p-8 rounded-3xl bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm animate-fade-slide-up">
-          <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 mb-6">
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
-            No analysis yet — Submit a purchase request in the Client Portal to see supplier comparison
-          </h2>
-          <button
-            onClick={() => router.push("/")}
-            className="mt-8 rounded-xl px-8 py-3.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-red-700 w-full"
-            style={{ backgroundColor: "#dc2626" }}
-          >
-            Go to Client Portal
-          </button>
-        </div>
-      </main>
-    );
-  }
+  const isLocked = mounted && !apiResult;
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen pb-16 transition-colors duration-300 bg-gray-50 dark:bg-[#0f1117]">
+    <main className="min-h-screen pb-16 transition-colors duration-300 bg-gray-50 dark:bg-[#0f1117] relative">
       
-      {/* Hero Header */}
+      {isLocked && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 pointer-events-auto">
+          <div className="flex flex-col items-center text-center max-w-lg p-8 rounded-3xl bg-[#12151f] border border-[#1e2130] shadow-2xl animate-fade-slide-up">
+            <div className="p-4 rounded-2xl bg-red-500/10 text-red-500 mb-6">
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2 tracking-tight">
+              No analysis yet — Submit a purchase request in the Client Portal to see supplier comparison
+            </h2>
+            <button
+              onClick={() => router.push("/")}
+              className="mt-8 rounded-xl px-8 py-3.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-red-700 w-full"
+              style={{ backgroundColor: "#dc2626" }}
+            >
+              Go to Client Portal
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className={`transition-all duration-300 ${isLocked ? "blur-[8px] pointer-events-none select-none" : ""}`} aria-hidden={isLocked}>
+        {/* Hero Header */}
       <div className="w-full bg-white dark:bg-[#12151f] border-b border-gray-200 dark:border-[#1e2130] px-6 py-12 md:px-12 md:py-16">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-end justify-between gap-6">
           <div className="animate-fade-slide-up delay-0">
@@ -602,6 +602,7 @@ export default function SupplierDemoPage() {
         </div>
 
 
+      </div>
       </div>
     </main>
   );

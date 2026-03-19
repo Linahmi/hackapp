@@ -27,28 +27,28 @@ export type SensitivityFactor = { label: string; impact: number };
 const BRAND_RED = "#C8102E";
 
 const riskChip = {
-  Low:  "border-emerald-700 bg-emerald-900/40 text-emerald-400",
-  Med:  "border-amber-700   bg-amber-900/40   text-amber-400",
-  High: "border-red-700     bg-red-900/40     text-red-400",
+  Low:  "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400",
+  Med:  "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400",
+  High: "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-400",
 };
 
 const esgChip = {
-  A: "border-emerald-700 bg-emerald-900/40 text-emerald-400",
-  B: "border-sky-700     bg-sky-900/40     text-sky-400",
-  C: "border-amber-700   bg-amber-900/40   text-amber-400",
-  D: "border-red-700     bg-red-900/40     text-red-400",
+  A: "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400",
+  B: "border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/40 text-sky-700 dark:text-sky-400",
+  C: "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400",
+  D: "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-400",
 };
 
 const auditDot = {
   approved:  "bg-emerald-500",
   blocked:   "bg-red-500",
-  escalated: "bg-amber-400",
+  escalated: "bg-amber-500",
 };
 
 const auditPill = {
-  approved:  "bg-emerald-900/50 text-emerald-400",
-  blocked:   "bg-red-900/50     text-red-400",
-  escalated: "bg-amber-900/50   text-amber-400",
+  approved:  "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400",
+  blocked:   "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400",
+  escalated: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400",
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -133,21 +133,20 @@ export function SupplierComparisonTable({
   return (
     <div className="space-y-4">
 
-      {/* Conflict banner */}
       {conflicts && conflicts.length > 0 && (
         <div className="space-y-2">
           {conflicts.map((c, i) => (
             <div
               key={i}
-              className="flex items-start gap-3 rounded-lg border border-amber-800/60 bg-amber-900/20 px-4 py-3 shadow-sm"
+              className="flex items-start gap-3 rounded-lg border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 shadow-sm"
               style={{ borderLeftWidth: 4, borderLeftColor: "#D97706" }}
             >
-              <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
               </svg>
               <div className="text-sm">
-                <span className="font-semibold text-amber-400">Conflict detected — </span>
-                <span className="text-amber-300/80">{c.message}</span>
+                <span className="font-semibold text-amber-700 dark:text-amber-400">Conflict detected — </span>
+                <span className="text-amber-600 dark:text-amber-300/80">{c.message}</span>
               </div>
             </div>
           ))}
@@ -167,7 +166,7 @@ export function SupplierComparisonTable({
               <span className="opacity-50">·</span>
               <span>{t.source}</span>
               <span className={`rounded px-1 py-0.5 text-[10px] font-semibold tracking-wide ${
-                t.method === "stated" ? "bg-slate-700 text-slate-300" : "bg-indigo-900/60 text-indigo-300"
+                t.method === "stated" ? "bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300" : "bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300"
               }`}>
                 {t.method}
               </span>

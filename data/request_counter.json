@@ -1,5 +1,5 @@
 {
-  "counter": 34,
+  "counter": 35,
   "requests": [
     {
       "id": "R-0001",
@@ -252,6 +252,14 @@
     {
       "id": "R-0033",
       "timestamp": "2026-03-19T19:29:50.090Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0035",
+      "timestamp": "2026-03-19T20:01:48.820Z",
       "category": "null > null",
       "quantity": null,
       "budget": null,
