@@ -164,6 +164,25 @@ export async function POST(req) {
           : null;
         escalations.forEach(e => { e.estimated_savings = estimatedSavings; });
 
+        // ER-003: inject approval-tier sign-off escalation for tier >= 2 if not already present
+        const TIER_ESCALATION_TARGETS = { 2: 'Procurement Manager', 3: 'Head of Category', 4: 'Head of Strategic Sourcing', 5: 'CPO' };
+        if (approvalTier?.tier >= 2 && !escalations.some(e => e.rule === 'ER-003')) {
+          const target = TIER_ESCALATION_TARGETS[approvalTier.tier] || 'Procurement Manager';
+          const isBlocking = approvalTier.tier >= 4;
+          escalations.push({
+            escalation_id: `ESC-${String(escalations.length + 1).padStart(3, '0')}`,
+            rule: 'ER-003',
+            trigger: `Tier ${approvalTier.tier} spend requires ${target} sign-off (${approvalTier.quotes_required} quote(s) required, value: ${enrichedRequest.budget_amount?.toLocaleString() ?? '?'} ${enrichedRequest.currency ?? ''}).`,
+            escalate_to: target,
+            hierarchy_level: approvalTier.tier + 1,
+            hierarchy_label: target,
+            hierarchy_color: isBlocking ? '#f43f5e' : '#a78bfa',
+            blocking: isBlocking,
+            action: `Route to ${target} for approval before award`,
+            estimated_savings: estimatedSavings,
+          });
+        }
+
         let decisionThinking = `Evaluating ${rankedSuppliers.length} suppliers against ${issues.length} issues and ${escalations.length} escalations...\n\n`;
         send('step', { step: 'decision', status: 'active', pct: 65, thinking: decisionThinking });
 
@@ -185,12 +204,12 @@ export async function POST(req) {
           preferredCheck?.is_preferred && !preferredCheck?.is_restricted,
           historicalContext.length > 0, escalations
         );
-        // Auto-approve ONLY for Tier 1 (low-value, self-service) with no escalations
+        // Auto-approve ONLY when: tier 1, no escalations, no critical validation issues
+        const hasBlockingValidationIssue = issues.some(i => i.severity === 'critical');
         const isAutoApproved =
           approvalTier?.tier === 1 &&
           escalations.length === 0 &&
-          confidence > 70 &&
-          (rankedSuppliers[0]?.risk_score || 100) < 30;
+          !hasBlockingValidationIssue;
 
         // Determine required approver based on the highest escalation level, or fall back to the approval tier
         let requiredApprover = null;

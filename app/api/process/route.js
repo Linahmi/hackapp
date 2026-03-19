@@ -137,6 +137,13 @@ export async function POST(req) {
     }
 
     if (preferredCheck?.is_restricted) triggers.push({ rule:'ER-002', reason:'Preferred supplier restricted', blocking:true });
+    if (enrichedRequest.preferred_supplier_stated && !preferredCheck) {
+      triggers.push({
+        rule: 'ER-002',
+        reason: `Requester's preferred supplier '${enrichedRequest.preferred_supplier_stated}' is not on the approved supplier list — manual review required.`,
+        blocking: true
+      });
+    }
     if (rankedSuppliers.length === 0) triggers.push({ rule:'ER-004', reason:'No compliant supplier found', blocking:true });
     if (originalRequest?.data_residency_constraint && geoRules.length > 0) triggers.push({ rule:'ER-005', reason:'Data residency constraint', blocking:true });
 
@@ -144,6 +151,25 @@ export async function POST(req) {
       ? Math.max(0, Math.round(enrichedRequest.budget_amount - rankedSuppliers[0].total_price))
       : null;
     const escalations = buildEscalations(triggers, estimatedSavings);
+
+    // ER-003: inject approval-tier sign-off escalation for tier >= 2 if not already present
+    const TIER_ESCALATION_TARGETS = { 2: 'Procurement Manager', 3: 'Head of Category', 4: 'Head of Strategic Sourcing', 5: 'CPO' };
+    if (approvalTier?.tier >= 2 && !escalations.some(e => e.rule === 'ER-003')) {
+      const target = TIER_ESCALATION_TARGETS[approvalTier.tier] || 'Procurement Manager';
+      const isBlocking = approvalTier.tier >= 4;
+      escalations.push({
+        escalation_id: `ESC-${String(escalations.length + 1).padStart(3, '0')}`,
+        rule: 'ER-003',
+        trigger: `Tier ${approvalTier.tier} spend requires ${target} sign-off (${approvalTier.quotes_required} quote(s) required, value: ${enrichedRequest.budget_amount?.toLocaleString() ?? '?'} ${enrichedRequest.currency ?? ''}).`,
+        escalate_to: target,
+        hierarchy_level: approvalTier.tier + 1,
+        hierarchy_label: target,
+        hierarchy_color: isBlocking ? '#f43f5e' : '#a78bfa',
+        blocking: isBlocking,
+        action: `Route to ${target} for approval before award`,
+        estimated_savings: estimatedSavings,
+      });
+    }
 
     // 9. Decision
     const decision = await generateDecision(enrichedRequest, validationResult, policyResult, rankedSuppliers, escalations, historicalContext);
@@ -160,12 +186,12 @@ export async function POST(req) {
       escalations
     );
 
-    // Auto-approve ONLY for Tier 1 (low-value, self-service) with no escalations
+    // Auto-approve ONLY when: tier 1, no escalations, no critical validation issues
+    const hasBlockingValidationIssue = issues.some(i => i.severity === 'critical');
     const isAutoApproved =
       approvalTier?.tier === 1 &&
       escalations.length === 0 &&
-      confidence > 70 &&
-      (rankedSuppliers[0]?.risk_score || 100) < 30;
+      !hasBlockingValidationIssue;
 
     // Determine required approver based on the highest escalation level, or fall back to the approval tier
     let requiredApprover = null;
