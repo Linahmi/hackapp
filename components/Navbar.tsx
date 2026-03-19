@@ -45,16 +45,24 @@ export default function Navbar() {
       </div>
 
       {/* Navigation Links */}
-      <div className="hidden sm:flex items-center gap-4 ml-6 pl-6 absolute left-1/2 -translate-x-1/2" style={{ borderLeft: "1px solid var(--border-subtle)" }}>
-        <Link 
-          href="/" 
-          className={`text-sm font-semibold transition-colors ${pathname === "/" ? "text-[color:var(--text-main)]" : "text-[color:var(--text-muted)] hover:opacity-70"}`}
+      <div className="flex items-center gap-1">
+        <Link
+          href="/"
+          className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+            pathname === "/"
+              ? "text-[color:var(--text-main)] bg-white/10"
+              : "text-[color:var(--text-muted)] hover:text-[color:var(--text-main)] hover:bg-white/5"
+          }`}
         >
           Buyer Portal
         </Link>
-        <Link 
-          href="/supplier-demo" 
-          className={`text-sm font-semibold transition-colors ${pathname?.startsWith("/supplier-demo") ? "text-[color:var(--text-main)]" : "text-[color:var(--text-muted)] hover:opacity-70"}`}
+        <Link
+          href="/supplier"
+          className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+            pathname?.startsWith("/supplier")
+              ? "text-[color:var(--text-main)] bg-white/10"
+              : "text-[color:var(--text-muted)] hover:text-[color:var(--text-main)] hover:bg-white/5"
+          }`}
         >
           Supplier Portal
         </Link>

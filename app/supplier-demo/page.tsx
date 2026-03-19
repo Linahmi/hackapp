@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useProcurement } from "@/contexts/ProcurementContext";
 import {
   SupplierComparisonTable,
   Supplier,
@@ -158,14 +159,22 @@ function WhyPanel({ text }: { text: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SupplierDemoPage() {
+  const { result: contextResult } = useProcurement();
   const [apiResult,    setApiResult]    = useState<any>(null);
   const [buyerRequest, setBuyerRequest] = useState(DEMO_REQUEST);
 
-  // Load API result from sessionStorage (set by homepage after /api/process)
+  // Prefer context result (survives SPA navigation, reset on refresh).
+  // Fall back to sessionStorage for direct page loads where context may be empty.
   useEffect(() => {
+    if (contextResult) {
+      setApiResult(contextResult);
+    } else {
+      try {
+        const raw = sessionStorage.getItem("procure_result");
+        if (raw) setApiResult(JSON.parse(raw));
+      } catch {}
+    }
     try {
-      const raw = sessionStorage.getItem("procure_result");
-      if (raw) setApiResult(JSON.parse(raw));
       const savedText = localStorage.getItem("buyer_request");
       if (savedText) setBuyerRequest(savedText);
     } catch {}

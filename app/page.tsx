@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useProcurement } from "@/contexts/ProcurementContext";
 import RequestInput          from "@/components/RequestInput";
 import ProgressStepper       from "@/components/ProgressStepper";
 import BundlingOpportunityCard from "@/components/BundlingOpportunityCard";
@@ -14,6 +15,7 @@ type Stage = "idle" | "intake" | "processing" | "done" | "error";
 
 export default function Home() {
   const router = useRouter();
+  const { result: contextResult, setResult: setContextResult } = useProcurement();
   const [text, setText] = useState("");
   const [activeReqId, setActiveReqId] = useState("REQ-000004");
   const [stage,  setStage]  = useState<Stage>("idle");
@@ -26,18 +28,19 @@ export default function Home() {
   }
 
   useEffect(() => {
+    // Always clear sessionStorage on page load/refresh — clean slate
+    sessionStorage.removeItem("procure_result");
+    sessionStorage.removeItem("session_active");
+
     const savedText = localStorage.getItem("buyer_request");
     if (savedText) setText(savedText);
 
-    try {
-      if (sessionStorage.getItem("session_active") === "true") {
-        const savedResult = sessionStorage.getItem("procure_result");
-        if (savedResult) {
-          setResult(JSON.parse(savedResult));
-          setStage("done");
-        }
-      }
-    } catch {}
+    // Restore result from context if navigating back from supplier (context
+    // survives SPA navigation but is reset on browser refresh)
+    if (contextResult) {
+      setResult(contextResult);
+      setStage("done");
+    }
   }, []);
 
   useEffect(() => {
@@ -84,6 +87,7 @@ export default function Home() {
       await new Promise(r => setTimeout(r, 800));
 
       setResult(data);
+      setContextResult(data);
       sessionStorage.setItem("procure_result", JSON.stringify(data));
       sessionStorage.setItem("session_active", "true");
       setStage("done");
