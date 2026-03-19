@@ -10,6 +10,7 @@ import {
   SensitivityFactor,
 } from "@/components/agent/SupplierComparisonTable";
 import { DecisionRow } from "@/components/agent/DecisionRow";
+import { EscalationRow } from "@/components/agent/EscalationRow";
 
 // ─── Raw scores (0–100, higher = better in all dimensions) ───────────────────
 //
@@ -319,6 +320,13 @@ export default function SupplierDemoPage() {
         bestScore={eligibleRanked[0]?.score ?? null}
         bestPrice={bestPrice}
         isAutoApproved={isAutoApproved}
+      />
+
+      <EscalationRow
+        label="Escalation required"
+        title="Bundle opportunity detected"
+        description="Manager approval is required before combining these orders"
+        note="Potential savings identified, but human validation is needed"
       />
     </main>
   );
