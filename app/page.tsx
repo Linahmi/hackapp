@@ -22,32 +22,45 @@ export default function Home() {
     setResult(null);
 
     try {
-      // Step 1: intake — parse raw text → structured request
+      // Step 1: intake simulé
       setStage("intake");
-      const intakeRes = await fetch("/api/intake", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text.trim() }),
-      });
-      if (!intakeRes.ok) {
-        const body = await intakeRes.json();
-        throw new Error(body.error ?? "Intake failed");
-      }
-      const intakeData = await intakeRes.json();
-
-      // Step 2: process — run full pipeline on structured request
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Step 2: process simulé
       setStage("processing");
-      const processRes = await fetch("/api/process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(intakeData),
-      });
-      if (!processRes.ok) {
-        const body = await processRes.json();
-        throw new Error(body.error ?? "Processing failed");
-      }
-      const processData = await processRes.json();
-      setResult(processData);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const mockResult = {
+        request_interpretation: {
+          currency: "EUR",
+          intent: "Achat d'équipement informatique",
+          category: "Hardware",
+          urgency: "Normal"
+        },
+        confidence_score: 0.95,
+        validation: {
+          status: "approved",
+          checks: [
+            { rule: "Budget Limit", passed: true, details: "Montant estimé dans les limites." },
+            { rule: "Approved Vendor", passed: true, details: "Fournisseur référencé." }
+          ]
+        },
+        supplier_shortlist: [
+          { name: "TechCorp", price: 4500, delivery_time: "3 jours", rating: 4.8 },
+          { name: "OfficeSupplies", price: 4800, delivery_time: "2 jours", rating: 4.5 }
+        ],
+        suppliers_excluded: [
+          { name: "ScamVendor", reason: "Fournisseur non certifié par l'entreprise" }
+        ],
+        recommendation: "Nous vous recommandons de sélectionner TechCorp. Bien que le temps de livraison soit légèrement plus long, le prix est inférieur et leur note globale est meilleure.",
+        policy_evaluation: {
+          overall_compliance: "Total",
+          notes: "Achat conforme à la politique d'équipement IT."
+        },
+        escalations: []
+      };
+
+      setResult(mockResult);
       setStage("done");
     } catch (err: any) {
       setError(err.message ?? "Unknown error");
