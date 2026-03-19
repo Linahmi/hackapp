@@ -7,10 +7,11 @@ interface Props {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
+  onLoadExample?: () => void;
   disabled?: boolean;
 }
 
-export default function RequestInput({ value, onChange, onSubmit, disabled = false }: Props) {
+export default function RequestInput({ value, onChange, onSubmit, onLoadExample, disabled = false }: Props) {
   return (
     <div className="w-full max-w-2xl flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -46,7 +47,7 @@ export default function RequestInput({ value, onChange, onSubmit, disabled = fal
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={() => onChange(EXAMPLE)}
+          onClick={() => onLoadExample ? onLoadExample() : onChange(EXAMPLE)}
           disabled={disabled}
           className="text-xs underline underline-offset-2 transition-opacity disabled:opacity-40"
           style={{ color: "#dc2626" }}

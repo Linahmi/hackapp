@@ -30,6 +30,17 @@ export default function Home() {
     return () => window.removeEventListener("toggleDemo", handleDemo);
   }, []);
 
+  async function handleLoadExample() {
+    try {
+      const res = await fetch("/api/demo");
+      if (!res.ok) return;
+      const demos = await res.json();
+      if (demos?.[0]?.request_text) setText(demos[0].request_text);
+    } catch {
+      // silently ignore — demo endpoint unavailable
+    }
+  }
+
   async function handleSubmit() {
     if (!text.trim()) return;
     setError(null);
@@ -43,10 +54,7 @@ export default function Home() {
       const res = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          text, 
-          request_id: "REQ-000004" 
-        })
+        body: JSON.stringify({ text, request_id: "REQ-000004" })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Processing failed");
@@ -72,6 +80,7 @@ export default function Home() {
         value={text}
         onChange={setText}
         onSubmit={handleSubmit}
+        onLoadExample={handleLoadExample}
         disabled={isLoading}
       />
 

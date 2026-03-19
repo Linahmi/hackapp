@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar() {
   const [demoOn, setDemoOn] = useState(false);
+  const pathname = usePathname();
 
   const toggleDemo = () => {
     const nextState = !demoOn;
@@ -39,6 +42,22 @@ export default function Navbar() {
             Agent ready
           </span>
         </div>
+      </div>
+
+      {/* Navigation Links */}
+      <div className="hidden sm:flex items-center gap-4 ml-6 pl-6 absolute left-1/2 -translate-x-1/2" style={{ borderLeft: "1px solid var(--border-subtle)" }}>
+        <Link 
+          href="/" 
+          className={`text-sm font-semibold transition-colors ${pathname === "/" ? "text-[color:var(--text-main)]" : "text-[color:var(--text-muted)] hover:opacity-70"}`}
+        >
+          Buyer Portal
+        </Link>
+        <Link 
+          href="/supplier-demo" 
+          className={`text-sm font-semibold transition-colors ${pathname?.startsWith("/supplier-demo") ? "text-[color:var(--text-main)]" : "text-[color:var(--text-muted)] hover:opacity-70"}`}
+        >
+          Supplier Portal
+        </Link>
       </div>
 
       <div className="flex items-center gap-2">
