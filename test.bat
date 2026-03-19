@@ -1,0 +1,1 @@
+curl.exe -s -X POST http://localhost:3000/api/process -H "Content-Type: application/json" -d "{\"text\": \"Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20. Budget capped at 25199.55 EUR. Please use Dell Enterprise Europe with no exception.\", \"request_id\": \"REQ-000004\"}" > out.json
