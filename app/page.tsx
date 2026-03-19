@@ -75,8 +75,20 @@ export default function Home() {
     };
   }, []);
 
-  async function handleSubmit() {
-    if (!requestText.trim()) return;
+  async function handleSubmit(file?: File | null) {
+    let finalRequestText = requestText;
+    
+    if (file) {
+      const attachmentText = `\n\n[Additional context: see attached ${file.name}]`;
+      if (!finalRequestText.includes(attachmentText)) {
+        finalRequestText += attachmentText;
+        setRequestText(finalRequestText);
+        localStorage.setItem("buyer_request", finalRequestText);
+      }
+    }
+
+    if (!finalRequestText.trim()) return;
+
     setError(null);
     setActiveStep(0);
     setThinkingText("");
@@ -87,7 +99,7 @@ export default function Home() {
       const res = await fetch("/api/process-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: requestText }),
+        body: JSON.stringify({ text: finalRequestText }),
       });
 
       if (!res.ok || !res.body) {
