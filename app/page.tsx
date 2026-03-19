@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import RequestInput          from "@/components/RequestInput";
 import ProgressStepper       from "@/components/ProgressStepper";
 import RequestInterpretation from "@/components/RequestInterpretation";
@@ -15,6 +15,18 @@ export default function Home() {
   const [stage,  setStage]  = useState<Stage>("idle");
   const [error,  setError]  = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
+
+  useEffect(() => {
+    const handleDemo = (e: any) => {
+      if (e.detail) {
+        setText("Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF, prefer Dell");
+      } else {
+        setText("");
+      }
+    };
+    window.addEventListener("toggleDemo", handleDemo);
+    return () => window.removeEventListener("toggleDemo", handleDemo);
+  }, []);
 
   async function handleSubmit() {
     if (!text.trim()) return;
@@ -157,6 +169,15 @@ export default function Home() {
             escalations={result.escalations ?? []}
           />
         </>
+      )}
+
+      {/* Loading Skeleton */}
+      {isLoading && (
+        <div className="w-full max-w-2xl flex flex-col gap-6 animate-pulse mt-4">
+          <div className="h-[120px] rounded-xl w-full" style={{ backgroundColor: "#12151f", border: "1px solid #1e2130" }} />
+          <div className="h-[80px] rounded-xl w-full" style={{ backgroundColor: "#12151f", border: "1px solid #1e2130" }} />
+          <div className="h-[200px] rounded-xl w-full" style={{ backgroundColor: "#12151f", border: "1px solid #1e2130" }} />
+        </div>
       )}
     </div>
   );
