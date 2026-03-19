@@ -31,11 +31,11 @@ export default function ProgressStepper({ stage }: Props) {
   return (
     <div
       className="w-full max-w-2xl rounded-xl px-6 py-5"
-      style={{ backgroundColor: "#12151f", border: "1px solid #1e2130" }}
+      style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}
     >
       <p
         className="text-xs font-semibold uppercase tracking-widest mb-5"
-        style={{ color: "#6b7280" }}
+        style={{ color: "var(--text-muted)" }}
       >
         {stage === "done" ? "Complete" : (STAGE_LABELS[stage] ?? "Processing…")}
       </p>
@@ -51,8 +51,8 @@ export default function ProgressStepper({ stage }: Props) {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${current ? "animate-pulse" : ""}`}
                   style={{
-                    backgroundColor: done || current ? "#dc2626" : "#1a1d27",
-                    color: done || current ? "#fff" : "#374151",
+                    backgroundColor: done || current ? "#dc2626" : "var(--bg-hover)",
+                    color: done || current ? "var(--text-main)" : "var(--text-muted)",
                     border: done || current ? "none" : "1px solid #2a2f42",
                   }}
                 >
@@ -66,7 +66,7 @@ export default function ProgressStepper({ stage }: Props) {
                 </div>
                 <span
                   className="text-xs whitespace-nowrap font-medium"
-                  style={{ color: done ? "#dc2626" : current ? "#fff" : "#374151" }}
+                  style={{ color: done ? "#dc2626" : current ? "var(--text-main)" : "var(--text-muted)" }}
                 >
                   {label}
                 </span>

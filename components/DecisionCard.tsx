@@ -82,7 +82,7 @@ export default function DecisionCard({ recommendation, policyEvaluation, escalat
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
              <span className="text-xl" style={{ color: cfg.badgeColor }}>{cfg.icon}</span>
-             <span className="text-white font-bold text-base">Decision</span>
+             <span className="text-[color:var(--text-main)] font-bold text-base">Decision</span>
              <span
                 className="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide ml-2"
                 style={{ backgroundColor: cfg.badgeBg, color: cfg.badgeColor }}
@@ -102,14 +102,14 @@ export default function DecisionCard({ recommendation, policyEvaluation, escalat
             }}
             id="export-btn"
             className="text-xs font-semibold px-3 py-1.5 rounded flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-            style={{ backgroundColor: "#1e2130", color: "#e5e7eb", border: "1px solid #374151" }}
+            style={{ backgroundColor: "#1e2130", color: "var(--text-main)", border: "1px solid #374151" }}
           >
             Export Case
           </button>
         </div>
 
         {/* Reason */}
-        <p className="text-sm leading-relaxed" style={{ color: "#d1d5db" }}>{reason}</p>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{reason}</p>
 
         {/* Supplier */}
         {(recommended_supplier || preferred_supplier_if_resolved) && (
@@ -117,14 +117,14 @@ export default function DecisionCard({ recommendation, policyEvaluation, escalat
             className="rounded-lg px-4 py-3"
             style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
           >
-            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "#6b7280" }}>
+            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>
               {preferred_supplier_if_resolved ? "Preferred (if resolved)" : "Recommended Supplier"}
             </p>
-            <p className="text-white font-semibold text-sm">
+            <p className="text-[color:var(--text-main)] font-semibold text-sm">
               {preferred_supplier_if_resolved ?? recommended_supplier}
             </p>
             {recommended_supplier_rationale && (
-              <p className="text-xs mt-1" style={{ color: "#9ca3af" }}>{recommended_supplier_rationale}</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{recommended_supplier_rationale}</p>
             )}
           </div>
         )}
@@ -135,7 +135,7 @@ export default function DecisionCard({ recommendation, policyEvaluation, escalat
             className="rounded-lg px-4 py-3"
             style={{ backgroundColor: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.2)" }}
           >
-            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "#6b7280" }}>Minimum Budget Required</p>
+            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>Minimum Budget Required</p>
             <p className="font-semibold text-sm" style={{ color: "#fca5a5" }}>
               {minimum_budget_currency} {Number(minimum_budget_required).toLocaleString()}
             </p>
@@ -148,9 +148,9 @@ export default function DecisionCard({ recommendation, policyEvaluation, escalat
             className="rounded-lg px-4 py-3 flex flex-col gap-1.5"
             style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
           >
-            <p className="text-xs uppercase tracking-wider mb-0.5" style={{ color: "#6b7280" }}>Approval Threshold</p>
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm" style={{ color: "#9ca3af" }}>
-              <span className="text-white font-mono">{threshold.rule_applied}</span>
+            <p className="text-xs uppercase tracking-wider mb-0.5" style={{ color: "var(--text-muted)" }}>Approval Threshold</p>
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm" style={{ color: "var(--text-muted)" }}>
+              <span className="text-[color:var(--text-main)] font-mono">{threshold.rule_applied}</span>
               <span>{threshold.quotes_required} quote{threshold.quotes_required !== 1 ? "s" : ""} required</span>
               <span>Approvers: <span className="text-white">{(threshold.approvers ?? []).join(", ")}</span></span>
               {threshold.deviation_approval && (
@@ -171,10 +171,10 @@ export default function DecisionCard({ recommendation, policyEvaluation, escalat
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-bold" style={{ color: "#f59e0b" }}>⚠ Blocking</span>
-                  <span className="text-xs font-mono" style={{ color: "#6b7280" }}>{e.rule}</span>
+                  <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{e.rule}</span>
                 </div>
-                <p className="text-sm" style={{ color: "#d1d5db" }}>{e.trigger}</p>
-                <p className="text-xs mt-1" style={{ color: "#9ca3af" }}>→ Escalate to: {e.escalate_to}</p>
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>{e.trigger}</p>
+                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>→ Escalate to: {e.escalate_to}</p>
               </div>
             ))}
           </div>

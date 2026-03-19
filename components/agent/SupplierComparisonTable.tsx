@@ -85,7 +85,7 @@ function SensitivityAnalysis({ factors }: { factors: SensitivityFactor[] }) {
   const max = Math.max(...factors.map((f) => f.impact), 1);
   return (
     <div className="rounded-xl border border-white/10 bg-[#1A1D27] p-5 shadow-sm">
-      <h3 className="text-sm font-semibold text-white">Sensitivity Analysis</h3>
+      <h3 className="text-sm font-semibold text-[color:var(--text-main)]">Sensitivity Analysis</h3>
       <p className="mt-0.5 text-xs text-gray-500">
         Relative influence of each factor on the final recommendation
       </p>
@@ -213,7 +213,7 @@ export function SupplierComparisonTable({
                   >
                     <td className="px-5 py-3.5 align-top">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-white">{s.name}</span>
+                        <span className="font-semibold text-[color:var(--text-main)]">{s.name}</span>
                         <Badge type={s.badge} />
                       </div>
                       {isBlocked && s.blockedReason && (

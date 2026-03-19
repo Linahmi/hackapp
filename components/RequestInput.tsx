@@ -14,8 +14,8 @@ export default function RequestInput({ value, onChange, onSubmit, disabled = fal
   return (
     <div className="w-full max-w-2xl flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-white text-xl font-bold tracking-tight">New Purchase Request</h2>
-        <p className="text-sm" style={{ color: "#6b7280" }}>
+        <h2 className="text-[color:var(--text-main)] text-xl font-bold tracking-tight">New Purchase Request</h2>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
           Describe your procurement need in plain language — any format, no constraints.
         </p>
       </div>
@@ -23,9 +23,9 @@ export default function RequestInput({ value, onChange, onSubmit, disabled = fal
       <textarea
         className="w-full rounded-xl px-5 py-4 text-sm leading-relaxed resize-none outline-none transition-all duration-200"
         style={{
-          backgroundColor: "#12151f",
-          color: "#e5e7eb",
-          border: "1px solid #1e2130",
+          backgroundColor: "var(--bg-card)",
+          color: "var(--text-main)",
+          border: "1px solid var(--border-card)",
           minHeight: "160px",
         }}
         placeholder="Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF..."
@@ -38,7 +38,7 @@ export default function RequestInput({ value, onChange, onSubmit, disabled = fal
           e.currentTarget.style.boxShadow = "0 0 0 3px rgba(220,38,38,0.12)";
         }}
         onBlur={(e) => {
-          e.currentTarget.style.border = "1px solid #1e2130";
+          e.currentTarget.style.border = "1px solid var(--border-card)";
           e.currentTarget.style.boxShadow = "none";
         }}
       />
@@ -58,7 +58,7 @@ export default function RequestInput({ value, onChange, onSubmit, disabled = fal
           type="button"
           onClick={onSubmit}
           disabled={disabled || !value.trim()}
-          className="rounded-xl px-6 py-2.5 text-sm font-semibold text-white transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="rounded-xl px-6 py-2.5 text-sm font-semibold text-[color:var(--text-main)] transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ backgroundColor: "#dc2626" }}
           onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.backgroundColor = "#b91c1c"; }}
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#dc2626"; }}
@@ -67,7 +67,7 @@ export default function RequestInput({ value, onChange, onSubmit, disabled = fal
         </button>
       </div>
 
-      <p className="text-center text-xs" style={{ color: "#4b5563" }}>
+      <p className="text-center text-xs" style={{ color: "var(--text-muted)" }}>
         Powered by ProcureTrace AI
       </p>
     </div>

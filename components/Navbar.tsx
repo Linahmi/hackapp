@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar() {
   const [demoOn, setDemoOn] = useState(false);
@@ -16,13 +17,13 @@ export default function Navbar() {
   return (
     <nav
       className="w-full flex items-center justify-between px-6 py-3"
-      style={{ backgroundColor: "#0f1117", borderBottom: "1px solid #1a1d27" }}
+      style={{ backgroundColor: "var(--bg-app)", borderBottom: "1px solid var(--border-subtle)" }}
     >
       <div className="flex items-center gap-3">
-        <span className="text-white font-bold text-lg tracking-tight select-none">
+        <span className="text-[color:var(--text-main)] font-bold text-lg tracking-tight select-none">
           ProcureTrace
         </span>
-        <span style={{ color: "#374151" }}>|</span>
+        <span style={{ color: "var(--text-muted)" }}>|</span>
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
             <span
@@ -40,17 +41,20 @@ export default function Navbar() {
         </div>
       </div>
 
-      <button
-        onClick={toggleDemo}
-        className="text-xs px-3 py-1.5 rounded-full font-semibold transition-colors border"
-        style={{
-          backgroundColor: demoOn ? "rgba(220,38,38,0.15)" : "transparent",
-          color: demoOn ? "#ef4444" : "#9ca3af",
-          borderColor: demoOn ? "rgba(220,38,38,0.4)" : "#374151"
-        }}
-      >
-        Demo Mode: {demoOn ? "ON" : "OFF"}
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={toggleDemo}
+          className="text-xs px-3 py-1.5 rounded-full font-semibold transition-colors border"
+          style={{
+            backgroundColor: demoOn ? "rgba(220,38,38,0.15)" : "transparent",
+            color: demoOn ? "#ef4444" : "var(--text-muted)",
+            borderColor: demoOn ? "rgba(220,38,38,0.4)" : "var(--text-muted)"
+          }}
+        >
+          Demo Mode: {demoOn ? "ON" : "OFF"}
+        </button>
+        <ThemeToggle />
+      </div>
     </nav>
   );
 }
