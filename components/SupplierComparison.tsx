@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 
+interface TcoBreakdown {
+  base_cost: number;
+  warranty_estimate: number;
+  lead_time_risk: number;
+  risk_premium: number;
+}
+
 interface Supplier {
   rank: number;
   supplier_id: string;
@@ -16,8 +23,8 @@ interface Supplier {
   recommendation_note?: string;
   currency?: string;
   score_breakdown?: Record<string, number>;
-  tco?: number;
-  tco_breakdown?: { base_cost: number; reliability_cost: number; lead_time_risk: number; risk_premium: number };
+  tco?: number | null;
+  tco_breakdown?: TcoBreakdown;
   tco_note?: string;
   tco_vs_budget_pct?: number | null;
   historical_flags?: string[];
@@ -33,6 +40,7 @@ interface Props {
   shortlist?: Supplier[];
   excluded?: Excluded[];
   currency?: string;
+  budget?: number;
 }
 
 function ScoreBar({ value }: { value: number }) {
@@ -53,7 +61,15 @@ function ScoreBar({ value }: { value: number }) {
   );
 }
 
-export default function SupplierComparison({ shortlist = [], excluded = [], currency = "EUR" }: Props) {
+function buildBreakdown(bd: TcoBreakdown): string {
+  const parts: string[] = [`Base ${Number(bd.base_cost).toLocaleString()}`];
+  if (bd.warranty_estimate > 0) parts.push(`W ${Number(bd.warranty_estimate).toLocaleString()}`);
+  if (bd.lead_time_risk > 0)    parts.push(`LT ${Number(bd.lead_time_risk).toLocaleString()}`);
+  if (bd.risk_premium > 0)      parts.push(`R ${Number(bd.risk_premium).toLocaleString()}`);
+  return parts.join(" + ");
+}
+
+export default function SupplierComparison({ shortlist = [], excluded = [], currency = "EUR", budget }: Props) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
@@ -157,10 +173,22 @@ export default function SupplierComparison({ shortlist = [], excluded = [], curr
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>TCO Est.</span>
-                    {s.tco != null ? (
+                    {s.tco == null ? (
+                      <span className="text-sm font-bold tabular-nums" style={{ color: "var(--text-muted)" }}>N/A</span>
+                    ) : (
                       <>
-                        <span className="text-sm font-bold tabular-nums" style={{ color: "var(--text-main)", fontFamily: "monospace" }}>
-                          {cur} {Number(s.tco).toLocaleString()}
+                        <span
+                          className="text-sm font-bold tabular-nums"
+                          style={{
+                            fontFamily: "monospace",
+                            color: budget == null
+                              ? "var(--text-main)"
+                              : s.tco < budget
+                                ? "#0F6E56"
+                                : "#DC2626",
+                          }}
+                        >
+                          {Number(s.tco).toLocaleString()} {cur}
                         </span>
                         {s.tco_vs_budget_pct != null && (
                           <span className="text-[10px] font-semibold tabular-nums" style={{ color: s.tco_vs_budget_pct >= 0 ? "#22c55e" : "#ef4444", fontFamily: "monospace" }}>
@@ -168,13 +196,16 @@ export default function SupplierComparison({ shortlist = [], excluded = [], curr
                           </span>
                         )}
                         {s.tco_breakdown && (
-                          <span className="text-[10px] leading-tight" style={{ color: "var(--text-muted)" }}>
-                            Base {cur} {s.tco_breakdown.base_cost.toLocaleString()} · Rel. {cur} {s.tco_breakdown.reliability_cost.toLocaleString()} · LT {cur} {s.tco_breakdown.lead_time_risk.toLocaleString()} · Risk {cur} {s.tco_breakdown.risk_premium.toLocaleString()}
+                          <span style={{ fontSize: "10px", color: "var(--text-muted)", fontFamily: "monospace" }}>
+                            {buildBreakdown(s.tco_breakdown)}
+                          </span>
+                        )}
+                        {s.tco_note && (
+                          <span style={{ fontSize: "10px", fontStyle: "italic", color: "var(--text-muted)" }}>
+                            {s.tco_note}
                           </span>
                         )}
                       </>
-                    ) : (
-                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>—</span>
                     )}
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -225,7 +256,7 @@ export default function SupplierComparison({ shortlist = [], excluded = [], curr
         {shortlist.some(s => s.tco != null) && (
           <div className="px-5 py-3" style={{ borderTop: "1px solid var(--border-card)" }}>
             <p className="text-[10px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
-              TCO = base cost + reliability buffer + lead-time risk + operational risk premium. Unit price alone does not reflect total procurement cost.
+              TCO = base cost + warranty estimate + lead-time risk + operational risk premium. Unit price alone does not reflect total procurement cost.
             </p>
           </div>
         )}

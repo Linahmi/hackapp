@@ -142,7 +142,7 @@ export default function Home() {
               sessionStorage.setItem("session_active", "true");
               setStage("done");
               router.push("/analysis");
-              return; 
+              return;
             }
 
             if (eventType === "error") {
@@ -170,7 +170,7 @@ export default function Home() {
   return (
     <div className="relative min-h-[calc(100vh-65px)] flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-[#0f1117] transition-colors duration-300">
       {/* Pure CSS Mesh Animated Background */}
-      <div 
+      <div
         className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-gradient-to-b from-white to-gray-100 dark:from-[#0f1117] dark:to-[#161a25] transition-colors duration-1000"
         style={{
           transform: `translateY(-${scrollY * 0.4}px)`,
@@ -181,10 +181,10 @@ export default function Home() {
         <div className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vh] rounded-full bg-blue-500/30 dark:bg-blue-600/30 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" />
         <div className="absolute top-[10%] -right-[10%] w-[50vw] h-[60vh] rounded-full bg-red-400/30 dark:bg-red-600/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: "2s" }} />
         <div className="absolute -bottom-[20%] left-[10%] w-[70vw] h-[60vh] rounded-full bg-purple-500/30 dark:bg-indigo-600/20 blur-[140px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: "4s" }} />
-        
+
         {/* Enterprise Grid Lines - High Visibility */}
-        <div 
-          className="absolute inset-0 opacity-[0.25] dark:opacity-[0.10]" 
+        <div
+          className="absolute inset-0 opacity-[0.25] dark:opacity-[0.10]"
           style={{
             backgroundImage: `linear-gradient(to right, #6b7280 1px, transparent 1px), linear-gradient(to bottom, #6b7280 1px, transparent 1px)`,
             backgroundSize: `4rem 4rem`,

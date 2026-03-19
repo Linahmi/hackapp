@@ -206,7 +206,7 @@ export default function SupplierDemoPage() {
       };
       meta[s.supplier_name] = {
         price:    formatAmount(s.total_price, currency),
-        tco:      formatAmount(Math.round(s.expedited_total ?? s.total_price * 1.06), currency),
+        tco:      s.tco != null ? formatAmount(s.tco, currency) : "N/A",
         risk:     riskLabel(s.risk_score ?? 50),
         esg:      esgLabel(s.esg_score  ?? 50),
         blocked:  false,
