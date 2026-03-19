@@ -7,6 +7,7 @@ import { buildEscalations } from '@/lib/escalationRouter';
 import { computeConfidence as newComputeConfidence } from '@/lib/confidenceScorer';
 import { findHistoricalContext } from '@/lib/historicalLookup';
 import { generateDecision } from '@/lib/decisionEngine';
+import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
 
 // Local proxy functions to bridge the requested step-by-step logic 
 // with the existing merged Backend-A native module signatures dynamically.
@@ -143,6 +144,9 @@ export async function POST(req) {
     // 9. Decision
     const decision = await generateDecision(enrichedRequest, validationResult, policyResult, rankedSuppliers, escalations, historicalContext);
 
+    // 9b. Bundling Detector
+    const bundlingOpportunity = detectBundlingOpportunity(enrichedRequest, rankedSuppliers);
+
     // 10. Confidence
     const confidence = computeConfidenceLocal(
       validationResult.issues, 
@@ -174,6 +178,7 @@ export async function POST(req) {
         composite_score_pct: Math.round(s.composite_score * 100)
       })),
       escalations: escalations,
+      bundling_opportunity: bundlingOpportunity,
       recommendation: {
         ...decision,
         is_auto_approved: isAutoApproved

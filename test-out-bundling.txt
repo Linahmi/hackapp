@@ -1,0 +1,16 @@
+
+=== SCENARIO: Test 1: REQ-000064 ===
+bundling_opportunity: null
+
+=== SCENARIO: Test 2: REQ-000038 ===
+opportunity_detected: true
+current_quantity: 500
+combined_quantity: 10500
+similar_requests_count: 2
+saving_pct: 3
+dynamic_pricing_projection: null
+esg_benefit: Consolidating these orders drastically reduces fragmented LTL (Less Than Truckload) shipments, positively contributing to Scope 3 emission targets.
+description: We identified 2 similar candidate requests within the EU region over the adjacent 30-day window. Bundling them unlocks a higher volume discount with HP Enterprise Devices without exposing confidential details.
+
+=== SCENARIO: Test 3: REQ-000004 ===
+bundling_opportunity: null
