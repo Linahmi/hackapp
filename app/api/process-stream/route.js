@@ -28,7 +28,7 @@ function computeConfidenceLocal(issues, suppliers, preferredAvailable, historica
   return Math.min(100, Math.max(0, score));
 }
 
-const delay = (ms) => new Promise(r => setTimeout(r, ms));
+const delay = (ms) => new Promise(r => setTimeout(r, 0)); // Artificial UI delays removed!
 
 export async function POST(req) {
   const body = await req.json();
