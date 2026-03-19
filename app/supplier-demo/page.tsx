@@ -11,6 +11,7 @@ import {
 } from "@/components/agent/SupplierComparisonTable";
 import { DecisionRow } from "@/components/agent/DecisionRow";
 import { EscalationRow } from "@/components/agent/EscalationRow";
+import { SupplierRadarChart } from "@/components/supplier-radar-chart";
 
 // ─── Demo fallback data (used when no API result is in sessionStorage) ────────
 
@@ -394,6 +395,8 @@ export default function SupplierDemoPage() {
       </div>
 
       {/* Table + banners + audit + sensitivity */}
+      <SupplierRadarChart />
+
       <div id="supplier-table">
         <SupplierComparisonTable
           suppliers={suppliers}
