@@ -49,7 +49,7 @@ export default function AuditTrail({ auditTrail }: Props) {
             <div className="flex flex-col gap-1">
               <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Sources Consulted</span>
               <div className="flex flex-wrap gap-1.5">
-                {auditTrail.data_sources_used.map(ds => (
+                {auditTrail.data_sources_used?.map(ds => (
                   <span key={ds} className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-muted)" }}>
                     {ds}
                   </span>
@@ -60,7 +60,7 @@ export default function AuditTrail({ auditTrail }: Props) {
             <div className="flex flex-col gap-1">
               <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Policies Checked</span>
               <div className="flex flex-wrap gap-1.5">
-                {auditTrail.policies_checked.map(p => (
+                {auditTrail.policies_checked?.map(p => (
                   <span key={p} className="text-xs font-mono px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "#86efac" }}>
                     {p}
                   </span>
@@ -71,7 +71,7 @@ export default function AuditTrail({ auditTrail }: Props) {
             <div className="flex flex-col gap-1 col-span-2">
               <span className="text-xs uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Evaluation Path</span>
               <p style={{ color: "var(--text-muted)" }}>
-                Evaluated {auditTrail.supplier_ids_evaluated.length} suppliers. Applied pricing rules: <span className="text-[color:var(--text-main)] font-mono">{auditTrail.pricing_tiers_applied}</span>.
+                Evaluated {auditTrail.supplier_ids_evaluated?.length ?? 0} suppliers. Applied pricing rules: <span className="text-[color:var(--text-main)] font-mono">{auditTrail.pricing_tiers_applied || "none"}</span>.
               </p>
             </div>
 

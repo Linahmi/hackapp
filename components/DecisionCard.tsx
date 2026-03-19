@@ -163,9 +163,9 @@ export default function DecisionCard({ recommendation, policyEvaluation, escalat
         {/* Blocking escalations */}
         {blocking.length > 0 && (
           <div className="flex flex-col gap-2">
-            {blocking.map((e) => (
+            {blocking.map((e, index) => (
               <div
-                key={e.escalation_id}
+                key={e.escalation_id || `escalation-${index}`}
                 className="rounded-lg px-4 py-3"
                 style={{ backgroundColor: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)" }}
               >
