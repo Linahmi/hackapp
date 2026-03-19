@@ -1,5 +1,5 @@
 {
-  "counter": 37,
+  "counter": 43,
   "requests": [
     {
       "id": "R-0001",
@@ -276,6 +276,54 @@
     {
       "id": "R-0037",
       "timestamp": "2026-03-19T20:19:19.408Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0038",
+      "timestamp": "2026-03-19T20:41:39.595Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0039",
+      "timestamp": "2026-03-19T20:41:52.321Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0040",
+      "timestamp": "2026-03-19T20:42:08.311Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0041",
+      "timestamp": "2026-03-19T20:42:21.642Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0042",
+      "timestamp": "2026-03-19T20:47:23.306Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0043",
+      "timestamp": "2026-03-19T20:52:25.289Z",
       "category": "null > null",
       "quantity": null,
       "budget": null,

@@ -386,8 +386,27 @@ export default function SupplierDemoPage() {
 
       <div className={`transition-all duration-300 ${isLocked ? "blur-[8px] pointer-events-none select-none" : ""}`} aria-hidden={isLocked}>
         {/* Hero Header */}
-      <div className="w-full bg-white dark:bg-[#12151f] border-b border-gray-200 dark:border-[#1e2130] px-6 py-12 md:px-12 md:py-16">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-end justify-between gap-6">
+      <div className="w-full relative overflow-hidden bg-white dark:bg-[#12151f] border-b border-gray-200 dark:border-[#1e2130] px-6 py-12 md:px-12 md:py-16">
+        {/* Mesh Gradient Background — Data Command Center */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          {/* Glowing orbs */}
+          <div className="absolute -top-[15%] -right-[10%] w-[50vw] h-[50vh] rounded-full bg-red-500/20 dark:bg-red-600/15 blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" />
+          <div className="absolute top-[20%] -left-[15%] w-[45vw] h-[45vh] rounded-full bg-slate-400/20 dark:bg-slate-600/10 blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: "1.5s" }} />
+          <div className="absolute -bottom-[25%] right-[5%] w-[55vw] h-[50vh] rounded-full bg-indigo-400/15 dark:bg-indigo-700/10 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: "3s" }} />
+
+          {/* Enterprise Grid Lines */}
+          <div
+            className="absolute inset-0 opacity-[0.15] dark:opacity-[0.06]"
+            style={{
+              backgroundImage: `linear-gradient(to right, #94a3b8 1px, transparent 1px), linear-gradient(to bottom, #94a3b8 1px, transparent 1px)`,
+              backgroundSize: `3rem 3rem`,
+              maskImage: `radial-gradient(ellipse at 60% 40%, black 30%, transparent 75%)`,
+              WebkitMaskImage: `radial-gradient(ellipse at 60% 40%, black 30%, transparent 75%)`,
+            }}
+          />
+        </div>
+
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-end justify-between gap-6 relative z-10">
           <div className="animate-slide-in-left delay-0">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-widest mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -402,7 +421,7 @@ export default function SupplierDemoPage() {
           </div>
           
           {confidence !== null && (
-            <div className="flex flex-col items-end gap-1.5 bg-gray-50 dark:bg-[#0f1117] px-5 py-4 rounded-2xl border border-gray-200 dark:border-white/5 animate-slide-in-right delay-200">
+            <div className="flex flex-col items-end gap-1.5 bg-white/60 dark:bg-[#0f1117]/80 backdrop-blur-sm px-5 py-4 rounded-2xl border border-gray-200 dark:border-white/5 animate-slide-in-right delay-200">
               <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Decision Confidence</span>
               <span className={`text-4xl font-black tabular-nums tracking-tight ${confidence >= 70 ? "text-emerald-500" : confidence >= 40 ? "text-amber-500" : "text-red-500"}`}>
                 {confidence}%
@@ -412,7 +431,26 @@ export default function SupplierDemoPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 md:px-12 mt-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 mt-8 space-y-8 relative">
+        {/* Content area background elements */}
+        <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+          {/* Large gradient wash from top */}
+          <div className="absolute -top-[100px] left-1/2 -translate-x-1/2 w-[120%] h-[500px] rounded-full bg-gradient-to-b from-red-400/15 dark:from-red-600/10 via-rose-300/10 dark:via-rose-500/5 to-transparent blur-[60px]" />
+          {/* Floating accent orbs — visible */}
+          <div className="absolute top-[20%] -right-[10%] w-[40vw] h-[40vh] rounded-full bg-indigo-300/20 dark:bg-indigo-600/10 blur-[80px] animate-pulse-slow" style={{ animationDelay: "2s" }} />
+          <div className="absolute top-[55%] -left-[10%] w-[35vw] h-[35vh] rounded-full bg-rose-300/15 dark:bg-rose-500/8 blur-[70px] animate-pulse-slow" style={{ animationDelay: "4s" }} />
+          <div className="absolute bottom-[10%] right-[10%] w-[30vw] h-[25vh] rounded-full bg-sky-300/12 dark:bg-sky-600/6 blur-[70px] animate-pulse-slow" style={{ animationDelay: "6s" }} />
+          {/* Dot pattern */}
+          <div
+            className="absolute inset-0 opacity-[0.18] dark:opacity-[0.06]"
+            style={{
+              backgroundImage: `radial-gradient(circle, #94a3b8 0.8px, transparent 0.8px)`,
+              backgroundSize: `28px 28px`,
+              maskImage: `linear-gradient(to bottom, transparent, black 5%, black 95%, transparent)`,
+              WebkitMaskImage: `linear-gradient(to bottom, transparent, black 5%, black 95%, transparent)`,
+            }}
+          />
+        </div>
         {/* User request context */}
         <div className="flex items-start gap-4 rounded-2xl px-6 py-5 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm animate-scale-fade-in delay-300">
           <div className="mt-1 p-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400">
