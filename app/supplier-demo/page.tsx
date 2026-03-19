@@ -199,11 +199,11 @@ export default function SupplierDemoPage() {
   
   const detectedLanguage = useMemo(() => {
     const text = buyerRequest.toLowerCase();
-    if (/(bonjour|besoin|de|pour|livraison|budget|merci)/.test(text)) return "French 🇫🇷";
-    if (/(hallo|brauche|für|lieferung|bitte|danke)/.test(text)) return "German 🇩🇪";
-    if (/(hola|necesito|para|entrega|por favor|gracias)/.test(text)) return "Spanish 🇪🇸";
-    if (/(ciao|ho bisogno| per |consegna|per favore|grazie)/.test(text)) return "Italian 🇮🇹";
-    if (/(hallo|nodig|voor|levering|alstublieft|dank)/.test(text)) return "Dutch 🇳🇱";
+    if (/\b(bonjour|besoin|livraison|merci)\b/.test(text)) return "French 🇫🇷";
+    if (/\b(brauche|für|lieferung|bitte|danke|schnell)\b/.test(text)) return "German 🇩🇪";
+    if (/\b(hola|necesito|para|entrega|gracias)\b/.test(text)) return "Spanish 🇪🇸";
+    if (/\b(ciao|bisogno|consegna|grazie)\b/.test(text)) return "Italian 🇮🇹";
+    if (/\b(nodig|levering|alstublieft|dank)\b/.test(text)) return "Dutch 🇳🇱";
     if (/(こんにちは|必要|配送|お願いします|ありがとう)/.test(text)) return "Japanese 🇯🇵";
     return null;
   }, [buyerRequest]);

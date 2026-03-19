@@ -1,5 +1,5 @@
 {
-  "counter": 31,
+  "counter": 32,
   "requests": [
     {
       "id": "R-0001",
@@ -239,6 +239,14 @@
       "category": "IT > Docking Stations",
       "quantity": 240,
       "budget": 25199.55,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0032",
+      "timestamp": "2026-03-19T19:29:50.090Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
       "status": "cannot_proceed"
     }
   ]
