@@ -219,12 +219,20 @@ export default function SupplierDemoPage() {
   const sourceTags: SourceTag[] = useMemo(() => {
     const ri = apiResult?.request_interpretation;
     if (!ri) return DEMO_SOURCE_TAGS;
+    
+    const getMethod = (key: string): "stated" | "inferred" => {
+      const source = ri.field_sources?.[key];
+      if (!source) return "stated"; // fallback
+      return source.startsWith("inferred") ? "inferred" : "stated";
+    };
+
     const tags: SourceTag[] = [];
-    if (ri.budget_amount)              tags.push({ label: "Budget",    source: formatAmount(ri.budget_amount, ri.currency || "CHF"), method: "stated"   });
-    if (ri.delivery_countries?.length) tags.push({ label: "Location",  source: ri.delivery_countries.join(", "),                    method: "stated"   });
-    if (ri.days_until_required)        tags.push({ label: "Timeline",  source: `${ri.days_until_required} days`,                    method: "stated"   });
-    if (ri.preferred_supplier_stated)  tags.push({ label: "Preferred", source: ri.preferred_supplier_stated,                        method: "stated"   });
-    if (ri.category_l2)                tags.push({ label: "Category",  source: ri.category_l2,                                      method: "inferred" });
+    if (ri.quantity)                   tags.push({ label: "Quantity",  source: `${ri.quantity} units`,                              method: getMethod("quantity") });
+    if (ri.budget_amount)              tags.push({ label: "Budget",    source: formatAmount(ri.budget_amount, ri.currency || "CHF"), method: getMethod("budget_amount") });
+    if (ri.delivery_countries?.length) tags.push({ label: "Location",  source: ri.delivery_countries.join(", "),                    method: getMethod("delivery_countries") });
+    if (ri.days_until_required)        tags.push({ label: "Timeline",  source: `${ri.days_until_required} days`,                    method: getMethod("required_by_date") });
+    if (ri.preferred_supplier_stated)  tags.push({ label: "Preferred", source: ri.preferred_supplier_stated,                        method: getMethod("preferred_supplier_stated") });
+    if (ri.category_l2)                tags.push({ label: "Category",  source: ri.category_l2,                                      method: getMethod("category_l2") });
     return tags.length ? tags : DEMO_SOURCE_TAGS;
   }, [apiResult]);
 
