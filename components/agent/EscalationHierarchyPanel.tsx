@@ -29,8 +29,50 @@ const LEVEL_META: Record<number, { icon: string; description: string }> = {
   6: { icon: "★", description: "Executive sign-off" },
 };
 
-export function EscalationHierarchyPanel({ escalations, currency = "EUR" }: Props) {
+type RecipientMeta = { name: string; dept: string; action: string; responseTime: string; responseEmoji: string };
+
+const RULE_RECIPIENTS: Array<{ pattern: RegExp } & RecipientMeta> = [
+  {
+    pattern: /budget/i,
+    name: "Sarah Chen", dept: "CFO Office",
+    action: "Review the budget shortfall and authorize an exception or reallocate funds.",
+    responseTime: "Response needed within 24–48 hours", responseEmoji: "📋",
+  },
+  {
+    pattern: /restrict|compliance|sanction|legal/i,
+    name: "Compliance Team", dept: "Legal Dept",
+    action: "Verify the supplier's compliance status and approve or block their use.",
+    responseTime: "Response needed within 4 hours", responseEmoji: "⚡",
+  },
+  {
+    pattern: /lead.?time|delivery|timeline|feasib/i,
+    name: "Marcus Wei", dept: "Head of Category IT",
+    action: "Confirm whether the delivery timeline can be extended or an emergency source approved.",
+    responseTime: "Response needed within 4 hours", responseEmoji: "⚡",
+  },
+  {
+    pattern: /missing|incomplete|info|detail|unknown/i,
+    name: "Intern / Sourcing Agent", dept: "Procurement",
+    action: "Contact the requester today to gather the missing specification details.",
+    responseTime: "Contact requester today", responseEmoji: "📞",
+  },
+  {
+    pattern: /no.?supplier|supplier.?not.?found|unavailable|no.?vendor/i,
+    name: "Head of Category", dept: "Regional Lead",
+    action: "Identify alternative suppliers or approve extending the sourcing region.",
+    responseTime: "Response needed within 4 hours", responseEmoji: "⚡",
+  },
+];
+
+function getRecipient(rule: string, trigger: string): RecipientMeta | null {
+  const text = `${rule} ${trigger}`;
+  return RULE_RECIPIENTS.find(r => r.pattern.test(text)) ?? null;
+}
+
+export function EscalationHierarchyPanel({ escalations }: Props) {
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+  const [sentTimes, setSentTimes] = useState<Record<string, string>>({});
+  const [auditLog, setAuditLog] = useState<string[]>([]);
 
   if (!escalations || escalations.length === 0) return null;
 
@@ -47,8 +89,13 @@ export function EscalationHierarchyPanel({ escalations, currency = "EUR" }: Prop
   }
   const levels = Array.from(levelMap.entries()).sort((a, b) => b[0] - a[0]);
 
-  function markSent(id: string) {
+  function markSent(id: string, recipientLabel: string) {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const dateStr = now.toLocaleDateString([], { month: "short", day: "numeric" });
     setSentIds(prev => new Set([...prev, id]));
+    setSentTimes(prev => ({ ...prev, [id]: timeStr }));
+    setAuditLog(prev => [...prev, `Escalated to ${recipientLabel} at ${dateStr} ${timeStr}`]);
   }
 
   return (
@@ -112,6 +159,20 @@ export function EscalationHierarchyPanel({ escalations, currency = "EUR" }: Prop
                 <div className="flex flex-col gap-2">
                   {levelEscs.map(e => {
                     const sent = sentIds.has(e.escalation_id);
+                    const sentTime = sentTimes[e.escalation_id];
+                    const recipient = getRecipient(e.rule, e.trigger);
+                    // Fallback response time: blocking = 4h, informational = 24-48h
+                    const fallbackResponseTime = e.blocking
+                      ? "Response needed within 4 hours"
+                      : "Response needed within 24–48 hours";
+                    const fallbackEmoji = e.blocking ? "⚡" : "📋";
+                    const displayName = recipient?.name ?? label;
+                    const displayDept = recipient?.dept ?? null;
+                    const displayAction = recipient?.action ?? e.action;
+                    const displayResponseTime = recipient?.responseTime ?? fallbackResponseTime;
+                    const displayEmoji = recipient?.responseEmoji ?? fallbackEmoji;
+                    const recipientLabel = displayDept ? `${displayName} (${displayDept})` : displayName;
+
                     return (
                       <div
                         key={e.escalation_id}
@@ -137,23 +198,54 @@ export function EscalationHierarchyPanel({ escalations, currency = "EUR" }: Prop
                               <span className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>{e.rule} · {e.escalation_id}</span>
                             </div>
                             <p className="text-sm leading-snug mb-1.5" style={{ color: "var(--text-main)" }}>{e.trigger}</p>
-                            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                              <span className="font-semibold text-emerald-400/80">Required action: </span>
-                              {e.action}
-                            </p>
+
+                            {/* WHO · WHAT · WHEN */}
+                            <div className="flex flex-col gap-1.5 mt-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                              {/* WHO */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Recipient</span>
+                                <span
+                                  className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold"
+                                  style={{
+                                    backgroundColor: e.blocking ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
+                                    color: e.blocking ? "#FCA5A5" : "#FCD34D",
+                                    border: `1px solid ${e.blocking ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.25)"}`,
+                                  }}
+                                >
+                                  {displayName}
+                                  {displayDept && (
+                                    <span className="font-normal opacity-75"> · {displayDept}</span>
+                                  )}
+                                </span>
+                              </div>
+
+                              {/* WHAT */}
+                              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                                <span style={{ color: "var(--text-main)", fontWeight: 600 }}>Action: </span>
+                                {displayAction}
+                              </p>
+
+                              {/* WHEN */}
+                              <span
+                                className="text-xs font-semibold"
+                                style={{ color: e.blocking ? "#FCA5A5" : "#FCD34D" }}
+                              >
+                                {displayEmoji} {displayResponseTime}
+                              </span>
+                            </div>
                           </div>
 
-                          {/* Send button */}
+                          {/* Send Notification button */}
                           <button
-                            onClick={() => markSent(e.escalation_id)}
+                            onClick={() => !sent && markSent(e.escalation_id, recipientLabel)}
                             disabled={sent}
-                            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
+                            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap"
                             style={sent
                               ? { backgroundColor: "rgba(16,185,129,0.12)", color: "#6EE7B7", border: "1px solid rgba(16,185,129,0.3)", cursor: "default" }
                               : { backgroundColor: `${color}20`, color, border: `1px solid ${color}40`, cursor: "pointer" }
                             }
                           >
-                            {sent ? "✓ Sent" : `Notify ${label}`}
+                            {sent ? `✓ Notified at ${sentTime}` : "Send Notification"}
                           </button>
                         </div>
                       </div>
@@ -165,6 +257,18 @@ export function EscalationHierarchyPanel({ escalations, currency = "EUR" }: Prop
           );
         })}
       </div>
+
+      {/* Audit log */}
+      {auditLog.length > 0 && (
+        <div className="px-5 py-3 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>Audit trail</p>
+          <div className="flex flex-col gap-0.5">
+            {auditLog.map((entry, i) => (
+              <p key={i} className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>▸ {entry}</p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Footer summary */}
       <div className="px-5 py-3 border-t text-xs flex items-center justify-between" style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}>

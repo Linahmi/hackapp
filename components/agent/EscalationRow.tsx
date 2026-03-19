@@ -9,17 +9,44 @@ export type EscalationRowProps = {
   note: string;
   estimatedSavings?: string | null;
   approver?: string;
+  recipientName?: string;
+  recipientDept?: string;
+  actionRequired?: string;
+  responseTime?: string;
+  responseEmoji?: string;
 };
 
-export function EscalationRow({ label, title, description, note, estimatedSavings, approver = "Manager" }: EscalationRowProps) {
+export function EscalationRow({
+  label,
+  title,
+  description,
+  note,
+  estimatedSavings,
+  approver = "Manager",
+  recipientName,
+  recipientDept,
+  actionRequired,
+  responseTime,
+  responseEmoji = "📋",
+}: EscalationRowProps) {
   const [sent, setSent] = useState(false);
+  const [sentTime, setSentTime] = useState<string | null>(null);
+  const [auditEntries, setAuditEntries] = useState<string[]>([]);
 
   function scrollToTable() {
     document.getElementById("supplier-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function handleSend() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const dateStr = now.toLocaleDateString([], { month: "short", day: "numeric" });
     setSent(true);
+    setSentTime(timeStr);
+    const role = recipientName
+      ? `${recipientName}${recipientDept ? ` (${recipientDept})` : ""}`
+      : approver;
+    setAuditEntries(prev => [...prev, `Escalated to ${role} at ${dateStr} ${timeStr}`]);
   }
 
   return (
@@ -66,13 +93,21 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <div>
-                <p className="text-base font-bold text-gray-900 dark:text-white">Request sent for approval</p>
+              <div className="flex-1">
+                <p className="text-base font-bold text-gray-900 dark:text-white">Notification sent</p>
                 <p className="text-sm mt-0.5 font-medium text-gray-600 dark:text-gray-400">
-                   Escalated to {approver} · awaiting decision
+                  ✓ Notified {recipientName ?? approver}{recipientDept ? ` · ${recipientDept}` : ""} at {sentTime}
                 </p>
               </div>
             </div>
+            {auditEntries.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-orange-200 dark:border-orange-500/20">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">Audit trail</p>
+                {auditEntries.map((entry, i) => (
+                  <p key={i} className="text-xs text-gray-500 dark:text-gray-400 font-mono">▸ {entry}</p>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="rounded-xl border-l-4 border-orange-500 bg-gradient-to-r from-orange-50 to-white dark:from-[#1a130f] dark:to-transparent border-r border-t border-b border-orange-200 dark:border-orange-500/20 px-6 py-5 transition-all duration-300 hover:shadow-md">
@@ -84,7 +119,7 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
                   </svg>
                 </div>
 
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold uppercase tracking-widest mb-1 text-orange-600 dark:text-orange-500">
                     Manual review needed
                   </p>
@@ -100,6 +135,34 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
                     <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{note}</span>
                   </div>
 
+                  {/* Enhanced: WHO · WHAT · WHEN */}
+                  {(recipientName || actionRequired || responseTime) && (
+                    <div className="mt-4 pt-3 border-t border-orange-200/60 dark:border-orange-500/15 flex flex-col gap-2">
+                      {(recipientName || recipientDept) && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Recipient</span>
+                          <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-500/25 px-2 py-0.5 text-xs font-bold text-orange-700 dark:text-orange-300">
+                            {recipientName}
+                            {recipientDept && (
+                              <span className="font-normal opacity-75"> · {recipientDept}</span>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {actionRequired && (
+                        <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-400">
+                          <span className="font-semibold text-gray-700 dark:text-gray-300">Action: </span>
+                          {actionRequired}
+                        </p>
+                      )}
+                      {responseTime && (
+                        <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+                          {responseEmoji} {responseTime}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   <button
                     onClick={scrollToTable}
                     className="mt-3 text-xs font-bold text-orange-600 dark:text-orange-500/70 hover:text-orange-500 dark:hover:text-orange-400 transition-colors duration-150 underline underline-offset-4"
@@ -114,7 +177,7 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
                   onClick={handleSend}
                   className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition-all duration-150 hover:bg-orange-500 shadow-sm"
                 >
-                  Request {approver} approval
+                  Send Notification
                 </button>
                 <button
                   onClick={scrollToTable}
