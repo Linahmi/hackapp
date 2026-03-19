@@ -145,7 +145,7 @@ export default function MarketIntelCard({ results, loading }: Props) {
           </span>
         </div>
         <span className="text-[10px] text-gray-600 uppercase tracking-wider font-medium">
-          Powered by Tavily
+          Powered by Exa AI
         </span>
       </div>
 

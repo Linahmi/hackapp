@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchSuppliers } from "@/lib/tavilySupplierSearch";
+import { searchSuppliers } from "@/lib/exaSupplierSearch";
 
 export async function POST(request: Request): Promise<NextResponse> {
   let body: { suppliers?: string[]; category?: string; region?: string };

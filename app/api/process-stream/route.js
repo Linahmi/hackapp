@@ -7,6 +7,7 @@ import { computeConfidence as newComputeConfidence } from '@/lib/confidenceScore
 import { findHistoricalContext } from '@/lib/historicalLookup';
 import { generateDecision } from '@/lib/decisionEngine';
 import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
+import { getNextRequestId, logRequest } from '@/lib/requestCounter';
 
 function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required) {
   const eligible = getEligibleSuppliers(l1, l2, countries, qty, currency);
@@ -42,8 +43,11 @@ export async function POST(req) {
       }
 
       try {
+        // Assign a unique R- request ID
+        const reqId = getNextRequestId();
+
         // ── Step 1: Parsing (20%) ────────────────────────────────────
-        send('step', { step: 'parsing', status: 'active', pct: 0, thinking: 'Reading your request and extracting product details, quantities, budget, delivery dates…' });
+        send('step', { step: 'parsing', status: 'active', pct: 0, requestId: reqId, thinking: `[${reqId}] Reading your request and extracting product details, quantities, budget, delivery dates…` });
 
         const data = getData();
         const originalRequest = request_id
@@ -165,6 +169,7 @@ export async function POST(req) {
 
         // ── Final result ─────────────────────────────────────────────
         const result = {
+          request_id: reqId,
           processed_at: new Date().toISOString(),
           confidence_score: confidence,
           request_interpretation: enrichedRequest,
@@ -184,6 +189,14 @@ export async function POST(req) {
             generated_at: new Date().toISOString()
           }
         };
+
+        // Log this request to history
+        logRequest(reqId, {
+          category: `${enrichedRequest.category_l1} > ${enrichedRequest.category_l2}`,
+          quantity: enrichedRequest.quantity,
+          budget: enrichedRequest.budget_amount,
+          status: decision.status,
+        });
 
         send('result', result);
         controller.close();
