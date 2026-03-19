@@ -1,5 +1,7 @@
 "use client";
 
+import React, { Fragment } from "react";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Supplier = {
@@ -206,9 +208,8 @@ export function SupplierComparisonTable({
                 : { borderLeft: "3px solid transparent" };
 
               return (
-                <>
+                <React.Fragment key={s.supplier_id ?? s.name}>
                   <tr
-                    key={s.supplier_id ?? s.name}
                     className={`${rowBg} transition hover:bg-white/5`}
                     style={leftBorder}
                   >
@@ -262,7 +263,7 @@ export function SupplierComparisonTable({
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               );
             })}
           </tbody>
