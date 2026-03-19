@@ -8,7 +8,7 @@ import PolicyCheck           from "@/components/PolicyCheck";
 import SupplierComparison    from "@/components/SupplierComparison";
 import DecisionCard          from "@/components/DecisionCard";
 import AuditTrail            from "@/components/AuditTrail";
-import DecisionRow           from "@/components/agent/DecisionRow";
+import { DecisionRow }       from "@/components/agent/DecisionRow";
 
 type Stage = "idle" | "intake" | "processing" | "done" | "error";
 
@@ -116,10 +116,10 @@ export default function Home() {
             currency={result.request_interpretation?.currency}
           />
           <DecisionRow
-            status={result.recommendation?.status ?? "pending_approval"}
-            recommendedSupplier={result.recommendation?.recommended_supplier}
-            reason={result.recommendation?.reason ?? ""}
-            approvers={result.policy_evaluation?.approval_threshold?.approvers ?? []}
+            bestName={result.supplier_shortlist?.[0]?.supplier_name ?? ""}
+            bestScore={result.supplier_shortlist?.[0]?.composite_score_pct ?? null}
+            bestPrice={`${result.supplier_shortlist?.[0]?.total_price ?? "0"} ${result.request_interpretation?.currency ?? "EUR"}`}
+            isAutoApproved={result.recommendation?.is_auto_approved ?? false}
           />
           <DecisionCard
             recommendation={result.recommendation}
