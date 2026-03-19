@@ -8,9 +8,10 @@ export type EscalationRowProps = {
   description: string;
   note: string;
   estimatedSavings?: string | null;
+  approver?: string;
 };
 
-export function EscalationRow({ label, title, description, note, estimatedSavings }: EscalationRowProps) {
+export function EscalationRow({ label, title, description, note, estimatedSavings, approver = "Manager" }: EscalationRowProps) {
   const [sent, setSent] = useState(false);
 
   function scrollToTable() {
@@ -49,7 +50,7 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-orange-500 dark:bg-orange-400" />
               </span>
-              Awaiting manager decision
+              Awaiting {approver} decision
             </span>
           )}
         </div>
@@ -68,7 +69,7 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
               <div>
                 <p className="text-base font-bold text-gray-900 dark:text-white">Request sent for approval</p>
                 <p className="text-sm mt-0.5 font-medium text-gray-600 dark:text-gray-400">
-                  Escalated to manager · awaiting decision
+                   Escalated to {approver} · awaiting decision
                 </p>
               </div>
             </div>
@@ -113,7 +114,7 @@ export function EscalationRow({ label, title, description, note, estimatedSaving
                   onClick={handleSend}
                   className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition-all duration-150 hover:bg-orange-500 shadow-sm"
                 >
-                  Request manager approval
+                  Request {approver} approval
                 </button>
                 <button
                   onClick={scrollToTable}
