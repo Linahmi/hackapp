@@ -10,13 +10,11 @@ import {
   SourceTag,
   ConflictWarning,
   AuditEntry,
-  SensitivityFactor,
 } from "@/components/agent/SupplierComparisonTable";
 import { DecisionRow } from "@/components/agent/DecisionRow";
 import { EscalationRow } from "@/components/agent/EscalationRow";
 import { DecisionJustification } from "@/components/agent/DecisionJustification";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
-import { SupplierRadarChart } from "@/components/supplier-radar-chart";
 
 // ─── Demo fallback data (used when no API result is in sessionStorage) ────────
 
@@ -83,7 +81,7 @@ function formatAmount(amount: number, currency: string): string {
 
 // ─── Score helpers ────────────────────────────────────────────────────────────
 
-type Weights  = { price: number; risk: number; delivery: number; esg: number };
+type Weights   = { price: number; risk: number; delivery: number; esg: number };
 type RawScores = Record<string, { price: number; risk: number; delivery: number; esg: number }>;
 
 function computeFinalScore(name: string, w: Weights, rawData: RawScores): number {
@@ -326,15 +324,6 @@ export default function SupplierDemoPage() {
     };
   });
 
-  // ─── Sensitivity factors ──────────────────────────────────────────────────
-
-  const sensitivityFactors: SensitivityFactor[] = [
-    { label: "Risk",           impact: weights.risk     },
-    { label: "Price",          impact: weights.price    },
-    { label: "Delivery",       impact: weights.delivery },
-    { label: "ESG Compliance", impact: weights.esg      },
-  ].sort((a, b) => b.impact - a.impact);
-
   const explanation  = generateExplanation(bestName, runnerName, weights, rawScores);
   const confidence   = apiResult?.confidence_score ?? null;
   const ri           = apiResult?.request_interpretation;
@@ -448,7 +437,6 @@ export default function SupplierDemoPage() {
         <WhyPanel text={explanation} />
 
 
-
         {/* Validation issues (severity-tagged, from AI) */}
         {validationIssues.length > 0 && (
           <div className="animate-slide-in-left delay-600 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
@@ -495,7 +483,6 @@ export default function SupplierDemoPage() {
             sourceTags={sourceTags}
             conflicts={conflicts}
             auditTrail={auditTrail}
-            sensitivityFactors={sensitivityFactors}
           />
         </div>
 
