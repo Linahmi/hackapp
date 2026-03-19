@@ -32,30 +32,65 @@ export default function Home() {
       
       const mockResult = {
         request_interpretation: {
+          category_l1: "Hardware",
+          category_l2: "Accessories",
+          quantity: 240,
+          unit_of_measure: "units",
+          budget_amount: 25199.55,
           currency: "EUR",
-          intent: "Achat d'équipement informatique",
-          category: "Hardware",
-          urgency: "Normal"
+          delivery_countries: ["France"],
+          required_by_date: "2026-03-20",
+          preferred_supplier_stated: "Dell Enterprise Europe"
         },
-        confidence_score: 0.95,
+        confidence_score: 95,
         validation: {
-          status: "approved",
-          checks: [
-            { rule: "Budget Limit", passed: true, details: "Montant estimé dans les limites." },
-            { rule: "Approved Vendor", passed: true, details: "Fournisseur référencé." }
-          ]
+          is_valid: true,
+          reasons: ["Budget respecté", "Fournisseurs certifiés"],
         },
         supplier_shortlist: [
-          { name: "TechCorp", price: 4500, delivery_time: "3 jours", rating: 4.8 },
-          { name: "OfficeSupplies", price: 4800, delivery_time: "2 jours", rating: 4.5 }
+          {
+            rank: 1,
+            supplier_id: "SUP-01",
+            supplier_name: "Dell Enterprise Europe",
+            composite_score: 0.92,
+            unit_price: 104.99,
+            total_price: 25197.60,
+            standard_lead_time_days: 14,
+            preferred: true,
+            incumbent: true,
+            recommendation_note: "Matches preferred request",
+            currency: "EUR"
+          },
+          {
+            rank: 2,
+            supplier_id: "SUP-02",
+            supplier_name: "TechData Pro",
+            composite_score: 0.82,
+            unit_price: 110.00,
+            total_price: 26400.00,
+            standard_lead_time_days: 7,
+            currency: "EUR"
+          }
         ],
         suppliers_excluded: [
-          { name: "ScamVendor", reason: "Fournisseur non certifié par l'entreprise" }
+          {
+            supplier_id: "SUP-03",
+            supplier_name: "UnknownVend",
+            reason: "Non certifié par la politique IT"
+          }
         ],
-        recommendation: "Nous vous recommandons de sélectionner TechCorp. Bien que le temps de livraison soit légèrement plus long, le prix est inférieur et leur note globale est meilleure.",
+        recommendation: {
+          status: "pending_approval",
+          reason: "Requête dépassant le seuil d'approbation automatique pour la catégorie Hardware.",
+          recommended_supplier: "Dell Enterprise Europe",
+          recommended_supplier_rationale: "Fournisseur référencé offrant le meilleur score composite.",
+        },
         policy_evaluation: {
-          overall_compliance: "Total",
-          notes: "Achat conforme à la politique d'équipement IT."
+          approval_threshold: {
+            rule_applied: "Hardware > 10,000 EUR",
+            quotes_required: 2,
+            approvers: ["IT Manager", "Finance Director"]
+          }
         },
         escalations: []
       };
