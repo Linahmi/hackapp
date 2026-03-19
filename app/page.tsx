@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import RequestInput          from "@/components/RequestInput";
 import ProgressStepper       from "@/components/ProgressStepper";
 import BundlingOpportunityCard from "@/components/BundlingOpportunityCard";
+import AuditPDFExport        from "@/components/AuditPDFExport";
 import RequestInterpretation from "@/components/RequestInterpretation";
 import PolicyCheck           from "@/components/PolicyCheck";
 
@@ -94,7 +95,7 @@ export default function Home() {
       />
 
       {/* Dynamic Demo Toggle Buttons */}
-      <div className="flex gap-4 w-full max-w-2xl px-2">
+      <div className="flex gap-4 w-full max-w-2xl px-2 no-print">
         <button 
           onClick={() => {
             handleTextChange("Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception.");
@@ -147,6 +148,8 @@ export default function Home() {
           <PolicyCheck           validation={result.validation} />
 
           <BundlingOpportunityCard bundlingOpportunity={result.bundling_opportunity ?? null} />
+
+          <AuditPDFExport data={result} />
 
           {/* Navigation CTA to Page 2 */}
           <div className="w-full max-w-2xl">

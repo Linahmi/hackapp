@@ -13,7 +13,7 @@ interface Props {
 
 export default function RequestInput({ value, onChange, onSubmit, onLoadExample, disabled = false }: Props) {
   return (
-    <div className="w-full max-w-2xl flex flex-col gap-4">
+    <div className="w-full max-w-2xl flex flex-col gap-4 no-print">
       <div className="flex flex-col gap-1">
         <h2 className="text-[color:var(--text-main)] text-xl font-bold tracking-tight">New Purchase Request</h2>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>

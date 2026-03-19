@@ -111,7 +111,7 @@ export async function POST(req) {
     }
 
     if (approvalTier && approvalTier.tier >= 2 && enrichedRequest.preferred_supplier_stated) {
-      const requestText = (text || '').toLowerCase();
+      const requestText = (originalRequest?.request_text || text || '').toLowerCase();
       if (requestText.includes('no exception') || requestText.includes('only') || requestText.includes('must use')) {
         triggers.push({ 
           rule: 'ER-002', 

@@ -43,7 +43,7 @@ export default function ProgressStepper({ stage }: Props) {
 
   return (
     <div
-      className="w-full max-w-2xl rounded-xl px-6 py-5"
+      className="w-full max-w-2xl rounded-xl px-6 py-5 no-print"
       style={{
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border-card)",
