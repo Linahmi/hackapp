@@ -178,6 +178,38 @@
       "status": "cannot_proceed"
     },
     {
+      "id": "R-0024",
+      "timestamp": "2026-03-19T19:06:24.071Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0025",
+      "timestamp": "2026-03-19T19:06:46.978Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0026",
+      "timestamp": "2026-03-19T19:07:37.646Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0027",
+      "timestamp": "2026-03-19T19:08:21.723Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
       "id": "R-0025",
       "timestamp": "2026-03-19T18:47:35.411Z",
       "category": "IT > Docking Stations",
