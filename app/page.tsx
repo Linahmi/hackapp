@@ -7,7 +7,11 @@ import RequestInterpretation from "@/components/RequestInterpretation";
 import PolicyCheck           from "@/components/PolicyCheck";
 import SupplierComparison    from "@/components/SupplierComparison";
 import DecisionCard          from "@/components/DecisionCard";
+<<<<<<< HEAD
 import AuditTrail            from "@/components/AuditTrail";
+=======
+import DecisionRow           from "@/components/agent/DecisionRow";
+>>>>>>> 1a8564b (add decision row)
 
 type Stage = "idle" | "intake" | "processing" | "done" | "error";
 
@@ -113,6 +117,12 @@ export default function Home() {
             shortlist={result.supplier_shortlist ?? []}
             excluded={result.suppliers_excluded ?? []}
             currency={result.request_interpretation?.currency}
+          />
+          <DecisionRow
+            status={result.recommendation?.status ?? "pending_approval"}
+            recommendedSupplier={result.recommendation?.recommended_supplier}
+            reason={result.recommendation?.reason ?? ""}
+            approvers={result.policy_evaluation?.approval_threshold?.approvers ?? []}
           />
           <DecisionCard
             recommendation={result.recommendation}

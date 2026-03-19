@@ -9,6 +9,8 @@ import {
   AuditEntry,
   SensitivityFactor,
 } from "@/components/agent/SupplierComparisonTable";
+import { DecisionRow } from "@/components/agent/DecisionRow";
+import { EscalationRow } from "@/components/agent/EscalationRow";
 
 // ─── Raw scores (0–100, higher = better in all dimensions) ───────────────────
 //
@@ -192,8 +194,10 @@ export default function SupplierDemoPage() {
     });
 
   const eligibleRanked = scored.filter((s) => s.score !== null);
-  const bestName   = (eligibleRanked[0]?.name ?? "") as SupplierName | "";
-  const runnerName = (eligibleRanked[1]?.name ?? "") as SupplierName | "";
+  const bestName        = (eligibleRanked[0]?.name ?? "") as SupplierName | "";
+  const runnerName      = (eligibleRanked[1]?.name ?? "") as SupplierName | "";
+  const bestPrice       = bestName ? META[bestName].price : "";
+  const isAutoApproved  = bestName !== "" && META[bestName as SupplierName].risk === "Low";
 
   // Assemble Supplier[] for table
   const suppliers: Supplier[] = scored.map(({ name, score }) => {
@@ -301,12 +305,28 @@ export default function SupplierDemoPage() {
       </div>
 
       {/* Table + banners + audit + sensitivity */}
+      <div id="supplier-table">
       <SupplierComparisonTable
         suppliers={suppliers}
         sourceTags={SOURCE_TAGS}
         conflicts={CONFLICTS}
         auditTrail={AUDIT_TRAIL}
         sensitivityFactors={sensitivityFactors}
+      />
+      </div>
+
+      <DecisionRow
+        bestName={bestName}
+        bestScore={eligibleRanked[0]?.score ?? null}
+        bestPrice={bestPrice}
+        isAutoApproved={isAutoApproved}
+      />
+
+      <EscalationRow
+        label="Escalation required"
+        title="Bundle opportunity detected"
+        description="Manager approval required to combine compatible orders"
+        note="Potential savings identified, but human validation is needed"
       />
     </main>
   );
