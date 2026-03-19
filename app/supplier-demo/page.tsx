@@ -131,7 +131,7 @@ function generateExplanation(bestName: string, runnerUp: string, w: Weights, raw
 
 function WhyPanel({ text }: { text: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-[#1A1D27]/80 backdrop-blur-md px-6 py-5 shadow-sm transition-all hover:shadow-md animate-fade-slide-up delay-150">
+    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-[#1A1D27]/80 backdrop-blur-md px-6 py-5 shadow-sm transition-all hover:shadow-md animate-slide-in-right delay-400">
       <div className="flex items-center gap-2.5 mb-3">
         <span className="relative flex h-2.5 w-2.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -399,7 +399,7 @@ export default function SupplierDemoPage() {
         {/* Hero Header */}
       <div className="w-full bg-white dark:bg-[#12151f] border-b border-gray-200 dark:border-[#1e2130] px-6 py-12 md:px-12 md:py-16">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-end justify-between gap-6">
-          <div className="animate-fade-slide-up delay-0">
+          <div className="animate-slide-in-left delay-0">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-widest mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
               Procurement Intelligence
@@ -413,7 +413,7 @@ export default function SupplierDemoPage() {
           </div>
           
           {confidence !== null && (
-            <div className="flex flex-col items-end gap-1.5 bg-gray-50 dark:bg-[#0f1117] px-5 py-4 rounded-2xl border border-gray-200 dark:border-white/5 animate-fade-slide-up delay-0">
+            <div className="flex flex-col items-end gap-1.5 bg-gray-50 dark:bg-[#0f1117] px-5 py-4 rounded-2xl border border-gray-200 dark:border-white/5 animate-slide-in-right delay-200">
               <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Decision Confidence</span>
               <span className={`text-4xl font-black tabular-nums tracking-tight ${confidence >= 70 ? "text-emerald-500" : confidence >= 40 ? "text-amber-500" : "text-red-500"}`}>
                 {confidence}%
@@ -425,7 +425,7 @@ export default function SupplierDemoPage() {
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 mt-8 space-y-8">
         {/* User request context */}
-        <div className="flex items-start gap-4 rounded-2xl px-6 py-5 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm animate-fade-slide-up delay-0">
+        <div className="flex items-start gap-4 rounded-2xl px-6 py-5 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm animate-scale-fade-in delay-300">
           <div className="mt-1 p-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400">
             <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -447,13 +447,11 @@ export default function SupplierDemoPage() {
         {/* Why panel */}
         <WhyPanel text={explanation} />
 
-        <div className="animate-fade-slide-up delay-300">
-          <SupplierRadarChart />
-        </div>
+
 
         {/* Validation issues (severity-tagged, from AI) */}
         {validationIssues.length > 0 && (
-          <div className="animate-fade-slide-up delay-350 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
+          <div className="animate-slide-in-left delay-600 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
             <div className="px-6 py-3.5 border-b border-gray-200 dark:border-[#1e2130] flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Validation Issues</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 font-semibold border border-red-500/20">{validationIssues.length}</span>
@@ -491,7 +489,7 @@ export default function SupplierDemoPage() {
           </div>
         )}
 
-        <div id="supplier-table" className="animate-fade-slide-up delay-450">
+        <div id="supplier-table" className="animate-scale-fade-in delay-700">
           <SupplierComparisonTable
             suppliers={suppliers}
             sourceTags={sourceTags}
@@ -503,7 +501,7 @@ export default function SupplierDemoPage() {
 
         {/* Excluded suppliers (non-blocked, with explicit reason) */}
         {excludedSuppliers.length > 0 && (
-          <div className="animate-fade-slide-up delay-460 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
+          <div className="animate-fade-slide-up delay-800 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
             <div className="px-6 py-3.5 border-b border-gray-200 dark:border-[#1e2130] flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Suppliers Excluded from Shortlist</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/10 text-gray-500 font-semibold border border-gray-500/20">{excludedSuppliers.length}</span>
@@ -529,7 +527,7 @@ export default function SupplierDemoPage() {
 
         {/* Live Market Benchmark */}
         {marketBenchmark && (
-          <div className="animate-fade-slide-up delay-500 rounded-2xl px-6 py-5 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
+          <div className="animate-slide-in-right delay-900 rounded-2xl px-6 py-5 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className={`p-1.5 rounded-lg ${marketBenchmark.isAbove ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
@@ -560,7 +558,7 @@ export default function SupplierDemoPage() {
           </div>
         )}
 
-        <div className="animate-fade-slide-up delay-600">
+        <div className="animate-fade-slide-up delay-1000">
           <DecisionRow
             bestName={bestName}
             bestScore={eligibleRanked[0]?.score ?? null}
@@ -571,7 +569,7 @@ export default function SupplierDemoPage() {
           />
         </div>
 
-        <div className="animate-fade-slide-up delay-600">
+        <div className="animate-slide-in-left delay-1100">
           {isFromApi && (
             <DecisionJustification
               recommendation={apiResult?.recommendation ?? null}
@@ -582,7 +580,7 @@ export default function SupplierDemoPage() {
           )}
         </div>
 
-        <div className="animate-fade-slide-up delay-600">
+        <div className="animate-fade-slide-up delay-1200">
           {/* Hierarchy panel for API results, legacy EscalationRow for demo */}
           {isFromApi && realEscalations.length > 0 ? (
             <EscalationHierarchyPanel
