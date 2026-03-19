@@ -13,7 +13,6 @@ export default function AuditPDFExport({ data }: Props) {
   const handleExportExcel = () => {
     const wb = XLSX.utils.book_new();
 
-    // 1. Supplier Comparison
     const supplierRows = (data.supplier_shortlist || []).map((s: any) => ({
       Rank: s.rank || "",
       Supplier: s.supplier_name || "",
@@ -32,7 +31,6 @@ export default function AuditPDFExport({ data }: Props) {
       Notes: s.recommendation_note || ""
     }));
     
-    // Fallback if empty
     const wsSuppliers = XLSX.utils.json_to_sheet(
       supplierRows.length > 0 ? supplierRows : [ {
         Rank: "", Supplier: "", Preferred: "", Incumbent: "", "Unit Price": "", "Total Price": "", Currency: "", "Lead Time (std)": "", "Lead Time (exp)": "", Quality: "", Risk: "", ESG: "", "Score (%)": "", "Policy Compliant": "", Notes: ""
@@ -40,53 +38,40 @@ export default function AuditPDFExport({ data }: Props) {
     );
     XLSX.utils.book_append_sheet(wb, wsSuppliers, "Supplier Comparison");
 
-    // 2. Decision Summary
     const decisionRows = [
-      { Label: "Request ID", Value: data.request_id || "N/A" },
-      { Label: "Category L1", Value: data.request_interpretation?.category_l1 || "N/A" },
-      { Label: "Category L2", Value: data.request_interpretation?.category_l2 || "N/A" },
+      { Label: "Category", Value: `${data.request_interpretation?.category_l1} > ${data.request_interpretation?.category_l2}` },
       { Label: "Quantity", Value: data.request_interpretation?.quantity || "N/A" },
-      { Label: "Budget", Value: data.request_interpretation?.budget_amount || "N/A" },
-      { Label: "Currency", Value: data.request_interpretation?.currency || "N/A" },
+      { Label: "Budget", Value: `${data.request_interpretation?.budget_amount || "N/A"} ${data.request_interpretation?.currency || ""}` },
       { Label: "Delivery Countries", Value: (data.request_interpretation?.delivery_countries || []).join(", ") || "N/A" },
       { Label: "Required By", Value: data.request_interpretation?.required_by_date || "N/A" },
-      { Label: "Preferred Supplier", Value: data.request_interpretation?.preferred_supplier_stated || "N/A" },
-      { Label: "Detected Language", Value: data.request_interpretation?.detected_language || "N/A" },
-      { Label: "", Value: "" },
-      { Label: "Validation Status", Value: data.validation?.issues?.length > 0 ? "FAIL" : "PASS" },
-      { Label: "Issues Count", Value: String(data.validation?.issues?.length || 0) },
-      { Label: "", Value: "" },
-      { Label: "Approval Tier", Value: data.policy_evaluation?.approval_tier?.tier || "N/A" },
-      { Label: "Quotes Required", Value: String(data.policy_evaluation?.approval_tier?.quotes_required || 0) },
-      { Label: "Approver", Value: data.policy_evaluation?.approval_tier?.approver || "N/A" },
+      { Label: "Preferred Supplier", Value: data.request_interpretation?.preferred_supplier_stated || "None" },
       { Label: "", Value: "" },
       { Label: "Decision Status", Value: data.recommendation?.status || "N/A" },
       { Label: "Confidence Score", Value: data.confidence_score !== null ? String(data.confidence_score) : "N/A" },
       { Label: "Auto Approved", Value: data.recommendation?.is_auto_approved ? "Yes" : "No" },
       { Label: "Rationale", Value: data.recommendation?.rationale || data.recommendation?.reason || "N/A" },
-      { Label: "", Value: "" },
-      { Label: "Escalations Count", Value: String(data.escalations?.length || 0) },
-      { Label: "Escalation details", Value: (data.escalations || []).map((e: any) => `[${e.id}] ${e.trigger} -> ${e.escalate_to}${e.blocking ? " (BLOCKING)" : ""}`).join("; ") || "None" }
     ];
     const wsDecision = XLSX.utils.json_to_sheet(decisionRows, { header: ["Label", "Value"], skipHeader: true });
     XLSX.utils.book_append_sheet(wb, wsDecision, "Decision Summary");
 
-    // 3. Audit Trail
     const auditRows = [
       { Item: "Policies Checked", Value: (data.audit_trail?.policies_checked || []).join(", ") || "None" },
       { Item: "Suppliers Evaluated", Value: (data.audit_trail?.suppliers_evaluated || []).join(", ") || "None" },
       { Item: "Data Sources", Value: (data.audit_trail?.data_sources_used || []).join(", ") || "None" },
-      { Item: "Historical Awards Consulted", Value: data.audit_trail?.historical_awards_consulted ? "Yes" : "No" },
-      { Item: "Assumptions", Value: (data.audit_trail?.assumptions || []).join(", ") || "None" },
-      { Item: "Inference Applied", Value: data.audit_trail?.inference_applied ? "Yes" : "No" },
       { Item: "Generated At", Value: data.processed_at || new Date().toISOString() }
     ];
     const wsAudit = XLSX.utils.json_to_sheet(auditRows);
     XLSX.utils.book_append_sheet(wb, wsAudit, "Audit Trail");
 
     const dateStr = new Date().toISOString().split("T")[0];
-    XLSX.writeFile(wb, `ProcureTrace_Audit_${data.request_id || "Unknown"}_${dateStr}.xlsx`);
+    XLSX.writeFile(wb, `ProcureTrace_Audit_${dateStr}.xlsx`);
   };
+
+  const interp = data.request_interpretation;
+  const rec = data.recommendation;
+  const hasBlocking = data.escalations?.some((e: any) => e.blocking);
+  const statusColor = rec?.status === "recommended" ? "#166534" : "#991b1b";
+  const statusBg = rec?.status === "recommended" ? "#f0fdf4" : "#fef2f2";
 
   return (
     <>
@@ -105,210 +90,233 @@ export default function AuditPDFExport({ data }: Props) {
         </button>
       </div>
 
-      <div id="audit-document" className="hidden print:block text-black bg-white font-serif p-0 m-0">
+      <div id="audit-document" className="hidden print:block text-black bg-white p-0 m-0">
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
-            body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
-            #audit-document { display: block !important; padding: 1.5cm; max-width: 100%; width: 100%; font-family: Georgia, serif; font-size: 11pt; line-height: 1.5; box-sizing: border-box; }
+            html, body { background: white !important; color: #111 !important; margin: 0 !important; padding: 0 !important; }
+            nav, .no-print { display: none !important; }
+            #audit-document {
+              display: block !important;
+              padding: 40pt 50pt;
+              width: 100%;
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+              font-size: 9.5pt;
+              line-height: 1.55;
+              color: #111;
+            }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .page-break { page-break-before: always; }
-            @page { margin: 0; }
+            @page { margin: 0; size: A4; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { padding: 6pt 8pt; text-align: left; }
+            .pdf-section { margin-bottom: 22pt; }
+            .pdf-section-title {
+              font-size: 10pt;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.8pt;
+              color: #374151;
+              border-bottom: 2px solid #dc2626;
+              padding-bottom: 4pt;
+              margin-bottom: 10pt;
+            }
+            .pdf-kv { display: grid; grid-template-columns: 140pt 1fr; gap: 3pt 12pt; }
+            .pdf-kv-label { font-weight: 600; color: #374151; }
+            .pdf-kv-value { color: #111; }
           }
         `}} />
         
-        {/* HEADER */}
-        <div className="border-b-2 border-black pb-4 mb-6">
-          <h1 className="text-3xl font-bold uppercase tracking-tight mb-1">Procurement Decision Record</h1>
-          <p className="text-sm font-semibold italic text-gray-700">Audit-Ready Sourcing Decision</p>
-          <div className="mt-4 text-xs font-mono grid grid-cols-2 gap-2 text-gray-600">
-            <div><strong>Request ID:</strong> {data.request_id}</div>
-            <div><strong>Processed At:</strong> {new Date(data.processed_at || Date.now()).toUTCString()}</div>
-            <div><strong>Classification:</strong> Highly Confidential</div>
-            <div><strong>System:</strong> ProcureTrace AI</div>
+        {/* ─── HEADER ─── */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #dc2626", paddingBottom: "14pt", marginBottom: "20pt" }}>
+          <div>
+            <div style={{ fontSize: "22pt", fontWeight: 800, letterSpacing: "-0.5pt", color: "#111" }}>ProcureTrace</div>
+            <div style={{ fontSize: "11pt", fontWeight: 600, color: "#6b7280", marginTop: "2pt" }}>Procurement Decision Record</div>
+          </div>
+          <div style={{ textAlign: "right", fontSize: "8pt", color: "#9ca3af", lineHeight: 1.7 }}>
+            <div><strong style={{ color: "#374151" }}>Date:</strong> {new Date(data.processed_at || Date.now()).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</div>
+            <div><strong style={{ color: "#374151" }}>Classification:</strong> Confidential</div>
+            <div><strong style={{ color: "#374151" }}>System:</strong> ProcureTrace AI v1.0</div>
           </div>
         </div>
 
-        {/* REQUEST SUMMARY */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase tracking-wide">1. Request Summary</h2>
-          <div className="grid grid-cols-2 gap-y-2 text-sm mb-4">
-            <div><strong>Category:</strong> {data.request_interpretation?.category_l1} &gt; {data.request_interpretation?.category_l2}</div>
-            <div><strong>Quantity:</strong> {data.request_interpretation?.quantity}</div>
-            <div><strong>Budget:</strong> {data.request_interpretation?.budget_amount} {data.request_interpretation?.currency}</div>
-            <div><strong>Delivery:</strong> {data.request_interpretation?.delivery_countries?.join(", ")}</div>
-            <div><strong>Required Date:</strong> {data.request_interpretation?.required_by_date}</div>
-            <div><strong>Language:</strong> {data.request_interpretation?.detected_language}</div>
-            <div className="col-span-2"><strong>Preferred Supplier:</strong> {data.request_interpretation?.preferred_supplier_stated || "None"}</div>
-          </div>
-          <p className="text-sm italic border-l-2 border-gray-300 pl-2">Goal: Address immediate procurement need based on submitted request.</p>
-        </div>
-
-        {/* FIELD PROVENANCE */}
-        <div className="mb-8 p-4 border border-gray-200 bg-gray-50">
-          <h2 className="text-md font-bold mb-2 uppercase tracking-wide text-gray-800">2. Field Provenance & Assumptions</h2>
-          <div className="text-sm">
-            {data.request_interpretation?.field_sources && Object.entries(data.request_interpretation.field_sources).length > 0 ? (
-              <ul className="list-disc pl-5 mb-3">
-                {Object.entries(data.request_interpretation.field_sources).map(([key, val]) => (
-                  <li key={key}><strong>{key}:</strong> {String(val).toUpperCase()}</li>
-                ))}
-              </ul>
-            ) : <p>All fields explicitly stated by requester.</p>}
-            
-            <div className="mt-2 text-sm">
-              <strong>Assumptions Applied: </strong>
-              {data.audit_trail?.assumptions?.length ? (
-                 <ul className="list-disc pl-5 mt-1">
-                   {data.audit_trail.assumptions.map((a: string, i: number) => <li key={i}>{a}</li>)}
-                 </ul>
-              ) : "None"}
+        {/* ─── DECISION BANNER ─── */}
+        <div style={{ padding: "12pt 16pt", marginBottom: "20pt", border: `2px solid ${statusColor}`, backgroundColor: statusBg, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: "7pt", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1pt", color: statusColor }}>Decision</div>
+            <div style={{ fontSize: "14pt", fontWeight: 800, color: statusColor, marginTop: "2pt" }}>
+              {rec?.status === "recommended" ? "RECOMMENDED" : "CANNOT PROCEED"}
             </div>
           </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "7pt", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1pt", color: "#6b7280" }}>Confidence</div>
+            <div style={{ fontSize: "20pt", fontWeight: 800, color: "#111" }}>{data.confidence_score ?? "—"}%</div>
+          </div>
         </div>
 
-        {/* VALIDATION */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase tracking-wide">3. Validation Findings</h2>
+        {/* ─── 1. REQUEST SUMMARY ─── */}
+        <div className="pdf-section">
+          <div className="pdf-section-title">1. Request Summary</div>
+          <div className="pdf-kv" style={{ fontSize: "9pt" }}>
+            <span className="pdf-kv-label">Category</span>
+            <span className="pdf-kv-value">{interp?.category_l1} › {interp?.category_l2}</span>
+            <span className="pdf-kv-label">Quantity</span>
+            <span className="pdf-kv-value">{interp?.quantity ?? "Not specified"}</span>
+            <span className="pdf-kv-label">Budget</span>
+            <span className="pdf-kv-value">{interp?.budget_amount ? `${interp.currency || "EUR"} ${Number(interp.budget_amount).toLocaleString("en", { minimumFractionDigits: 2 })}` : "Not specified"}</span>
+            <span className="pdf-kv-label">Delivery</span>
+            <span className="pdf-kv-value">{interp?.delivery_countries?.join(", ") || "Not specified"}</span>
+            <span className="pdf-kv-label">Required By</span>
+            <span className="pdf-kv-value">{interp?.required_by_date || "Not specified"} {interp?.days_until_required != null ? `(${interp.days_until_required} days)` : ""}</span>
+            <span className="pdf-kv-label">Preferred Supplier</span>
+            <span className="pdf-kv-value">{interp?.preferred_supplier_stated || "None"}</span>
+          </div>
+        </div>
+
+        {/* ─── 2. VALIDATION ─── */}
+        <div className="pdf-section">
+          <div className="pdf-section-title">2. Validation</div>
           {data.validation?.issues?.length > 0 ? (
-            <div className="text-sm border-l-4 border-red-500 pl-3">
-              <div className="font-bold text-red-600 mb-2">FAIL - Validation Issues Detected</div>
-              <ul className="list-decimal pl-4">
-                {data.validation.issues.map((iss: any, i: number) => (
-                  <li key={i} className="mb-2">
-                    <strong>[{iss.severity?.toUpperCase()}] {iss.type}:</strong> {iss.description} <br/>
-                    <em>Required Action: {iss.action}</em>
-                  </li>
-                ))}
-              </ul>
+            <div>
+              <div style={{ fontWeight: 700, color: "#991b1b", marginBottom: "6pt" }}>⚠ {data.validation.issues.length} issue(s) found</div>
+              <table>
+                <thead>
+                  <tr style={{ backgroundColor: "#fef2f2", borderBottom: "1px solid #fca5a5" }}>
+                    <th style={{ width: "60pt", fontSize: "8pt" }}>Severity</th>
+                    <th style={{ fontSize: "8pt" }}>Issue</th>
+                    <th style={{ fontSize: "8pt" }}>Required Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.validation.issues.map((iss: any, i: number) => (
+                    <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}>
+                      <td style={{ fontWeight: 600, color: iss.severity === "critical" ? "#991b1b" : "#92400e", textTransform: "uppercase", fontSize: "8pt" }}>{iss.severity}</td>
+                      <td>{iss.description}</td>
+                      <td style={{ color: "#6b7280", fontStyle: "italic" }}>{iss.action}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
-            <p className="text-sm font-semibold text-green-700 border-l-4 border-green-500 pl-3">PASS - No completeness or consistency issues detected.</p>
+            <div style={{ color: "#166534", fontWeight: 600, padding: "6pt 0" }}>✓ All validation checks passed</div>
           )}
         </div>
 
-        {/* POLICY */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase tracking-wide">4. Policy Evaluation</h2>
-          <div className="grid grid-cols-2 gap-y-2 text-sm mb-3">
-            <div><strong>Approval Tier:</strong> {data.policy_evaluation?.approval_tier?.tier || "N/A"}</div>
-            <div><strong>Quotes Required:</strong> {data.policy_evaluation?.approval_tier?.quotes_required || "N/A"}</div>
-            <div className="col-span-2"><strong>Required Approver:</strong> {data.policy_evaluation?.approval_tier?.approver || "N/A"}</div>
-            {data.policy_evaluation?.preferred_supplier && (
-              <div className="col-span-2"><strong>Eligible Supplier Guard:</strong> Rule actively checked.</div>
-            )}
-          </div>
-          
-          <div className="text-sm mt-3 border-t border-dashed border-gray-300 pt-2">
-             <strong>Violations: </strong> {data.policy_evaluation?.violations?.length ? (
-               <ul className="list-disc pl-5 mt-1 text-red-600">
-                 {data.policy_evaluation.violations.map((v: string, i: number) => <li key={i}>{v}</li>)}
-               </ul>
-             ) : "None"}
+        {/* ─── 3. POLICY ─── */}
+        <div className="pdf-section">
+          <div className="pdf-section-title">3. Policy Evaluation</div>
+          <div className="pdf-kv" style={{ fontSize: "9pt" }}>
+            <span className="pdf-kv-label">Approval Tier</span>
+            <span className="pdf-kv-value">Tier {data.policy_evaluation?.approval_tier?.tier || "N/A"}</span>
+            <span className="pdf-kv-label">Quotes Required</span>
+            <span className="pdf-kv-value">{data.policy_evaluation?.approval_tier?.quotes_required || "N/A"}</span>
+            <span className="pdf-kv-label">Approver</span>
+            <span className="pdf-kv-value">{data.policy_evaluation?.approval_tier?.approver || "N/A"}</span>
           </div>
         </div>
 
         <div className="page-break"></div>
 
-        {/* SUPPLIER EVALUATION */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase tracking-wide">5. Supplier Evaluation</h2>
-          <div className="mb-2 text-xs text-gray-600">Scoring Weights: 35% Price / 25% Lead Time / 20% Quality / 15% Risk / 5% ESG</div>
+        {/* ─── 4. SUPPLIER EVALUATION ─── */}
+        <div className="pdf-section">
+          <div className="pdf-section-title">4. Supplier Evaluation</div>
+          <div style={{ fontSize: "7.5pt", color: "#9ca3af", marginBottom: "6pt" }}>Scoring: 35% Price · 25% Lead Time · 20% Quality · 15% Risk · 5% ESG</div>
           {data.supplier_shortlist?.length > 0 ? (
-            <table className="w-full text-sm text-left border-collapse mt-2">
+            <table>
               <thead>
-                <tr className="bg-gray-100 border-b-2 border-gray-400">
-                  <th className="py-2 px-2">Rank</th>
-                  <th className="py-2 px-2">Supplier</th>
-                  <th className="py-2 px-2 border-l border-gray-300">Total Price</th>
-                  <th className="py-2 px-2 border-l border-gray-300">Lead Time</th>
-                  <th className="py-2 px-2 border-l border-gray-300">Score</th>
+                <tr style={{ backgroundColor: "#f3f4f6", borderBottom: "2px solid #9ca3af" }}>
+                  <th style={{ width: "30pt", fontSize: "8pt" }}>#</th>
+                  <th style={{ fontSize: "8pt" }}>Supplier</th>
+                  <th style={{ fontSize: "8pt", textAlign: "right" }}>Unit Price</th>
+                  <th style={{ fontSize: "8pt", textAlign: "right" }}>Total</th>
+                  <th style={{ fontSize: "8pt", textAlign: "center" }}>Lead Time</th>
+                  <th style={{ fontSize: "8pt", textAlign: "center" }}>Score</th>
                 </tr>
               </thead>
               <tbody>
                 {data.supplier_shortlist.map((s: any, i: number) => (
-                  <tr key={i} className="border-b border-gray-200">
-                    <td className="py-2 px-2">#{s.rank || (i+1)}</td>
-                    <td className="py-2 px-2 font-bold">{s.supplier_name} {s.preferred ? "(Preferred)" : ""}</td>
-                    <td className="py-2 px-2 border-l border-gray-200">{s.total_price} {data.request_interpretation?.currency}</td>
-                    <td className="py-2 px-2 border-l border-gray-200">{s.standard_lead_time_days} days</td>
-                    <td className="py-2 px-2 border-l border-gray-200 text-green-700 font-bold">{s.composite_score_pct} / 100</td>
+                  <tr key={i} style={{ borderBottom: "1px solid #e5e7eb", backgroundColor: i === 0 ? "#f0fdf4" : "transparent" }}>
+                    <td style={{ fontWeight: 700 }}>{s.rank || i + 1}</td>
+                    <td>
+                      <span style={{ fontWeight: 600 }}>{s.supplier_name}</span>
+                      {s.preferred && <span style={{ fontSize: "7pt", color: "#2563eb", marginLeft: "4pt" }}> PREFERRED</span>}
+                      {s.incumbent && <span style={{ fontSize: "7pt", color: "#7c3aed", marginLeft: "4pt" }}> INCUMBENT</span>}
+                    </td>
+                    <td style={{ textAlign: "right" }}>{s.unit_price} {interp?.currency}</td>
+                    <td style={{ textAlign: "right", fontWeight: 600 }}>{Number(s.total_price).toLocaleString("en")} {interp?.currency}</td>
+                    <td style={{ textAlign: "center" }}>{s.standard_lead_time_days}d / {s.expedited_lead_time_days}d</td>
+                    <td style={{ textAlign: "center", fontWeight: 700, color: "#166534" }}>{s.composite_score_pct ?? s.composite_score}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <p className="text-sm border-l-2 border-gray-300 pl-2">No supplier shortlist available - constraints likely blocked mapping.</p>
-          )}
-          {data.recommendation?.recommended_supplier_rationale && (
-            <p className="mt-3 text-sm italic"><strong>Rationale:</strong> {data.recommendation.recommended_supplier_rationale}</p>
+            <div style={{ color: "#991b1b", fontWeight: 600, padding: "6pt 0" }}>No eligible suppliers found</div>
           )}
         </div>
 
-        {/* ESCALATIONS */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase tracking-wide">6. Escalation Record</h2>
-          {data.escalations?.length > 0 ? (
-            <div className="text-sm border border-red-300 bg-red-50 p-3">
-              <p className="font-bold text-red-800 mb-2">⚠ Blocking escalations require immediate human approval before continuing.</p>
-              <ul className="list-disc pl-5">
+        {/* ─── 5. ESCALATIONS ─── */}
+        {data.escalations?.length > 0 && (
+          <div className="pdf-section">
+            <div className="pdf-section-title">5. Escalations</div>
+            <table>
+              <thead>
+                <tr style={{ backgroundColor: "#fef2f2", borderBottom: "1px solid #fca5a5" }}>
+                  <th style={{ width: "50pt", fontSize: "8pt" }}>ID</th>
+                  <th style={{ fontSize: "8pt" }}>Trigger</th>
+                  <th style={{ fontSize: "8pt" }}>Escalate To</th>
+                  <th style={{ width: "60pt", fontSize: "8pt" }}>Blocking</th>
+                </tr>
+              </thead>
+              <tbody>
                 {data.escalations.map((e: any, i: number) => (
-                  <li key={i} className="mb-1">
-                    <strong>[{e.id}]</strong> {e.trigger} &mdash; <em>Escalate to: {e.escalate_to}</em> 
-                    {e.blocking && <span className="text-red-700 font-bold"> (BLOCKING)</span>}
-                  </li>
+                  <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}>
+                    <td style={{ fontWeight: 600 }}>{e.id}</td>
+                    <td>{e.trigger}</td>
+                    <td>{e.escalate_to}</td>
+                    <td style={{ fontWeight: 700, color: e.blocking ? "#991b1b" : "#166534" }}>{e.blocking ? "YES" : "No"}</td>
+                  </tr>
                 ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="text-sm text-green-700 border-l-4 border-green-500 pl-3">No escalations required. Decision made within policy.</p>
-          )}
-        </div>
-
-        {/* BUNDLING */}
-        {data.bundling_opportunity && data.bundling_opportunity.opportunity_detected && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase tracking-wide">7. Bundling Opportunity</h2>
-            <div className="text-sm border border-blue-200 bg-blue-50 p-3">
-              <p className="font-bold text-blue-800 mb-1">{data.bundling_opportunity.title}</p>
-              <p className="mb-2 text-gray-700">{data.bundling_opportunity.description}</p>
-              <p><strong>Estimated Saving:</strong> {data.bundling_opportunity.estimated_saving} {data.bundling_opportunity.currency} ({data.bundling_opportunity.saving_pct}% reduction)</p>
-              {data.bundling_opportunity.dynamic_pricing_projection && (
-                <p className="mt-1"><strong>Financial Projection:</strong> {data.bundling_opportunity.dynamic_pricing_projection.message}</p>
-              )}
-              <p className="mt-2 text-xs text-gray-500 italic">Antitrust Guard: {data.bundling_opportunity.antitrust_note}</p>
-            </div>
+              </tbody>
+            </table>
           </div>
         )}
 
-        {/* DECISION RECORD */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-gray-300 pb-1 mb-3 uppercase tracking-wide">8. Decision Record</h2>
-          <div className="p-4 border-2 border-black bg-gray-50 text-sm">
-            <div className="grid grid-cols-2 gap-y-2 mb-3">
-              <div><strong>Status:</strong> <span className="uppercase font-bold">{String(data.recommendation?.status).replace("_", " ")}</span></div>
-              <div><strong>Confidence Score:</strong> {data.confidence_score != null ? `${data.confidence_score}%` : "N/A"}</div>
-              <div className="col-span-2"><strong>Auto-Approved:</strong> {data.recommendation?.is_auto_approved ? "Yes" : "No"}</div>
+        {/* ─── 6. AI RATIONALE ─── */}
+        <div className="pdf-section">
+          <div className="pdf-section-title">{data.escalations?.length > 0 ? "6" : "5"}. AI Decision Rationale</div>
+          <div style={{ fontSize: "9pt", lineHeight: 1.6, padding: "10pt 12pt", backgroundColor: "#f9fafb", border: "1px solid #e5e7eb" }}>
+            <div style={{ marginBottom: "8pt" }}>
+              <strong>Status:</strong>{" "}
+              <span style={{ fontWeight: 700, color: statusColor, textTransform: "uppercase" }}>
+                {String(rec?.status).replace("_", " ")}
+              </span>
+              {rec?.is_auto_approved && <span style={{ marginLeft: "8pt", color: "#166534", fontSize: "8pt", fontWeight: 600 }}>✓ AUTO-APPROVED</span>}
             </div>
-            <p><strong>Rationale:</strong> {data.recommendation?.rationale || data.recommendation?.reason}</p>
-            {data.recommendation?.status === "cannot_proceed" && (
-              <p className="mt-3 font-bold text-red-600">⚠ CLEAR NEED FOR HUMAN INTERVENTION REQUIRED.</p>
+            <div>{rec?.rationale || rec?.reason || "No rationale provided"}</div>
+            {rec?.key_reasons && (
+              <div style={{ marginTop: "8pt" }}>
+                <strong>Key factors:</strong>
+                <ul style={{ margin: "4pt 0 0 16pt", padding: 0, listStyle: "disc" }}>
+                  {rec.key_reasons.map((r: string, i: number) => <li key={i}>{r}</li>)}
+                </ul>
+              </div>
             )}
           </div>
         </div>
 
-        {/* SYSTEM AUDIT */}
-        <div className="mb-10 text-xs text-gray-500">
-          <h2 className="font-bold border-b border-gray-300 pb-1 mb-2 uppercase tracking-wide text-gray-700">9. System Audit Logs</h2>
-          <p><strong>Policies Checked:</strong> {data.audit_trail?.policies_checked?.join(", ")}</p>
-          <p><strong>Data Sources:</strong> {data.audit_trail?.data_sources_used?.join(", ")}</p>
-          <p><strong>Inference Applied:</strong> {data.audit_trail?.inference_applied ? "Yes" : "No"}</p>
+        {/* ─── AUDIT TRAIL ─── */}
+        <div style={{ marginTop: "16pt", paddingTop: "8pt", borderTop: "1px solid #e5e7eb", fontSize: "7.5pt", color: "#9ca3af" }}>
+          <div><strong>Policies:</strong> {data.audit_trail?.policies_checked?.join(", ")}</div>
+          <div><strong>Data sources:</strong> {data.audit_trail?.data_sources_used?.join(", ")}</div>
+          <div><strong>Inference applied:</strong> {data.audit_trail?.inference_applied ? "Yes" : "No"}</div>
         </div>
 
-        {/* LEGAL FOOTER */}
-        <div className="border-t-2 border-black pt-3 text-[10px] text-gray-400 text-center uppercase tracking-widest mt-auto">
-          <p>Generated by ProcureTrace AI — Confidential Internal Record</p>
-          <p className="mt-1">This is a non-binding decision. Final fiduciary authorization remains strictly subject to human review.</p>
-          <p className="mt-1">Timestamp: {new Date().toUTCString()} | Traceability Engine Execution</p>
+        {/* ─── FOOTER ─── */}
+        <div style={{ marginTop: "24pt", borderTop: "2px solid #dc2626", paddingTop: "10pt", textAlign: "center", fontSize: "7pt", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "1pt" }}>
+          <div>Generated by ProcureTrace AI — Confidential Internal Record</div>
+          <div style={{ marginTop: "3pt" }}>Non-binding decision. Final authorization subject to human review.</div>
+          <div style={{ marginTop: "3pt" }}>{new Date().toUTCString()}</div>
         </div>
       </div>
     </>

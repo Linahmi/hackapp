@@ -11,6 +11,7 @@ import {
 } from "@/components/agent/SupplierComparisonTable";
 import { DecisionRow } from "@/components/agent/DecisionRow";
 import { EscalationRow } from "@/components/agent/EscalationRow";
+import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
 // ─── Demo fallback data (used when no API result is in sessionStorage) ────────
 
@@ -159,6 +160,9 @@ function WhyPanel({ text }: { text: string }) {
 export default function SupplierDemoPage() {
   const [apiResult,    setApiResult]    = useState<any>(null);
   const [buyerRequest, setBuyerRequest] = useState(DEMO_REQUEST);
+  const [marketIntel,  setMarketIntel]  = useState<SupplierIntelResult[]>([]);
+  const [intelLoading, setIntelLoading] = useState(false);
+  const [intelFetched, setIntelFetched] = useState(false);
 
   // Load API result from sessionStorage (set by homepage after /api/process)
   useEffect(() => {
@@ -423,6 +427,44 @@ export default function SupplierDemoPage() {
           estimatedSavings={savingsStr}
         />
       )}
+
+      {/* ── Market Intelligence (Tavily) ────────────────────────────────── */}
+      <div className="mt-6">
+        {!intelFetched && !intelLoading && names.length > 0 && (
+          <button
+            onClick={async () => {
+              setIntelLoading(true);
+              try {
+                const category = apiResult?.request_interpretation?.category_l2 ?? apiResult?.request_interpretation?.category_l1 ?? "enterprise hardware";
+                const region = apiResult?.request_interpretation?.delivery_countries?.[0] ?? "Europe";
+                const res = await fetch("/api/supplier-intel", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ suppliers: names, category, region }),
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  setMarketIntel(data.results ?? []);
+                }
+              } catch (err) {
+                console.error("Market intel fetch failed:", err);
+              } finally {
+                setIntelLoading(false);
+                setIntelFetched(true);
+              }
+            }}
+            className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-[#3B82F6]/30 bg-[#3B82F6]/10 px-6 py-3.5 text-sm font-semibold text-[#3B82F6] transition-all hover:bg-[#3B82F6]/15 hover:border-[#3B82F6]/40"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Search Live Market Intelligence
+          </button>
+        )}
+        {(intelLoading || intelFetched) && (
+          <MarketIntelCard results={marketIntel} loading={intelLoading} />
+        )}
+      </div>
     </main>
   );
 }
