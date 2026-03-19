@@ -132,7 +132,10 @@ export async function POST(req) {
     if (rankedSuppliers.length === 0) triggers.push({ rule:'ER-004', reason:'No compliant supplier found', blocking:true });
     if (originalRequest?.data_residency_constraint && geoRules.length > 0) triggers.push({ rule:'ER-005', reason:'Data residency constraint', blocking:true });
     
-    const escalations = buildEscalations(triggers);
+    const estimatedSavings = structuredRequest.budget_amount && rankedSuppliers[0]
+      ? Math.max(0, Math.round(structuredRequest.budget_amount - rankedSuppliers[0].total_price))
+      : null;
+    const escalations = buildEscalations(triggers, estimatedSavings);
 
     // 9. Decision
     const decision = await generateDecision(structuredRequest, validationResult, policyResult, rankedSuppliers, escalations, historicalContext);
@@ -145,6 +148,8 @@ export async function POST(req) {
       historicalContext.length > 0,
       escalations
     );
+
+    const isAutoApproved = escalations.length === 0 && confidence > 70 && (rankedSuppliers[0]?.risk_score || 100) < 30;
 
     // 11. Return structure
     return NextResponse.json({
@@ -161,9 +166,15 @@ export async function POST(req) {
       request_interpretation: structuredRequest,
       validation: validationResult,
       policy_evaluation: policyResult,
-      supplier_shortlist: rankedSuppliers,
+      supplier_shortlist: rankedSuppliers.map(s => ({
+        ...s,
+        composite_score_pct: Math.round(s.composite_score * 100)
+      })),
       escalations: escalations,
-      recommendation: decision,
+      recommendation: {
+        ...decision,
+        is_auto_approved: isAutoApproved
+      },
       audit_trail: {
         policies_checked: ['AT-001','AT-002','AT-003','AT-004','AT-005','ER-001','ER-002','ER-004','ER-005'],
         suppliers_evaluated: rankedSuppliers.map(s => s.supplier_id),

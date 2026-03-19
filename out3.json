@@ -1,6 +1,6 @@
 {
   "request_id": "REQ-000004",
-  "processed_at": "2026-03-19T01:59:21.537Z",
+  "processed_at": "2026-03-19T02:13:47.295Z",
   "confidence_score": 50,
   "steps": [
     {
@@ -116,7 +116,8 @@
       },
       "policy_compliant": true,
       "covers_delivery_country": true,
-      "recommendation_note": "Lowest total price. Incumbent supplier. Expedited lead time (18d) does not meet the 10-day requirement"
+      "recommendation_note": "Lowest total price. Incumbent supplier. Expedited lead time (18d) does not meet the 10-day requirement",
+      "composite_score_pct": 77
     },
     {
       "rank": 2,
@@ -145,7 +146,8 @@
       },
       "policy_compliant": true,
       "covers_delivery_country": true,
-      "recommendation_note": "Highest quality score. Lowest risk score. Expedited lead time (17d) does not meet the 10-day requirement"
+      "recommendation_note": "Highest quality score. Lowest risk score. Expedited lead time (17d) does not meet the 10-day requirement",
+      "composite_score_pct": 63
     },
     {
       "rank": 3,
@@ -174,30 +176,37 @@
       },
       "policy_compliant": true,
       "covers_delivery_country": true,
-      "recommendation_note": "Expedited lead time (19d) does not meet the 10-day requirement"
+      "recommendation_note": "Expedited lead time (19d) does not meet the 10-day requirement",
+      "composite_score_pct": 38
     }
   ],
   "escalations": [
     {
-      "escalation_id": "ESC-001",
+      "id": "ESC-001",
       "rule": "ER-001",
       "trigger": "Budget of 25199.55 EUR is insufficient. Minimum required: 35712.00 EUR",
       "escalate_to": "Requester",
-      "blocking": true
+      "action": "",
+      "blocking": true,
+      "estimated_savings": 0
     },
     {
-      "escalation_id": "ESC-002",
+      "id": "ESC-002",
       "rule": "ER-002",
       "trigger": "Policy AT-002 requires 2 quotes. Requester single-supplier instruction cannot override this policy.",
       "escalate_to": "Procurement Manager",
-      "blocking": true
+      "action": "",
+      "blocking": true,
+      "estimated_savings": 0
     },
     {
-      "escalation_id": "ESC-003",
+      "id": "ESC-003",
       "rule": "ER-004",
       "trigger": "Required delivery in 6 days but fastest expedited lead time is 17 days. No supplier can meet this deadline.",
       "escalate_to": "Head of Category",
-      "blocking": true
+      "action": "",
+      "blocking": true,
+      "estimated_savings": 0
     }
   ],
   "recommendation": {
@@ -215,7 +224,8 @@
       "Delivery deadline may not be achievable"
     ],
     "minimum_budget_required": null,
-    "savings_vs_budget_pct": null
+    "savings_vs_budget_pct": null,
+    "is_auto_approved": false
   },
   "audit_trail": {
     "policies_checked": [
@@ -243,6 +253,6 @@
     ],
     "historical_awards_consulted": true,
     "assumptions": [],
-    "generated_at": "2026-03-19T01:59:21.537Z"
+    "generated_at": "2026-03-19T02:13:47.295Z"
   }
 }
