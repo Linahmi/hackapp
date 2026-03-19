@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import RequestInput          from "@/components/RequestInput";
 import ProgressStepper       from "@/components/ProgressStepper";
 import RequestInterpretation from "@/components/RequestInterpretation";
@@ -9,6 +10,7 @@ import PolicyCheck           from "@/components/PolicyCheck";
 type Stage = "idle" | "intake" | "processing" | "done" | "error";
 
 export default function Home() {
+  const router = useRouter();
   const [text,   setText]   = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("buyer_request") ?? "";
     return "";
@@ -67,7 +69,9 @@ export default function Home() {
       await new Promise(r => setTimeout(r, 800));
 
       setResult(data);
+      sessionStorage.setItem("procure_result", JSON.stringify(data));
       setStage("done");
+      router.push("/supplier");
     } catch (err: any) {
       setError(err.message ?? "Unknown error");
       setStage("error");
@@ -119,14 +123,20 @@ export default function Home() {
       {/* Error */}
       {stage === "error" && error && (
         <div
-          className="w-full max-w-2xl rounded-xl px-5 py-4 text-sm"
+          className="w-full max-w-2xl rounded-xl px-5 py-4 text-sm flex items-start justify-between gap-4"
           style={{
             backgroundColor: "rgba(220,38,38,0.08)",
             border: "1px solid rgba(220,38,38,0.3)",
             color: "#fca5a5",
           }}
         >
-          <span className="font-semibold">Error: </span>{error}
+          <span><span className="font-semibold">Error: </span>{error}</span>
+          <button
+            onClick={() => { setStage("idle"); setError(null); }}
+            className="shrink-0 rounded-lg border border-red-500/40 bg-red-900/30 px-3 py-1 text-xs font-semibold text-red-300 hover:bg-red-900/50 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       )}
 

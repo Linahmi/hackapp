@@ -52,9 +52,9 @@ export default function Navbar() {
         >
           Buyer Portal
         </Link>
-        <Link 
-          href="/supplier-demo" 
-          className={`text-sm font-semibold transition-colors ${pathname?.startsWith("/supplier-demo") ? "text-[color:var(--text-main)]" : "text-[color:var(--text-muted)] hover:opacity-70"}`}
+        <Link
+          href="/supplier"
+          className={`text-sm font-semibold transition-colors ${(pathname === "/supplier" || pathname?.startsWith("/supplier-demo")) ? "text-[color:var(--text-main)]" : "text-[color:var(--text-muted)] hover:opacity-70"}`}
         >
           Supplier Portal
         </Link>

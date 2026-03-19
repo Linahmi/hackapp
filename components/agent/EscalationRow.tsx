@@ -7,9 +7,10 @@ export type EscalationRowProps = {
   title: string;
   description: string;
   note: string;
+  estimatedSavings?: string | null;
 };
 
-export function EscalationRow({ label, title, description, note }: EscalationRowProps) {
+export function EscalationRow({ label, title, description, note, estimatedSavings }: EscalationRowProps) {
   const [sent, setSent] = useState(false);
 
   function scrollToTable() {
@@ -109,9 +110,11 @@ export function EscalationRow({ label, title, description, note }: EscalationRow
                   <p className="text-sm text-gray-400 mt-1 leading-relaxed">{description}</p>
 
                   <div className="mt-2.5 flex flex-wrap items-center gap-3">
-                    <span className="inline-flex items-center gap-1.5 rounded border border-orange-700/40 bg-orange-900/25 px-2 py-0.5 text-xs font-semibold text-orange-300">
-                      Estimated savings: 18k CHF
-                    </span>
+                    {estimatedSavings && (
+                      <span className="inline-flex items-center gap-1.5 rounded border border-orange-700/40 bg-orange-900/25 px-2 py-0.5 text-xs font-semibold text-orange-300">
+                        Estimated savings: {estimatedSavings}
+                      </span>
+                    )}
                     <span className="text-xs text-gray-600">{note}</span>
                   </div>
 
