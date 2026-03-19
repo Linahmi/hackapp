@@ -3,7 +3,7 @@
 const EXAMPLE =
   "Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception.";
 
-import { Loader2, Paperclip, Mic, X } from "lucide-react";
+import { Loader2, Paperclip, Mic, X, CheckCircle2, XCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 interface Props {
@@ -167,6 +167,28 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
           >
             <X className="h-3.5 w-3.5" />
           </button>
+        </div>
+      )}
+
+      {/* Live Validation Checklist */}
+      {value.trim() && (
+        <div className="flex flex-wrap items-center gap-5 bg-gray-50/80 dark:bg-white/[0.02] px-4 py-3 rounded-xl border border-gray-200 dark:border-white/5 animate-fade-slide-up no-print">
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/\\b\\d+\\b/i.test(value) || /\\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats)\\b/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {/\\b\\d+\\b/i.test(value) || /\\b(units?|pcs|pieces|laptops|screens|stations|coolers|seats)\\b/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+            Quantity
+          </div>
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(budget|k\\b|m\\b|chf|eur|usd|£|\\$|€|\\b\\d+\\s*(k|m)\\b)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {/(budget|k\\b|m\\b|chf|eur|usd|£|\\$|€|\\b\\d+\\s*(k|m)\\b)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+            Budget
+          </div>
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(geneva|kigali|europe|emea|de\\b|berlin|uk\\b|london|paris|fr\\b|us\\b|office|site)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {/(geneva|kigali|europe|emea|de\\b|berlin|uk\\b|london|paris|fr\\b|us\\b|office|site)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+            Location
+          </div>
+          <div className={`flex items-center gap-1.5 text-xs font-bold transition-colors duration-300 ${/(weeks?|days?|months?|years?|asap|by\\b|urgent|q[1-4]|202[0-9]|soon)/i.test(value) ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {/(weeks?|days?|months?|years?|asap|by\\b|urgent|q[1-4]|202[0-9]|soon)/i.test(value) ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+            Timeline
+          </div>
         </div>
       )}
 
