@@ -66,7 +66,7 @@ export default function Home() {
   return (
     <div
       className="flex flex-col items-center gap-8 px-4 py-16"
-      style={{ backgroundColor: "#0f1117", minHeight: "calc(100vh - 49px)" }}
+      style={{ backgroundColor: "var(--bg-app)", minHeight: "calc(100vh - 49px)" }}
     >
       <RequestInput
         value={text}
@@ -121,9 +121,9 @@ export default function Home() {
       {/* Loading Skeleton */}
       {isLoading && (
         <div className="w-full max-w-2xl flex flex-col gap-6 animate-pulse mt-4">
-          <div className="h-[120px] rounded-xl w-full" style={{ backgroundColor: "#12151f", border: "1px solid #1e2130" }} />
-          <div className="h-[80px] rounded-xl w-full" style={{ backgroundColor: "#12151f", border: "1px solid #1e2130" }} />
-          <div className="h-[200px] rounded-xl w-full" style={{ backgroundColor: "#12151f", border: "1px solid #1e2130" }} />
+          <div className="h-[120px] rounded-xl w-full" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }} />
+          <div className="h-[80px] rounded-xl w-full" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }} />
+          <div className="h-[200px] rounded-xl w-full" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }} />
         </div>
       )}
     </div>

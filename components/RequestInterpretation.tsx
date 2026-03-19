@@ -66,14 +66,14 @@ export default function RequestInterpretation({ interpretation, confidence }: Pr
     >
       <div
         className="rounded-xl p-5 flex flex-col gap-4"
-        style={{ backgroundColor: "#12151f", border: "1px solid #1e2130" }}
+        style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <svg className="w-4 h-4 shrink-0" style={{ color: "#dc2626" }} viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
             </svg>
-            <span className="text-white text-sm font-semibold">Request Interpreted</span>
+            <span className="text-[color:var(--text-main)] text-sm font-semibold">Request Interpreted</span>
           </div>
           {confidence != null && (
             <span className="text-xs font-semibold" style={{ color: confColor }}>
@@ -87,13 +87,13 @@ export default function RequestInterpretation({ interpretation, confidence }: Pr
             <div
               key={label}
               className="flex flex-col gap-1.5 rounded-lg px-4 py-3"
-              style={{ backgroundColor: "#0f1117", border: "1px solid #1a1d27" }}
+              style={{ backgroundColor: "var(--bg-app)", border: "1px solid var(--border-subtle)" }}
             >
               <span className="text-lg leading-none">{icon}</span>
-              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "#6b7280" }}>
+              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
                 {label}
               </span>
-              <span className="text-sm font-semibold text-white leading-tight">{value}</span>
+              <span className="text-sm font-semibold text-[color:var(--text-main)] leading-tight">{value}</span>
             </div>
           ))}
         </div>

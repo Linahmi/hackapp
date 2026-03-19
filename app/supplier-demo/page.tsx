@@ -130,7 +130,7 @@ function WeightSlider({
         <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
           {label}
         </span>
-        <span className="w-8 text-right text-sm font-bold tabular-nums text-white">{value}</span>
+        <span className="w-8 text-right text-sm font-bold tabular-nums text-[color:var(--text-main)]">{value}</span>
       </div>
       <input
         type="range"
@@ -236,7 +236,7 @@ export default function SupplierDemoPage() {
         <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#C8102E]">
           Procurement Intelligence
         </p>
-        <h1 className="text-2xl font-bold text-white">Supplier Comparison</h1>
+        <h1 className="text-2xl font-bold text-[color:var(--text-main)]">Supplier Comparison</h1>
         <p className="mt-1 text-sm text-gray-500">
           AI-generated recommendation · Geneva region · Hardware category
         </p>
@@ -288,7 +288,7 @@ export default function SupplierDemoPage() {
                 className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-400"
               >
                 {label}
-                <span className="font-bold text-white">{pct}%</span>
+                <span className="font-bold text-[color:var(--text-main)]">{pct}%</span>
               </span>
             );
           })}
