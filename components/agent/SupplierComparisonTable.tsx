@@ -3,6 +3,7 @@
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Supplier = {
+  supplier_id?: string;
   name: string;
   price: string;
   tco: string;
@@ -207,7 +208,7 @@ export function SupplierComparisonTable({
               return (
                 <>
                   <tr
-                    key={s.name}
+                    key={s.supplier_id ?? s.name}
                     className={`${rowBg} transition hover:bg-white/5`}
                     style={leftBorder}
                   >

@@ -58,7 +58,7 @@ export default function RequestInput({ value, onChange, onSubmit, onLoadExample,
         <button
           type="button"
           onClick={onSubmit}
-          disabled={disabled || !value.trim()}
+          disabled={Boolean(disabled || !value.trim())}
           className="rounded-xl px-6 py-2.5 text-sm font-semibold text-[color:var(--text-main)] transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ backgroundColor: "#dc2626" }}
           onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.backgroundColor = "#b91c1c"; }}

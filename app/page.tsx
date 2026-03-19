@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import RequestInput          from "@/components/RequestInput";
 import ProgressStepper       from "@/components/ProgressStepper";
+import BundlingOpportunityCard from "@/components/BundlingOpportunityCard";
 import RequestInterpretation from "@/components/RequestInterpretation";
 import PolicyCheck           from "@/components/PolicyCheck";
 
@@ -96,7 +97,7 @@ export default function Home() {
       <div className="flex gap-4 w-full max-w-2xl px-2">
         <button 
           onClick={() => {
-            handleTextChange("Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20. Budget capped at 25199.55 EUR. Please use Dell Enterprise Europe with no exception.");
+            handleTextChange("Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception.");
             setActiveReqId("REQ-000004");
           }}
           className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000004" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
@@ -105,12 +106,12 @@ export default function Home() {
         </button>
         <button 
           onClick={() => {
-            handleTextChange("Need IT Project Management Services for the Q3 migration initiative.");
-            setActiveReqId("REQ-000001");
+            handleTextChange("Need 500 laptops for fleet refresh  onboarding  and warranty replacement. Delivery required by 2026-04-06. Budget is approximately 490 000.00 EUR.");
+            setActiveReqId("REQ-000038");
           }}
-          className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000001" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
+          className={`px-4 py-2 border rounded-full text-xs font-semibold transition-colors ${activeReqId === "REQ-000038" ? "bg-white/20 text-white border-white/20" : "border-white/10 text-gray-400 hover:bg-white/5"}`}
         >
-          Load Standard Demo (REQ-000001)
+          Load Standard Demo (REQ-000038)
         </button>
       </div>
 
@@ -144,6 +145,8 @@ export default function Home() {
         <>
           <RequestInterpretation interpretation={result.request_interpretation} />
           <PolicyCheck           validation={result.validation} />
+
+          <BundlingOpportunityCard bundlingOpportunity={result.bundling_opportunity ?? null} />
 
           {/* Navigation CTA to Page 2 */}
           <div className="w-full max-w-2xl">

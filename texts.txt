@@ -1,0 +1,2 @@
+REQ-000038: Need 500 laptops for fleet refresh  onboarding  and warranty replacement. Delivery required by 2026-04-06. Budget is approximately 490 000.00 EUR.
+REQ-000004: Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception.
