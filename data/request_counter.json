@@ -171,10 +171,10 @@
     },
     {
       "id": "R-0022",
-      "timestamp": "2026-03-19T18:24:28.048Z",
-      "category": "IT > Computers",
-      "quantity": 5,
-      "budget": 10000,
+      "timestamp": "2026-03-19T18:25:05.490Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
       "status": "cannot_proceed"
     }
   ]
