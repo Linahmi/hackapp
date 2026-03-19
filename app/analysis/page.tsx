@@ -44,7 +44,7 @@ export default function AnalysisPage() {
           style={{ textDecoration: 'none' }}
         >
           <ArrowLeft className="h-4 w-4" />
-          ← New Request
+          New Request
         </button>
       </div>
 

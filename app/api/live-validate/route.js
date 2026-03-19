@@ -14,10 +14,10 @@ export async function POST(request) {
       // Mock logic simulating AI delay
       await new Promise(r => setTimeout(r, 400));
       return NextResponse.json({
-         quantity: /\\b\\d+\\b/i.test(text) || /(one|two|three|four|five|six|seven|eight|nine|ten)/i.test(text),
-         budget: /(budget|\\$|€|k|m|eur|usd|chf)/i.test(text),
-         location: /(geneva|kigali|europe|berlin|london|paris|office|delivery)/i.test(text),
-         timeline: /(weeks?|days?|months?|asap|urgent|noon|morning)/i.test(text)
+         quantity: /\\b\\d+\\b/i.test(text) || /(one|two|three|four|five|six|seven|eight|nine|ten|un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)/i.test(text),
+         budget: /(budget|\\$|€|k|m|eur|usd|chf|franc)/i.test(text),
+         location: /(geneva|kigali|europe|berlin|london|paris|office|delivery|casablanca|maroc|france|suisse|canada|usa|uk\\b|fr\\b|de\\b|à [a-z]+|in [a-z]+)/i.test(text),
+         timeline: /(weeks?|days?|months?|years?|asap|urgent|noon|morning|by\\b|q[1-4]|202[0-9]|soon|demain|matin|soir|jour|semaine|mois|an|année|rapidement|vite|bientôt)/i.test(text)
       });
     }
 
@@ -31,7 +31,7 @@ export async function POST(request) {
         },
         body: JSON.stringify({
           messages: [
-            { role: 'system', content: 'Analyze the procurement request snippet. Return JSON with exactly these 4 boolean keys indicating if the concept is mentioned: "quantity", "budget", "location", "timeline". Reply ONLY with JSON.' },
+            { role: 'system', content: 'Analyze the procurement request snippet (it may be in any language, e.g., English, French). Return JSON with exactly these 4 boolean keys indicating if the concept is mentioned: "quantity", "budget", "location" (e.g., city, country, office), "timeline" (e.g., tomorrow, demain matin, urgent). Reply ONLY with JSON.' },
             { role: 'user', content: text }
           ],
           max_tokens: 50,
