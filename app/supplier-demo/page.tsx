@@ -510,6 +510,8 @@ export default function SupplierDemoPage() {
             isAutoApproved={isAutoApproved}
             status={hasBlocking ? "cannot_proceed" : "pending_approval"}
             escalations={realEscalations}
+            recommendation={apiResult?.recommendation}
+            requestId={apiResult?.request_id}
           />
         </div>
 
