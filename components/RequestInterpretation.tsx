@@ -34,21 +34,25 @@ export default function RequestInterpretation({ interpretation }: Props) {
       icon: "🖥️",
       label: "Product",
       value: [category_l1, category_l2].filter(Boolean).join(" › ") || "—",
+      method: "inferred" as const,
     },
     {
       icon: "📦",
       label: "Quantity",
       value: quantity != null ? `${quantity}${unit_of_measure ? " " + unit_of_measure : ""}` : "—",
+      method: "stated" as const,
     },
     {
       icon: "📍",
       label: "Location",
       value: delivery_countries?.length ? delivery_countries.join(", ") : "—",
+      method: "stated" as const,
     },
     {
       icon: "💰",
       label: "Budget",
       value: budget_amount != null ? `${currency ?? ""} ${Number(budget_amount).toLocaleString()}`.trim() : "—",
+      method: "stated" as const,
     },
   ];
 
@@ -74,13 +78,20 @@ export default function RequestInterpretation({ interpretation }: Props) {
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {chips.map(({ icon, label, value }) => (
+          {chips.map(({ icon, label, value, method }) => (
             <div
               key={label}
               className="flex flex-col gap-1.5 rounded-lg px-4 py-3"
               style={{ backgroundColor: "var(--bg-app)", border: "1px solid var(--border-subtle)" }}
             >
-              <span className="text-lg leading-none">{icon}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-lg leading-none">{icon}</span>
+                <span className={`rounded px-1 py-0.5 text-[10px] font-semibold tracking-wide ${
+                  method === "stated" ? "bg-slate-700 text-slate-300" : "bg-indigo-900/60 text-indigo-300"
+                }`}>
+                  {method}
+                </span>
+              </div>
               <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
                 {label}
               </span>

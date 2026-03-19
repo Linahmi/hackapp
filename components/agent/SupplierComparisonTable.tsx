@@ -76,7 +76,7 @@ function ScoreBar({ label, value, accent }: { label: string; value: number; acce
           style={{ width: `${value}%`, backgroundColor: accent }}
         />
       </div>
-      <span className="w-5 text-right text-xs tabular-nums text-gray-500">{value}</span>
+      <span className="w-12 text-right text-xs tabular-nums text-gray-500">{value} / 100</span>
     </div>
   );
 }
@@ -235,8 +235,9 @@ export function SupplierComparisonTable({
                     </td>
                     <td className="px-5 py-3.5 align-top">
                       {s.score !== null ? (
-                        <span className={`text-lg font-bold tabular-nums ${isBest ? "text-emerald-400" : "text-gray-300"}`}>
-                          {s.score}
+                        <span className={`font-bold tabular-nums ${isBest ? "text-emerald-400" : "text-gray-300"}`}>
+                          <span className="text-lg">{s.score}</span>
+                          <span className="text-xs font-medium opacity-60"> / 100</span>
                         </span>
                       ) : (
                         <span className="text-gray-600">—</span>

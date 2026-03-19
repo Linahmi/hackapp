@@ -28,9 +28,9 @@ type MetaEntry = {
 };
 
 const DEMO_META: Record<string, MetaEntry> = {
-  "Dell Geneva": { price: "387k CHF", tco: "412k CHF", risk: "Low",  esg: "A", blocked: false },
-  "HP EMEA":     { price: "362k CHF", tco: "389k CHF", risk: "Med",  esg: "C", blocked: false },
-  "Supplier X":  { price: "340k CHF", tco: "371k CHF", risk: "High", esg: "D", blocked: true,
+  "Dell Geneva": { price: "387,000 CHF", tco: "412,000 CHF", risk: "Low",  esg: "A", blocked: false },
+  "HP EMEA":     { price: "362,000 CHF", tco: "389,000 CHF", risk: "Med",  esg: "C", blocked: false },
+  "Supplier X":  { price: "340,000 CHF", tco: "371,000 CHF", risk: "High", esg: "D", blocked: true,
                    blockedReason: "Rule R-14: restricted supplier list" },
 };
 
@@ -42,7 +42,7 @@ const DEMO_SOURCE_TAGS: SourceTag[] = [
 ];
 
 const DEMO_CONFLICTS: ConflictWarning[] = [
-  { message: "ASAP requested but fastest compliant supplier delivers in 6 weeks." },
+  { message: "ASAP requested but fastest compliant supplier: Delivery: 6 weeks." },
 ];
 
 const DEMO_AUDIT: AuditEntry[] = [
@@ -72,8 +72,7 @@ function esgLabel(score: number): "A" | "B" | "C" | "D" {
 
 function formatAmount(amount: number, currency: string): string {
   if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M ${currency}`;
-  if (amount >= 1_000)     return `${Math.round(amount / 1_000)}k ${currency}`;
-  return `${Math.round(amount)} ${currency}`;
+  return `${Math.round(amount).toLocaleString("en")} ${currency}`;
 }
 
 // ─── Score helpers ────────────────────────────────────────────────────────────

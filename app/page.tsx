@@ -71,7 +71,6 @@ export default function Home() {
       setResult(data);
       sessionStorage.setItem("procure_result", JSON.stringify(data));
       setStage("done");
-      router.push("/supplier");
     } catch (err: any) {
       setError(err.message ?? "Unknown error");
       setStage("error");
@@ -140,11 +139,25 @@ export default function Home() {
         </div>
       )}
 
-      {/* Results — interpretation + policy check only (yellow spec) */}
+      {/* Results — interpretation + policy check + CTA */}
       {stage === "done" && result && (
         <>
           <RequestInterpretation interpretation={result.request_interpretation} />
           <PolicyCheck           validation={result.validation} />
+
+          {/* Navigation CTA to Page 2 */}
+          <div className="w-full max-w-2xl">
+            <button
+              onClick={() => router.push("/supplier")}
+              className="w-full flex items-center justify-center gap-2.5 rounded-xl px-6 py-4 text-sm font-semibold text-white transition-colors hover:opacity-90"
+              style={{ backgroundColor: "#C8102E" }}
+            >
+              View Supplier Analysis
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </button>
+          </div>
         </>
       )}
 
