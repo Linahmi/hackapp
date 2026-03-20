@@ -1,5 +1,5 @@
 {
-  "counter": 69,
+  "counter": 67,
   "requests": [
     {
       "id": "R-0001",
@@ -499,35 +499,19 @@
     },
     {
       "id": "R-0066",
-      "timestamp": "2026-03-20T00:29:35.502Z",
-      "category": "null > null",
+      "timestamp": "2026-03-20T00:49:57.237Z",
+      "category": "IT > Smartphones",
       "quantity": null,
-      "budget": 12000,
+      "budget": 30030,
       "status": "cannot_proceed"
     },
     {
       "id": "R-0067",
-      "timestamp": "2026-03-20T00:44:25.807Z",
-      "category": "IT > Laptops",
-      "quantity": 500,
-      "budget": 490000,
-      "status": "recommended"
-    },
-    {
-      "id": "R-0068",
-      "timestamp": "2026-03-20T00:44:44.956Z",
-      "category": "IT > Laptops",
-      "quantity": 500,
-      "budget": 490000,
-      "status": "recommended"
-    },
-    {
-      "id": "R-0069",
-      "timestamp": "2026-03-20T00:45:13.254Z",
-      "category": "IT > Laptops",
-      "quantity": 500,
-      "budget": 490000,
-      "status": "recommended"
+      "timestamp": "2026-03-20T00:50:38.094Z",
+      "category": "IT > Smartphones",
+      "quantity": null,
+      "budget": 30030,
+      "status": "cannot_proceed"
     }
   ]
 }
