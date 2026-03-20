@@ -13,9 +13,19 @@ const HARD_BLOCK_CASE_TYPES = ['FAILED_IMPOSSIBLE_DATE', 'MORE_INFO_REQUIRED', '
 
 function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required, historicalContext) {
   const eligible = getEligibleSuppliers(l1, l2, countries, qty, currency);
-  const fakePolicy = { restricted_suppliers: {} };
+  const { policies } = getData();
+  const restricted_suppliers = {};
+  for (const { supplier } of eligible) {
+    const entry = policies.restricted_suppliers?.find(r => r.supplier_id === supplier.supplier_id);
+    if (entry) {
+      restricted_suppliers[`${supplier.supplier_id}_${supplier.supplier_name.replace(/ /g, '_')}`] = {
+        restricted: true,
+        reason: entry.restriction_reason,
+      };
+    }
+  }
   const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, historicalContext };
-  const { shortlist } = newScoreSuppliers(eligible, fakePolicy, mockReq);
+  const { shortlist } = newScoreSuppliers(eligible, { restricted_suppliers }, mockReq);
   return shortlist;
 }
 

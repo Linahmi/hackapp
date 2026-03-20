@@ -14,6 +14,7 @@ import {
 import { DecisionRow } from "@/components/agent/DecisionRow";
 import { DecisionJustification } from "@/components/agent/DecisionJustification";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
+import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
 // ─── Demo fallback data (used when no API result is in sessionStorage) ────────
 
@@ -125,6 +126,9 @@ export default function SupplierDemoPage() {
   const [apiResult,    setApiResult]    = useState<any>(null);
   const [buyerRequest, setBuyerRequest] = useState(DEMO_REQUEST);
   const [mounted, setMounted] = useState(false);
+  const [marketIntel,  setMarketIntel]  = useState<SupplierIntelResult[]>([]);
+  const [intelLoading, setIntelLoading] = useState(false);
+  const [intelFetched, setIntelFetched] = useState(false);
 
   // Prefer context result (survives SPA navigation, reset on refresh).
   // Fall back to sessionStorage for direct page loads where context may be empty.
@@ -144,6 +148,34 @@ export default function SupplierDemoPage() {
     } catch {}
   }, [contextResult]);
 
+
+  // ─── Market Intelligence fetch ────────────────────────────────────────────
+
+  useEffect(() => {
+    const shortlist = apiResult?.supplier_shortlist;
+    if (!shortlist?.length || intelFetched || intelLoading) return;
+    const category = apiResult?.request_interpretation?.category_l2;
+    if (!category) return;
+    const countries: string[] = apiResult?.request_interpretation?.delivery_countries ?? [];
+    const region = countries.some((c: string) => ["US","CA"].includes(c)) ? "US"
+      : countries.some((c: string) => ["SG","JP","AU"].includes(c)) ? "APAC"
+      : "EU";
+    setIntelLoading(true);
+    setIntelFetched(true);
+    fetch("/api/supplier-intel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        suppliers: shortlist.slice(0, 3).map((s: any) => s.supplier_name),
+        category,
+        region,
+      }),
+    })
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((data) => setMarketIntel(data.results ?? []))
+      .catch(() => {})
+      .finally(() => setIntelLoading(false));
+  }, [apiResult?.supplier_shortlist, intelFetched, intelLoading]);
 
   // ─── Multi-Language detection ─────────────────────────────────────────────
   
@@ -730,6 +762,12 @@ export default function SupplierDemoPage() {
           ) : null}
         </div>
 
+
+        {(intelLoading || marketIntel.length > 0) && (
+          <div className="animate-fade-slide-up delay-900">
+            <MarketIntelCard results={marketIntel} loading={intelLoading} />
+          </div>
+        )}
 
       </div>
       </div>

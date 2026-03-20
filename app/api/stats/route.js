@@ -9,7 +9,7 @@ export async function GET() {
     const requests = data.requests || [];
     const total = data.counter ?? requests.length;
     const approved = requests.filter(
-      (r) => r.status === 'approved' || r.status === 'pending_approval'
+      (r) => r.status === 'approved' || r.status === 'pending_approval' || r.status === 'recommended'
     ).length;
     const autoApprovedPct = total > 0 ? Math.round((approved / total) * 100) : 0;
     return NextResponse.json({ total, autoApprovedPct });

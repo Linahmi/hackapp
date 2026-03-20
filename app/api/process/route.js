@@ -13,9 +13,19 @@ import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
 // with the existing merged Backend-A native module signatures dynamically.
 function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required, budget_amount, historicalContext) {
   const eligible = getEligibleSuppliers(l1, l2, countries, qty, currency);
-  const fakePolicy = { restricted_suppliers: {} };
+  const { policies } = getData();
+  const restricted_suppliers = {};
+  for (const { supplier } of eligible) {
+    const entry = policies.restricted_suppliers?.find(r => r.supplier_id === supplier.supplier_id);
+    if (entry) {
+      restricted_suppliers[`${supplier.supplier_id}_${supplier.supplier_name.replace(/ /g, '_')}`] = {
+        restricted: true,
+        reason: entry.restriction_reason,
+      };
+    }
+  }
   const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, budget_amount, historicalContext };
-  const { shortlist } = newScoreSuppliers(eligible, fakePolicy, mockReq);
+  const { shortlist } = newScoreSuppliers(eligible, { restricted_suppliers }, mockReq);
   return shortlist;
 }
 
