@@ -12,7 +12,6 @@ import {
   AuditEntry,
 } from "@/components/agent/SupplierComparisonTable";
 import { DecisionRow } from "@/components/agent/DecisionRow";
-import { DecisionJustification } from "@/components/agent/DecisionJustification";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
 import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
@@ -429,7 +428,6 @@ export default function SupplierDemoPage() {
 
   const eligibleRanked = scored.filter(s => s.score !== null);
   const bestName       = eligibleRanked[0]?.name ?? "";
-  const bestPrice      = bestName ? (meta[bestName]?.price ?? "") : "";
 
   // ─── Decision & escalation data ───────────────────────────────────────────
 
@@ -644,7 +642,6 @@ export default function SupplierDemoPage() {
           <DecisionRow
             bestName={bestName}
             bestScore={eligibleRanked[0]?.score ?? null}
-            bestPrice={bestPrice}
             isAutoApproved={isAutoApproved}
             status={hasBlocking ? "cannot_proceed" : "pending_approval"}
             escalations={realEscalations}
@@ -652,17 +649,6 @@ export default function SupplierDemoPage() {
             requestId={apiResult?.request_id}
           />
         </div>
-
-        {isFromApi && (
-          <div className="animate-fade-slide-up delay-200">
-            <DecisionJustification
-              recommendation={apiResult?.recommendation ?? null}
-              topSupplier={apiResult?.supplier_shortlist?.[0] ?? null}
-              runnerUp={apiResult?.supplier_shortlist?.[1] ?? null}
-              currency={apiResult?.request_interpretation?.currency ?? "EUR"}
-            />
-          </div>
-        )}
 
         {/* Validation issues (severity-tagged, from AI) */}
         {validationIssues.length > 0 && (

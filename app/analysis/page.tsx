@@ -8,6 +8,7 @@ import AuditPDFExport        from "@/components/AuditPDFExport";
 import RequestInterpretation from "@/components/RequestInterpretation";
 import PolicyCheck           from "@/components/PolicyCheck";
 import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
+import { SupplierComparisonTable, Supplier, ConflictWarning } from "@/components/agent/SupplierComparisonTable";
 import { ArrowLeft } from "lucide-react";
 
 type ConfidenceDriver = { tone: "good" | "warn" | "danger"; label: string };
@@ -23,8 +24,34 @@ type EscalationData = {
   blocking: boolean;
   escalate_to?: string;
   supplier_name?: string;
+  trigger?: string;
 };
-type ShortlistSupplier = { supplier_name: string };
+type ShortlistSupplier = {
+  supplier_id?: string;
+  supplier_name: string;
+  currency?: string;
+  total_price?: number;
+  tco?: number | null;
+  risk_score?: number;
+  esg_score?: number;
+  preferred?: boolean;
+  incumbent?: boolean;
+  composite_score?: number;
+  recommendation_note?: string;
+  historical_flags?: string[];
+  standard_lead_time_days?: number;
+  score_breakdown?: {
+    price?: number;
+    risk?: number;
+    lead_time?: number;
+    esg?: number;
+  };
+};
+type ExcludedSupplier = {
+  supplier_id?: string;
+  supplier_name: string;
+  reason: string;
+};
 type RequestInterpretationData = {
   category_l1?: string | null;
   category_l2?: string | null;
@@ -46,7 +73,27 @@ type AnalysisResult = {
   validation?: unknown;
   bundling_opportunity?: unknown;
   market_benchmark?: unknown;
+  suppliers_excluded?: ExcludedSupplier[];
 };
+
+function riskLabel(score: number): "Low" | "Med" | "High" {
+  if (score < 30) return "Low";
+  if (score < 60) return "Med";
+  return "High";
+}
+
+function esgLabel(score: number): "A" | "B" | "C" | "D" {
+  if (score >= 80) return "A";
+  if (score >= 60) return "B";
+  if (score >= 40) return "C";
+  return "D";
+}
+
+function formatAmount(amount?: number | null, currency = "EUR") {
+  if (amount == null) return "N/A";
+  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M ${currency}`;
+  return `${Math.round(amount).toLocaleString("en")} ${currency}`;
+}
 
 function readStoredResult(): AnalysisResult | null {
   if (typeof window === "undefined") return null;
@@ -249,6 +296,32 @@ export default function AnalysisPage() {
     result.recommendation?.status === "cannot_proceed" || hasBlockers
       ? "danger"
       : "good";
+  const comparisonSuppliers: Supplier[] = (result.supplier_shortlist ?? []).map((supplier, index) => ({
+    supplier_id: supplier.supplier_id,
+    name: supplier.supplier_name,
+    price: formatAmount(supplier.total_price, supplier.currency ?? "EUR"),
+    tco: formatAmount(supplier.tco, supplier.currency ?? "EUR"),
+    totalPriceValue: supplier.total_price,
+    tcoValue: supplier.tco ?? undefined,
+    leadTimeDays: supplier.standard_lead_time_days,
+    risk: riskLabel(supplier.risk_score ?? 50),
+    esg: esgLabel(supplier.esg_score ?? 50),
+    score: typeof supplier.composite_score === "number" ? Math.round(supplier.composite_score * 100) : null,
+    badge: index === 0 ? "best" : "normal",
+    recommendationNote: supplier.recommendation_note,
+    historicalFlags: supplier.historical_flags,
+    preferred: supplier.preferred,
+    incumbent: supplier.incumbent,
+    breakdown: [
+      { label: "Price", value: Math.round((supplier.score_breakdown?.price ?? 0.5) * 100) },
+      { label: "Risk", value: Math.round((supplier.score_breakdown?.risk ?? 0.5) * 100) },
+      { label: "Delivery", value: Math.round((supplier.score_breakdown?.lead_time ?? 0.5) * 100) },
+      { label: "ESG", value: Math.round((supplier.score_breakdown?.esg ?? 0.5) * 100) },
+    ],
+  }));
+  const comparisonConflicts: ConflictWarning[] = blockingEscalations
+    .filter((escalation) => escalation.trigger)
+    .map((escalation) => ({ message: escalation.trigger! }));
 
   return (
     <div className="flex flex-col items-center gap-8 px-4 py-16 min-h-[calc(100vh-65px)] bg-gray-50 dark:bg-[#0f1117] transition-colors duration-300">
@@ -351,6 +424,15 @@ export default function AnalysisPage() {
         </div>
       )}
 
+      {comparisonSuppliers.length > 0 && (
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-325">
+          <SupplierComparisonTable
+            suppliers={comparisonSuppliers}
+            conflicts={comparisonConflicts}
+          />
+        </div>
+      )}
+
       {(effectiveCaseType === 'READY_FOR_VALIDATION' || effectiveCaseType === 'SIMILAR_NOT_EXACT_MATCH') && (
         <div className="w-full max-w-2xl animate-fade-slide-up delay-450">
           <BundlingOpportunityCard bundlingOpportunity={result.bundling_opportunity ?? null} />
@@ -371,16 +453,6 @@ export default function AnalysisPage() {
           </div>
         )}
 
-        <button
-          onClick={() => router.push("/supplier")}
-          className="w-full flex items-center justify-center gap-2.5 rounded-xl px-6 py-4 mt-8 text-sm font-semibold text-white transition-colors hover:bg-red-700"
-          style={{ backgroundColor: "#dc2626" }}
-        >
-          View Supplier Analysis
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-          </svg>
-        </button>
       </div>
     </div>
   );

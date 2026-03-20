@@ -28,7 +28,6 @@ type RecommendationData = {
 export type DecisionRowProps = {
   bestName: string;
   bestScore: number | null;
-  bestPrice: string;
   isAutoApproved: boolean;
   status?: string;
   escalations?: Escalation[];
@@ -348,25 +347,20 @@ function ReviewDetailsModal({
 export function DecisionRow({
   bestName,
   bestScore,
-  bestPrice,
   isAutoApproved,
   status = "pending_approval",
   escalations = [],
   recommendation,
   requestId,
 }: DecisionRowProps) {
-  const [approved,   setApproved]   = useState(false);
+  const [approvedSupplier, setApprovedSupplier] = useState<string | null>(null);
   const [showModal,  setShowModal]  = useState(false);
 
-  // Reset if best supplier changes (slider moved after approval)
-  useEffect(() => {
-    setApproved(false);
-  }, [bestName]);
-
   const hasEligible = bestName !== "" && bestScore !== null;
+  const approved = approvedSupplier === bestName;
 
   function handleApprove() {
-    setApproved(true);
+    setApprovedSupplier(bestName);
   }
 
   function handleReview() {
@@ -376,44 +370,6 @@ export function DecisionRow({
   return (
     <>
       <div className="rounded-2xl shadow-sm mt-8 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] transition-colors duration-300">
-        {/* Header row */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-white/5">
-          <div className="flex items-center gap-2.5">
-            <span className="inline-flex items-center rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
-              Urgent procurement request
-            </span>
-          </div>
-
-          {/* Decision status indicator — non-interactive */}
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
-              Decision status
-            </span>
-            {approved ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-700/50 bg-emerald-900/30 px-3 py-0.5 text-xs font-medium text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                Approved
-              </span>
-            ) : hasEligible ? (
-              isAutoApproved ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-700/50 bg-emerald-900/30 px-3 py-0.5 text-xs font-medium text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  Handled automatically
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-700/50 bg-amber-900/30 px-3 py-0.5 text-xs font-medium text-amber-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                  Requires human review
-                </span>
-              )
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-xs font-bold bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5 text-gray-500 dark:text-gray-400">
-                No decision
-              </span>
-            )}
-          </div>
-        </div>
-
         {/* Decision body */}
         <div className="px-5 py-5">
           {hasEligible ? (
