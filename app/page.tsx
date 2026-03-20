@@ -18,10 +18,13 @@ const STANDARD_CASES = [
   "Need 240 docking stations compatible with the existing Dell laptop fleet for Berlin and Munich. Delivery required in 4 weeks. Budget capped at 28k EUR. Open to approved suppliers.",
   "Need 85 monitors for new analysts in Paris and Brussels. Delivery within 21 days. Budget 42k EUR. Please include ergonomic stands and standard corporate warranty.",
   "Need 60 rugged laptops for field engineers in Milan and Madrid. Delivery needed in 5 weeks. Budget 140k EUR. Preference for low-risk suppliers with strong after-sales support.",
+  "Need 45 sit-stand desks for the new operations floor in Amsterdam and Brussels. Delivery required within 5 weeks. Budget 95k EUR. Prefer durable commercial-grade workstations and assembly support.",
+  "Need 120 ergonomic office chairs for the finance and HR teams in Zurich and Vienna. Delivery within 30 days. Budget 72k CHF. Prioritize low-risk suppliers with strong warranty coverage.",
+  "Need meeting room furniture for 8 collaboration spaces in Paris. Delivery in 6 weeks. Budget 110k EUR. Include tables, seating, and installation.",
 ];
 
 const SCENARIOS = [
-  { icon: Laptop, title: "Standard Case", desc: "Fresh realistic happy-path request every click.", text: "" },
+  { icon: Laptop, title: "Standard Case", desc: "Fresh realistic request every click across IT and workplace categories.", text: "" },
   { icon: Package, title: "Cross-Border Case", desc: "Logistics request with uncertain duties and constraints.", text: "Required 50 specialized medical transport coolers to Kigali by end of month. Budget 12k USD, unsure about import duties." },
   { icon: AlertTriangle, title: "High-Value Case", desc: "Software renewal that should trigger approval logic.", text: "Need to renew Autodesk Maya licenses for 15 designers and add 5 new seats. Total budget 45k." },
   { icon: Search, title: "Missing Information", desc: "Vague request requiring clarification before sourcing.", text: "Need more screens for the newly hired analysts. Send them ASAP." }
@@ -101,7 +104,7 @@ export default function Home() {
       if (animTimer) clearInterval(animTimer);
       window.removeEventListener("scroll", handleScroll);
     };
-  }, []);
+  }, [requestText, router, setRequestText]);
 
   async function handleSubmit(file?: File | null) {
     let finalRequestText = requestText;
@@ -189,7 +192,7 @@ export default function Home() {
             if (eventType === "error") {
               throw new Error(payload.message || "Pipeline error");
             }
-          } catch (parseErr: any) {
+          } catch (parseErr: unknown) {
             if (eventType === "error") throw parseErr;
           }
         }
@@ -199,8 +202,8 @@ export default function Home() {
         setStage("done");
         router.push("/analysis");
       }
-    } catch (err: any) {
-      setError(err.message ?? "Unknown error");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unknown error");
       setStage("error");
     }
   }
