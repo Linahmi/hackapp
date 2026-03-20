@@ -110,12 +110,12 @@ function ScoreBar({ value, max = 1 }: { value: number; max?: number }) {
 }
 
 export function DecisionJustification({ recommendation, topSupplier, runnerUp, currency }: Props) {
-  if (!recommendation || !topSupplier) return null;
+  if (!recommendation) return null;
 
   const { rationale, decision_summary, justification, next_action, key_reasons, risks, status } = recommendation;
-  const bd = topSupplier.score_breakdown ?? {};
+  const bd = topSupplier?.score_breakdown ?? {};
   const isBlocked = status === "cannot_proceed";
-  const winnerReasons = !isBlocked ? buildWinnerReasons(topSupplier, runnerUp) : [];
+  const winnerReasons = !isBlocked && topSupplier ? buildWinnerReasons(topSupplier, runnerUp) : [];
 
   return (
     <div className="mt-4 rounded-xl" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
@@ -173,7 +173,7 @@ export function DecisionJustification({ recommendation, topSupplier, runnerUp, c
         ) : null}
 
         {/* ── Supplier choice summary ── */}
-        {!isBlocked && (
+        {!isBlocked && topSupplier && (
           <div className="rounded-lg px-4 py-4" style={{ backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-subtle)" }}>
             <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
               Why {topSupplier.supplier_name}?
@@ -264,7 +264,7 @@ export function DecisionJustification({ recommendation, topSupplier, runnerUp, c
         )}
 
         {/* ── vs runner-up ── */}
-        {!isBlocked && runnerUp && (
+        {!isBlocked && topSupplier && runnerUp && (
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
               vs #{runnerUp.rank} {runnerUp.supplier_name}

@@ -13,10 +13,10 @@ import { ArrowLeft } from "lucide-react";
 const CASE_CONFIG: Record<string, { bg: string; border: string; iconColor: string; title: string; desc: string }> = {
   MORE_INFO_REQUIRED:    { bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.3)",  iconColor: "#f59e0b", title: "More information required",          desc: "The request is too vague to process automatically. Please clarify the details below and resubmit." },
   FAILED_IMPOSSIBLE_DATE:{ bg: "rgba(220,38,38,0.06)", border: "rgba(220,38,38,0.3)",   iconColor: "#dc2626", title: "Delivery date is not achievable",     desc: "The requested delivery window cannot be met by any available supplier. Please revise the deadline or accept an alternative timeline." },
+  PENDING_RESOLUTION:   { bg: "rgba(220,38,38,0.06)", border: "rgba(220,38,38,0.3)",   iconColor: "#dc2626", title: "Pending resolution",                 desc: "The request cannot proceed automatically. Resolve the blocking policy, budget, or approval issue below before continuing." },
   NO_SUPPLIER_AVAILABLE: { bg: "rgba(220,38,38,0.06)", border: "rgba(220,38,38,0.3)",   iconColor: "#dc2626", title: "No compliant supplier found",          desc: "No supplier in the approved panel can fulfill this request with the given constraints. A sourcing specialist will need to intervene." },
   SIMILAR_NOT_EXACT_MATCH:{ bg: "rgba(99,102,241,0.06)", border: "rgba(99,102,241,0.3)", iconColor: "#6366f1", title: "Similar alternatives found",            desc: "The exact product or configuration requested is not available. The suppliers below offer the closest compliant alternatives." },
   READY_FOR_VALIDATION:  { bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.3)",   iconColor: "#22c55e", title: "Ready for validation",                 desc: "All compliance checks passed and suppliers are available. Review the recommendation below and validate to proceed." },
-  PENDING_RESOLUTION:    { bg: "rgba(220,38,38,0.06)", border: "rgba(220,38,38,0.3)",   iconColor: "#dc2626", title: "Pending Resolution",                   desc: "One or more blocking escalations must be resolved before this request can proceed. Validate Order is unavailable until all blockers are cleared." },
 };
 
 function SummaryCard({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "good" | "warn" | "danger" }) {

@@ -9,6 +9,8 @@ import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
 import { getNextRequestId, logRequest } from '@/lib/requestCounter';
 import { explainConfidence } from '@/lib/confidenceScorer';
 
+const HARD_BLOCK_CASE_TYPES = ['FAILED_IMPOSSIBLE_DATE', 'MORE_INFO_REQUIRED', 'NO_SUPPLIER_AVAILABLE', 'PENDING_RESOLUTION'];
+
 function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required, historicalContext) {
   const eligible = getEligibleSuppliers(l1, l2, countries, qty, currency);
   const fakePolicy = { restricted_suppliers: {} };
@@ -138,9 +140,11 @@ export async function POST(req) {
         // ── Case type ────────────────────────────────────────────────
         const hasImpossibleDate = issues.some(i => i.type === 'deadline_passed' || i.type === 'lead_time_infeasible');
         const hasUnclearIntent  = structuredRequest.unclear_intent === true || (!enrichedRequest.category_l2 && !enrichedRequest.category_l1);
+        const hasBudgetIssue = issues.some(i => i.type === 'budget_insufficient');
         let case_type;
         if      (hasImpossibleDate)                                            case_type = 'FAILED_IMPOSSIBLE_DATE';
         else if (hasUnclearIntent)                                             case_type = 'MORE_INFO_REQUIRED';
+        else if (hasBudgetIssue)                                               case_type = 'PENDING_RESOLUTION';
         else if (rankedSuppliers.length === 0)                                 case_type = 'NO_SUPPLIER_AVAILABLE';
         else if (structuredRequest.demand_reframe_flag && rankedSuppliers.length > 0) case_type = 'SIMILAR_NOT_EXACT_MATCH';
         else                                                                   case_type = 'READY_FOR_VALIDATION';
@@ -193,6 +197,10 @@ export async function POST(req) {
           decisionThinking += chunk;
           send('step', { step: 'decision', status: 'active', pct: 75, thinking: decisionThinking });
         });
+
+        if (decision.status === 'cannot_proceed' && case_type === 'READY_FOR_VALIDATION') {
+          case_type = 'PENDING_RESOLUTION';
+        }
 
         // Bundling requires a valid shortlist — never run when no compliant supplier exists
         const bundlingOpportunity = (!isHardBlock && rankedSuppliers.length > 0)

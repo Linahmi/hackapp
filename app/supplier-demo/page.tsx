@@ -531,6 +531,7 @@ export default function SupplierDemoPage() {
           const caseContacts: Record<string, { role: string; action: string; color: string }> = {
             MORE_INFO_REQUIRED:     { role: "Intern / Sourcing Agent",  action: "Follow up with the requester to collect missing information before this request can proceed.", color: "#f59e0b" },
             FAILED_IMPOSSIBLE_DATE: { role: "Intern / Sourcing Agent",  action: "Contact the requester to negotiate a revised delivery deadline or confirm if an alternative date is acceptable.", color: "#f59e0b" },
+            PENDING_RESOLUTION:     { role: "Procurement Manager",      action: "Resolve the blocking budget, policy, or approval issue before the request can continue through sourcing.", color: "#dc2626" },
             NO_SUPPLIER_AVAILABLE:  { role: "Sourcing Specialist",      action: "Identify and onboard a new supplier capable of fulfilling this requirement, or escalate to category management.", color: "#dc2626" },
             SIMILAR_NOT_EXACT_MATCH:{ role: "Procurement Manager",      action: "Review the proposed alternatives with the requester and confirm acceptance of a substitute product or specification.", color: "#6366f1" },
           };
