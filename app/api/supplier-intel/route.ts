@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { searchSuppliers } from "@/lib/exaSupplierSearch";
+import { searchMarketCandidates, searchSuppliers } from "@/lib/exaSupplierSearch";
 
 export async function POST(request: Request): Promise<NextResponse> {
-  let body: { suppliers?: string[]; category?: string; region?: string };
+  let body: { suppliers?: string[]; category?: string; region?: string; discoveryMode?: boolean };
 
   try {
     body = await request.json();
@@ -13,14 +13,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  const { suppliers, category, region } = body;
-
-  if (!suppliers || !Array.isArray(suppliers) || suppliers.length === 0) {
-    return NextResponse.json(
-      { error: "suppliers must be a non-empty array of strings" },
-      { status: 400 },
-    );
-  }
+  const { suppliers, category, region, discoveryMode } = body;
 
   if (!category || typeof category !== "string") {
     return NextResponse.json(
@@ -29,12 +22,23 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  // Cap at 5 suppliers to avoid excessive API calls
-  const capped = suppliers.slice(0, 5);
-
   try {
+    if (discoveryMode) {
+      const results = await searchMarketCandidates(category, region);
+      return NextResponse.json({ results, mode: "discovery" }, { status: 200 });
+    }
+
+    if (!suppliers || !Array.isArray(suppliers) || suppliers.length === 0) {
+      return NextResponse.json(
+        { error: "suppliers must be a non-empty array of strings unless discoveryMode is enabled" },
+        { status: 400 },
+      );
+    }
+
+    // Cap at 5 suppliers to avoid excessive API calls
+    const capped = suppliers.slice(0, 5);
     const results = await searchSuppliers(capped, category, region);
-    return NextResponse.json({ results }, { status: 200 });
+    return NextResponse.json({ results, mode: "shortlist" }, { status: 200 });
   } catch (err) {
     console.error("[supplier-intel] Unexpected error:", err);
     return NextResponse.json(
