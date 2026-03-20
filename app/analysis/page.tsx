@@ -177,6 +177,7 @@ export default function AnalysisPage() {
   if (!result) return null;
 
   const approvalThreshold = result.policy_evaluation?.approval_threshold ?? null;
+  const confidenceDetails = (result.confidence_details as { tone: "good" | "warn" | "danger"; label: string }[] | undefined) ?? [];
   const blockingEscalations = (result.escalations ?? []).filter((e: any) => e.blocking);
   const hasBlockers = blockingEscalations.length > 0;
 
@@ -249,6 +250,39 @@ export default function AnalysisPage() {
           <SummaryCard label="Blocking Escalations" value={`${blockingEscalations.length}`} tone={blockingEscalations.length > 0 ? "danger" : "good"} />
           <SummaryCard label="Next Action" value={nextAction} tone={summaryTone} />
         </div>
+        {typeof result.confidence_score === "number" && (
+          <div className="mt-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12151f] px-4 py-4 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Decision Confidence</p>
+                <p className={`mt-1 text-2xl font-black ${result.confidence_score >= 78 ? "text-emerald-500" : result.confidence_score >= 55 ? "text-amber-500" : "text-red-500"}`}>
+                  {result.confidence_score}%
+                </p>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md">
+                Based on request completeness, policy clarity, shortlist strength, and escalation load.
+              </p>
+            </div>
+            {confidenceDetails.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {confidenceDetails.map((item, i) => (
+                  <span
+                    key={i}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold border ${
+                      item.tone === "good"
+                        ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20"
+                        : item.tone === "danger"
+                        ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20"
+                        : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="w-full max-w-2xl animate-fade-slide-up delay-150">

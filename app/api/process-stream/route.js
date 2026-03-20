@@ -7,6 +7,7 @@ import { findHistoricalContext } from '@/lib/historicalLookup';
 import { generateDecision } from '@/lib/decisionEngine';
 import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
 import { getNextRequestId, logRequest } from '@/lib/requestCounter';
+import { explainConfidence } from '@/lib/confidenceScorer';
 
 function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required, historicalContext) {
   const eligible = getEligibleSuppliers(l1, l2, countries, qty, currency);
@@ -14,30 +15,6 @@ function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days
   const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, historicalContext };
   const { shortlist } = newScoreSuppliers(eligible, fakePolicy, mockReq);
   return shortlist;
-}
-
-const HARD_BLOCK_CASE_TYPES = ['FAILED_IMPOSSIBLE_DATE', 'MORE_INFO_REQUIRED', 'NO_SUPPLIER_AVAILABLE'];
-
-function computeConfidenceLocal(caseType, escalations, issues, preferredAvailable, historicalMatch, preferredStatedButUnresolved = false) {
-  // Hard blocks are deterministic: the agent is certain about why the request cannot proceed
-  if (HARD_BLOCK_CASE_TYPES.includes(caseType)) return 95;
-
-  // Escalation-required: resolution depends on human judgment — moderate confidence
-  const hasBlocking = escalations?.some(e => e.blocking);
-  if (hasBlocking) {
-    let score = 70;
-    if (historicalMatch) score += 5;
-    if (preferredAvailable) score += 5;
-    return Math.min(80, score); // 70–80
-  }
-
-  // Forward path with tradeoffs: heuristic scoring
-  let score = 85;
-  if (issues?.length > 0) score -= issues.length * 5;
-  if (preferredStatedButUnresolved) score -= 10;
-  if (preferredAvailable) score += 5;
-  if (historicalMatch) score += 5;
-  return Math.min(95, Math.max(50, score));
 }
 
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
@@ -228,15 +205,6 @@ export async function POST(req) {
         await delay(600);
         send('step', { step: 'logged', status: 'active', pct: 90, thinking: 'Writing audit trail and computing confidence score…' });
 
-        const preferredStatedButUnresolved = !!enrichedRequest.preferred_supplier_stated && !preferredCheck;
-        const confidence = computeConfidenceLocal(
-          case_type,
-          escalations,
-          issues,
-          preferredCheck?.is_preferred && !preferredCheck?.is_restricted,
-          historicalContext.length > 0,
-          preferredStatedButUnresolved
-        );
         // Auto-approve ONLY when: tier 1, no escalations, no critical validation issues
         const hasBlockingValidationIssue = issues.some(i => i.severity === 'critical');
         const isAutoApproved =
@@ -255,6 +223,16 @@ export async function POST(req) {
           }
         }
 
+        const confidenceResult = explainConfidence(
+          enrichedRequest,
+          validationResult,
+          policyResult,
+          rankedSuppliers,
+          escalations,
+          { ...decision, is_auto_approved: isAutoApproved }
+        );
+        const confidence = confidenceResult.score;
+
         await delay(500);
         send('step', { step: 'logged', status: 'done', pct: 100, thinking: `Confidence: ${confidence}%. ${isAutoApproved ? 'Auto-approved ✓' : `Requires approval from ${requiredApprover}`}` });
 
@@ -263,6 +241,7 @@ export async function POST(req) {
           request_id: reqId,
           processed_at: new Date().toISOString(),
           confidence_score: confidence,
+          confidence_details: confidenceResult.drivers,
           request_interpretation: enrichedRequest,
           validation: validationResult,
           policy_evaluation: policyResult,

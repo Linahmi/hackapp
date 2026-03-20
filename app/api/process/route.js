@@ -4,7 +4,7 @@ import { parseRequest, fillGapsFromHistory } from '@/lib/intakeAgent';
 import { checkApprovalTier, checkPreferredSupplier, checkCategoryRules, checkGeographyRules, evaluatePolicy } from '@/lib/policyEngine';
 import { scoreSuppliers as newScoreSuppliers } from '@/lib/supplierScorer';
 import { buildEscalations } from '@/lib/escalationRouter';
-import { computeConfidence as newComputeConfidence } from '@/lib/confidenceScorer';
+import { explainConfidence } from '@/lib/confidenceScorer';
 import { findHistoricalContext } from '@/lib/historicalLookup';
 import { generateDecision } from '@/lib/decisionEngine';
 import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
@@ -17,19 +17,6 @@ function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days
   const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, budget_amount, historicalContext };
   const { shortlist } = newScoreSuppliers(eligible, fakePolicy, mockReq);
   return shortlist;
-}
-
-function computeConfidenceLocal(issues, suppliers, preferredAvailable, historicalMatch, escalations) {
-  let score = 100;
-  if (issues && issues.length > 0) score -= (20 * issues.length);
-  if (!suppliers || suppliers.length === 0) score -= 20;
-
-  const hasBlocking = escalations && escalations.some(e => e.blocking);
-  if (hasBlocking) score -= 30;
-
-  if (preferredAvailable) score += 10;
-  if (historicalMatch) score += 10;
-  return Math.min(100, Math.max(0, score));
 }
 
 export async function POST(req) {
@@ -177,15 +164,6 @@ export async function POST(req) {
     // 9b. Bundling Detector
     const bundlingOpportunity = detectBundlingOpportunity(enrichedRequest, rankedSuppliers);
 
-    // 10. Confidence
-    const confidence = computeConfidenceLocal(
-      validationResult.issues,
-      rankedSuppliers,
-      preferredCheck?.is_preferred && !preferredCheck?.is_restricted,
-      historicalContext.length > 0,
-      escalations
-    );
-
     // Auto-approve ONLY when: tier 1, no escalations, no critical validation issues
     const hasBlockingValidationIssue = issues.some(i => i.severity === 'critical');
     const isAutoApproved =
@@ -206,11 +184,23 @@ export async function POST(req) {
       }
     }
 
+    // 10. Confidence
+    const confidenceResult = explainConfidence(
+      enrichedRequest,
+      validationResult,
+      policyResult,
+      rankedSuppliers,
+      escalations,
+      { ...decision, is_auto_approved: isAutoApproved }
+    );
+    const confidence = confidenceResult.score;
+
     // 11. Return structure
     return NextResponse.json({
       request_id,
       processed_at: new Date().toISOString(),
       confidence_score: confidence,
+      confidence_details: confidenceResult.drivers,
       steps: [
         { id:'parsing', label:'Reading request', status:'done' },
         { id:'validation', label:'Checking completeness', status:'done' },

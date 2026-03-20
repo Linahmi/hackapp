@@ -297,6 +297,7 @@ export default function SupplierDemoPage() {
   });
 
   const confidence   = apiResult?.confidence_score ?? null;
+  const confidenceDetails = (apiResult?.confidence_details as { tone: "good" | "warn" | "danger"; label: string }[] | undefined) ?? [];
   const ri           = apiResult?.request_interpretation;
   const approvalThreshold = apiResult?.policy_evaluation?.approval_threshold ?? null;
   const nextAction = apiResult?.recommendation?.next_action
@@ -403,11 +404,34 @@ export default function SupplierDemoPage() {
           </div>
           
           {confidence !== null && (
-            <div className="flex flex-col items-end gap-1.5 bg-white/60 dark:bg-[#0f1117]/80 backdrop-blur-sm px-5 py-4 rounded-2xl border border-gray-200 dark:border-white/5 animate-slide-in-right delay-200">
-              <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Decision Confidence</span>
-              <span className={`text-4xl font-black tabular-nums tracking-tight ${confidence >= 70 ? "text-emerald-500" : confidence >= 40 ? "text-amber-500" : "text-red-500"}`}>
-                {confidence}%
-              </span>
+            <div className="flex flex-col items-end gap-3 bg-white/60 dark:bg-[#0f1117]/80 backdrop-blur-sm px-5 py-4 rounded-2xl border border-gray-200 dark:border-white/5 animate-slide-in-right delay-200 max-w-md">
+              <div className="flex flex-col items-end gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Decision Confidence</span>
+                <span className={`text-4xl font-black tabular-nums tracking-tight ${confidence >= 78 ? "text-emerald-500" : confidence >= 55 ? "text-amber-500" : "text-red-500"}`}>
+                  {confidence}%
+                </span>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                  Based on request completeness, policy clarity, shortlist strength, and escalation load
+                </span>
+              </div>
+              {confidenceDetails.length > 0 && (
+                <div className="flex flex-wrap justify-end gap-2">
+                  {confidenceDetails.map((item, i) => (
+                    <span
+                      key={i}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold border ${
+                        item.tone === "good"
+                          ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20"
+                          : item.tone === "danger"
+                          ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20"
+                          : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20"
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
