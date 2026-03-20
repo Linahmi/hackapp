@@ -775,25 +775,7 @@ export default function SupplierDemoPage() {
             </div>
           )}
 
-          {suppliers.length > 0 ? (
-            <>
-              <div className="flex items-center justify-between pt-2">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Step 4</p>
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">Supplier Comparison</h2>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Compliant options ranked on price, risk, delivery, and ESG</p>
-              </div>
-              <div id="supplier-table" className="animate-scale-fade-in delay-700">
-                <SupplierComparisonTable
-                  suppliers={suppliers}
-                  sourceTags={sourceTags}
-                  conflicts={conflicts}
-                  auditTrail={auditTrail}
-                />
-              </div>
-            </>
-          ) : (
+          {suppliers.length === 0 && (
             <div className="animate-scale-fade-in delay-700 rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/8 px-6 py-5 shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 mb-2">Step 4</p>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">No Compliant Supplier Available</h2>
