@@ -11,9 +11,9 @@ const STEPS = [
 type PipelineStatus = "complete" | "awaiting_action" | "pending_resolution";
 
 const STATUS_CFG: Record<PipelineStatus, { label: string; color: string; pct: number }> = {
-  complete:            { label: "Pipeline complete",    color: "#22c55e", pct: 100 },
-  awaiting_action:     { label: "Awaiting action",      color: "#f59e0b", pct: 85  },
-  pending_resolution:  { label: "Pending resolution",   color: "#ef4444", pct: 85  },
+  complete:            { label: "Pipeline complete",                 color: "#22c55e", pct: 100 },
+  awaiting_action:     { label: "Pipeline complete — awaiting action", color: "#f59e0b", pct: 100 },
+  pending_resolution:  { label: "Pipeline complete — pending resolution", color: "#ef4444", pct: 100 },
 };
 
 interface Props {

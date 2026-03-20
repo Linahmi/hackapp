@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import RequestInput from "@/components/RequestInput";
 import ProgressStepper from "@/components/ProgressStepper";
@@ -13,8 +13,15 @@ const STEP_INDEX: Record<string, number> = {
   parsing: 0, rules: 1, scoring: 2, decision: 3, logged: 4,
 };
 
+const STANDARD_CASES = [
+  "Need 120 laptops for the Geneva and Zurich offices within 3 weeks. Budget 180k CHF. Prefer Dell, but open to any compliant supplier with 3-year warranty and next-business-day support.",
+  "Need 240 docking stations compatible with the existing Dell laptop fleet for Berlin and Munich. Delivery required in 4 weeks. Budget capped at 28k EUR. Open to approved suppliers.",
+  "Need 85 monitors for new analysts in Paris and Brussels. Delivery within 21 days. Budget 42k EUR. Please include ergonomic stands and standard corporate warranty.",
+  "Need 60 rugged laptops for field engineers in Milan and Madrid. Delivery needed in 5 weeks. Budget 140k EUR. Preference for low-risk suppliers with strong after-sales support.",
+];
+
 const SCENARIOS = [
-  { icon: Laptop, title: "Standard Case", desc: "Complete request with a policy conflict.", text: "Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception." },
+  { icon: Laptop, title: "Standard Case", desc: "Fresh realistic happy-path request every click.", text: "" },
   { icon: Package, title: "Cross-Border Case", desc: "Logistics request with uncertain duties and constraints.", text: "Required 50 specialized medical transport coolers to Kigali by end of month. Budget 12k USD, unsure about import duties." },
   { icon: AlertTriangle, title: "High-Value Case", desc: "Software renewal that should trigger approval logic.", text: "Need to renew Autodesk Maya licenses for 15 designers and add 5 new seats. Total budget 45k." },
   { icon: Search, title: "Missing Information", desc: "Vague request requiring clarification before sourcing.", text: "Need more screens for the newly hired analysts. Send them ASAP." }
@@ -33,6 +40,7 @@ export default function Home() {
   const [activeStep, setActiveStep] = useState(0);
   const [thinkingText, setThinkingText] = useState("");
   const [progressPct, setProgressPct] = useState(0);
+  const standardCaseIndexRef = useRef(-1);
 
   // Parallax Scroll State
   const [scrollY, setScrollY] = useState(0);
@@ -40,6 +48,11 @@ export default function Home() {
   function handleTextChange(val: string) {
     setRequestText(val);
     localStorage.setItem("buyer_request", val);
+  }
+
+  function getNextStandardCase() {
+    standardCaseIndexRef.current = (standardCaseIndexRef.current + 1) % STANDARD_CASES.length;
+    return STANDARD_CASES[standardCaseIndexRef.current];
   }
 
   useEffect(() => {
@@ -269,7 +282,7 @@ export default function Home() {
                 key={i}
                 type="button"
                 onClick={(e) => {
-                  handleTextChange(s.text);
+                  handleTextChange(s.title === "Standard Case" ? getNextStandardCase() : s.text);
                   const el = e.currentTarget;
                   el.classList.add("scale-95");
                   setTimeout(() => el.classList.remove("scale-95"), 150);
