@@ -16,6 +16,7 @@ export interface SupplierIntelResult {
     name: string;
     reason: string;
     url: string;
+    source: "exa" | "dataset_fallback";
   } | null;
 }
 
@@ -172,7 +173,9 @@ export default function MarketIntelCard({ results, loading, mode = "shortlist" }
 
       {suggestedCandidate && (
         <div className="mb-6 rounded-xl border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/8 px-5 py-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Best External Lead</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
+            {suggestedCandidate.source === "exa" ? "Best External Lead" : "Proposed Supplier Fallback"}
+          </p>
           <div className="mt-1 flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{suggestedCandidate.name}</p>

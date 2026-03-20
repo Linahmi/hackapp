@@ -1,5 +1,5 @@
 {
-  "counter": 68,
+  "counter": 74,
   "requests": [
     {
       "id": "R-0001",
@@ -515,11 +515,51 @@
     },
     {
       "id": "R-0068",
-      "timestamp": "2026-03-20T01:38:15.823Z",
+      "timestamp": "2026-03-20T01:09:04.155Z",
       "category": "IT > Monitors",
       "quantity": 85,
       "budget": 42000,
       "status": "recommended"
+    },
+    {
+      "id": "R-0069",
+      "timestamp": "2026-03-20T01:13:23.585Z",
+      "category": "IT > Monitors",
+      "quantity": 85,
+      "budget": 42000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0070",
+      "timestamp": "2026-03-20T01:53:27.154Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0071",
+      "timestamp": "2026-03-20T01:55:09.560Z",
+      "category": "Facilities > Sit-stand desks",
+      "quantity": 45,
+      "budget": 95000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0073",
+      "timestamp": "2026-03-20T02:01:58.025Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0074",
+      "timestamp": "2026-03-20T02:06:21.276Z",
+      "category": "Facilities > specialized medical transport coolers",
+      "quantity": 50,
+      "budget": 120000000,
+      "status": "cannot_proceed"
     }
   ]
 }
