@@ -10,6 +10,55 @@ import PolicyCheck           from "@/components/PolicyCheck";
 import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 import { ArrowLeft } from "lucide-react";
 
+type ConfidenceDriver = { tone: "good" | "warn" | "danger"; label: string };
+type ApprovalThreshold = {
+  rule_applied?: string;
+  tier?: number;
+  quotes_required?: number;
+  approver?: string;
+  approvers?: string[];
+  deviation_approval?: string | null;
+};
+type EscalationData = {
+  blocking: boolean;
+  escalate_to?: string;
+  supplier_name?: string;
+};
+type ShortlistSupplier = { supplier_name: string };
+type RequestInterpretationData = {
+  category_l1?: string | null;
+  category_l2?: string | null;
+  delivery_countries?: string[];
+};
+type RecommendationData = {
+  status?: string;
+  next_action?: string;
+};
+type AnalysisResult = {
+  supplier_shortlist?: ShortlistSupplier[];
+  confidence_score?: number;
+  confidence_details?: ConfidenceDriver[];
+  escalations?: EscalationData[];
+  case_type?: string;
+  recommendation?: RecommendationData | null;
+  request_interpretation?: RequestInterpretationData;
+  policy_evaluation?: { approval_threshold?: ApprovalThreshold | null };
+  validation?: unknown;
+  bundling_opportunity?: unknown;
+  market_benchmark?: unknown;
+};
+
+function readStoredResult(): AnalysisResult | null {
+  if (typeof window === "undefined") return null;
+  try {
+    if (sessionStorage.getItem("procuretrace_session_active") !== "true") return null;
+    const savedResult = sessionStorage.getItem("procuretrace_result");
+    return savedResult ? JSON.parse(savedResult) as AnalysisResult : null;
+  } catch {
+    return null;
+  }
+}
+
 const CASE_CONFIG: Record<string, { bg: string; border: string; iconColor: string; title: string; desc: string }> = {
   MORE_INFO_REQUIRED:    { bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.3)",  iconColor: "#f59e0b", title: "More information required",          desc: "The request is too vague to process automatically. Please clarify the details below and resubmit." },
   FAILED_IMPOSSIBLE_DATE:{ bg: "rgba(220,38,38,0.06)", border: "rgba(220,38,38,0.3)",   iconColor: "#dc2626", title: "Delivery date is not achievable",     desc: "The requested delivery window cannot be met by any available supplier. Please revise the deadline or accept an alternative timeline." },
@@ -113,7 +162,7 @@ function CaseBanner({ caseType, onValidate }: { caseType: string; onValidate?: (
 
 export default function AnalysisPage() {
   const router = useRouter();
-  const [result, setResult] = useState<any>(null);
+  const [result] = useState<AnalysisResult | null>(() => readStoredResult());
   const [marketIntel, setMarketIntel] = useState<SupplierIntelResult[]>([]);
   const [intelMode, setIntelMode] = useState<"shortlist" | "discovery">("shortlist");
   const [intelLoading, setIntelLoading] = useState(false);
@@ -122,21 +171,10 @@ export default function AnalysisPage() {
   const [validated, setValidated] = useState(false);
 
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem("procuretrace_session_active") === "true") {
-        const savedResult = sessionStorage.getItem("procuretrace_result");
-        if (savedResult) {
-          setResult(JSON.parse(savedResult));
-        } else {
-          router.push("/");
-        }
-      } else {
-        router.push("/");
-      }
-    } catch {
+    if (!result) {
       router.push("/");
     }
-  }, [router]);
+  }, [result, router]);
 
   // Auto-trigger live supplier intel when result loads
   useEffect(() => {
@@ -148,37 +186,51 @@ export default function AnalysisPage() {
 
     if (!shortlist.length && result.case_type !== "NO_SUPPLIER_AVAILABLE") return;
 
-    setIntelLoading(true);
     const discoveryMode = shortlist.length === 0;
-    if (discoveryMode) {
-      setIntelMode("discovery");
-    } else {
-      setIntelMode("shortlist");
+    let isCancelled = false;
+
+    async function loadIntel() {
+      setIntelLoading(true);
+      try {
+        const response = await fetch("/api/supplier-intel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            discoveryMode
+              ? { category, region, discoveryMode: true }
+              : { suppliers: shortlist.map((supplier) => supplier.supplier_name), category, region }
+          ),
+        });
+        if (!response.ok) throw new Error("intel fetch failed");
+        const data = await response.json() as { results?: SupplierIntelResult[]; mode?: "shortlist" | "discovery" };
+        if (!isCancelled) {
+          setMarketIntel(data.results ?? []);
+          setIntelMode(data.mode === "discovery" ? "discovery" : "shortlist");
+          setIntelError(false);
+        }
+      } catch {
+        if (!isCancelled) {
+          setIntelError(true);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIntelLoading(false);
+          setIntelFetched(true);
+        }
+      }
     }
 
-    fetch("/api/supplier-intel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        discoveryMode
-          ? { category, region, discoveryMode: true }
-          : { suppliers: shortlist.map((s: any) => s.supplier_name), category, region }
-      ),
-    })
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((data) => {
-        setMarketIntel(data.results ?? []);
-        setIntelMode(data.mode === "discovery" ? "discovery" : "shortlist");
-      })
-      .catch(() => setIntelError(true))
-      .finally(() => { setIntelLoading(false); setIntelFetched(true); });
+    void loadIntel();
+    return () => {
+      isCancelled = true;
+    };
   }, [result, intelFetched, intelLoading]);
 
   if (!result) return null;
 
   const approvalThreshold = result.policy_evaluation?.approval_threshold ?? null;
-  const confidenceDetails = (result.confidence_details as { tone: "good" | "warn" | "danger"; label: string }[] | undefined) ?? [];
-  const blockingEscalations = (result.escalations ?? []).filter((e: any) => e.blocking);
+  const confidenceDetails = result.confidence_details ?? [];
+  const blockingEscalations = (result.escalations ?? []).filter((e) => e.blocking);
   const hasBlockers = blockingEscalations.length > 0;
 
   // Override case type: never show READY_FOR_VALIDATION when blocking escalations exist
@@ -221,7 +273,7 @@ export default function AnalysisPage() {
           pipelineStatus={
             result?.recommendation?.status === "cannot_proceed"
               ? "pending_resolution"
-              : (result?.escalations ?? []).some((e: any) => e.blocking)
+              : (result?.escalations ?? []).some((e) => e.blocking)
               ? "awaiting_action"
               : "complete"
           }
@@ -296,42 +348,6 @@ export default function AnalysisPage() {
       {effectiveCaseType === "READY_FOR_VALIDATION" && (
         <div className="w-full max-w-2xl animate-fade-slide-up delay-300">
           <PolicyCheck validation={result.validation} />
-        </div>
-      )}
-
-      {(result?.recommendation?.decision_summary || result?.recommendation?.rationale) && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-350">
-          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12151f] px-6 py-5 shadow-sm">
-            <div className="flex items-center gap-2.5 mb-4">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-              </span>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Decision Justification</h3>
-            </div>
-            {result.recommendation.decision_summary ? (
-              <div className="flex flex-col gap-4">
-                <div className={`rounded-lg px-4 py-3 ${result.recommendation.status === 'cannot_proceed' ? 'bg-red-50 dark:bg-red-500/8 border border-red-200 dark:border-red-500/20' : 'bg-emerald-50 dark:bg-emerald-500/8 border border-emerald-200 dark:border-emerald-500/20'}`}>
-                  <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${result.recommendation.status === 'cannot_proceed' ? 'text-red-500' : 'text-emerald-500'}`}>Decision</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{result.recommendation.decision_summary}</p>
-                </div>
-                {result.recommendation.justification && (
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider mb-1.5 text-gray-400">Justification</p>
-                    <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-200">{result.recommendation.justification}</p>
-                  </div>
-                )}
-                {result.recommendation.next_action && (
-                  <div className="rounded-lg px-4 py-3 bg-amber-50 dark:bg-amber-500/8 border border-amber-200 dark:border-amber-500/20">
-                    <p className="text-xs font-bold uppercase tracking-wider mb-1 text-amber-500">Next Action</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-200">{result.recommendation.next_action}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium">{result.recommendation.rationale}</p>
-            )}
-          </div>
         </div>
       )}
 

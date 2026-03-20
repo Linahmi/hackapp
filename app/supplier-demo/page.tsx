@@ -200,30 +200,6 @@ const DEMO_AUDIT: AuditEntry[] = [
 
 const DEMO_REQUEST = "Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF, prefer Dell";
 
-function SummaryTile({
-  label,
-  value,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  tone?: "default" | "good" | "warn" | "danger";
-}) {
-  const tones = {
-    default: "border-gray-200 dark:border-[#1e2130] bg-white dark:bg-[#12151f]",
-    good: "border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/8",
-    warn: "border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/8",
-    danger: "border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/8",
-  };
-
-  return (
-    <div className={`rounded-2xl border px-5 py-4 shadow-sm ${tones[tone]}`}>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug">{value}</p>
-    </div>
-  );
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function riskLabel(score: number): "Low" | "Med" | "High" {
@@ -496,15 +472,6 @@ export default function SupplierDemoPage() {
   const confidence   = apiResult?.confidence_score ?? null;
   const confidenceDetails = apiResult?.confidence_details ?? [];
   const ri           = apiResult?.request_interpretation;
-  const approvalThreshold = apiResult?.policy_evaluation?.approval_threshold ?? null;
-  const nextAction = apiResult?.recommendation?.next_action
-    ?? (realEscalations.find((e) => e.blocking)?.action || "Review supplier details");
-  const caseSummary = apiResult?.case_type
-    ? apiResult.case_type.replace(/_/g, " ").toLowerCase()
-    : isAutoApproved
-    ? "ready for approval"
-    : "manual review required";
-
   // ─── Market Price Benchmark (only from API — no client-side estimation) ──────
 
   const marketBenchmark = useMemo(() => {
@@ -672,29 +639,6 @@ export default function SupplierDemoPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 animate-fade-slide-up delay-350">
-          <SummaryTile
-            label="Case Status"
-            value={caseSummary}
-            tone={hasBlocking ? "danger" : isAutoApproved ? "good" : "warn"}
-          />
-          <SummaryTile
-            label="Policy Rule"
-            value={approvalThreshold ? `${approvalThreshold.rule_applied}${approvalThreshold.tier ? ` · Tier ${approvalThreshold.tier}` : ""}` : "No threshold found"}
-            tone={approvalThreshold ? "default" : "warn"}
-          />
-          <SummaryTile
-            label="Best Supplier"
-            value={bestName || "No compliant supplier found"}
-            tone={bestName && !hasBlocking ? "good" : "warn"}
-          />
-          <SummaryTile
-            label="Next Action"
-            value={nextAction}
-            tone={hasBlocking ? "danger" : "default"}
-          />
-        </div>
-
         {/* Decision + Justification — most important, shown first */}
         <div className="animate-fade-slide-up delay-150">
           <DecisionRow
@@ -719,33 +663,6 @@ export default function SupplierDemoPage() {
             />
           </div>
         )}
-
-
-        {/* Case-type escalation contact */}
-        {apiResult?.case_type && apiResult.case_type !== "READY_FOR_VALIDATION" && (() => {
-          const caseContacts: Record<string, { role: string; action: string; color: string }> = {
-            MORE_INFO_REQUIRED:     { role: "Intern / Sourcing Agent",  action: "Follow up with the requester to collect missing information before this request can proceed.", color: "#f59e0b" },
-            FAILED_IMPOSSIBLE_DATE: { role: "Intern / Sourcing Agent",  action: "Contact the requester to negotiate a revised delivery deadline or confirm if an alternative date is acceptable.", color: "#f59e0b" },
-            PENDING_RESOLUTION:     { role: "Procurement Manager",      action: "Resolve the blocking budget, policy, or approval issue before the request can continue through sourcing.", color: "#dc2626" },
-            NO_SUPPLIER_AVAILABLE:  { role: "Sourcing Specialist",      action: "Identify and onboard a new supplier capable of fulfilling this requirement, or escalate to category management.", color: "#dc2626" },
-            SIMILAR_NOT_EXACT_MATCH:{ role: "Procurement Manager",      action: "Review the proposed alternatives with the requester and confirm acceptance of a substitute product or specification.", color: "#6366f1" },
-          };
-          const c = caseContacts[apiResult.case_type];
-          if (!c) return null;
-          return (
-            <div className="animate-fade-slide-up delay-200 rounded-xl px-5 py-4 flex items-start gap-4 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
-              <div className="mt-0.5 w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${c.color}20` }}>
-                <svg className="w-4 h-4" style={{ color: c.color }} viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: c.color }}>Assigned to: {c.role}</p>
-                <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">{c.action}</p>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Validation issues (severity-tagged, from AI) */}
         {validationIssues.length > 0 && (
@@ -784,36 +701,6 @@ export default function SupplierDemoPage() {
                 );
               })}
             </ul>
-          </div>
-        )}
-
-        {approvalThreshold && (
-          <div className="animate-fade-slide-up delay-650 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
-            <div className="px-6 py-3.5 border-b border-gray-200 dark:border-[#1e2130] flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Policy Application</span>
-            </div>
-            <div className="grid gap-4 px-6 py-5 md:grid-cols-3">
-              <SummaryTile
-                label="Approval Rule"
-                value={`${approvalThreshold.rule_applied ?? "N/A"}${approvalThreshold.tier ? ` · Tier ${approvalThreshold.tier}` : ""}`}
-              />
-              <SummaryTile
-                label="Quotes Required"
-                value={approvalThreshold.quotes_required != null ? `${approvalThreshold.quotes_required}` : "N/A"}
-              />
-              <SummaryTile
-                label="Approver"
-                value={approvalThreshold.approver || approvalThreshold.approvers?.join(", ") || "N/A"}
-                tone={approvalThreshold.tier && approvalThreshold.tier > 1 ? "warn" : "default"}
-              />
-            </div>
-            {approvalThreshold.deviation_approval && (
-              <div className="px-6 pb-5">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Deviation approval: <span className="font-semibold text-gray-700 dark:text-gray-200">{approvalThreshold.deviation_approval}</span>
-                </p>
-              </div>
-            )}
           </div>
         )}
 
