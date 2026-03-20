@@ -465,6 +465,12 @@ export default function SupplierDemoPage() {
             escalations={realEscalations}
             recommendation={apiResult?.recommendation}
             requestId={apiResult?.request_id}
+            topSupplier={apiResult?.supplier_shortlist?.[0] ? {
+              score: Math.round((apiResult.supplier_shortlist[0].composite_score ?? 0) * 100),
+              unitPrice: apiResult.supplier_shortlist[0].total_price ?? null,
+              leadTime: apiResult.supplier_shortlist[0].standard_lead_time_days ?? null,
+              currency: apiResult?.request_interpretation?.currency ?? "EUR",
+            } : undefined}
           />
         </div>
 
