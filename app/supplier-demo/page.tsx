@@ -537,15 +537,17 @@ export default function SupplierDemoPage() {
           />
         </div>
 
-        {/* Decision justification — shown in both demo and API mode */}
-        <div className="animate-fade-slide-up delay-200">
-          <DecisionJustification
-            recommendation={djRecommendation}
-            topSupplier={djTopSupplier}
-            runnerUp={djRunnerUp}
-            currency={ri?.currency ?? "CHF"}
-          />
-        </div>
+        {/* Decision justification — shown once mounted and data is stable */}
+        {mounted && (djTopSupplier || !isFromApi) && (
+          <div className="animate-fade-slide-up delay-200">
+            <DecisionJustification
+              recommendation={djRecommendation}
+              topSupplier={djTopSupplier}
+              runnerUp={djRunnerUp}
+              currency={ri?.currency ?? "CHF"}
+            />
+          </div>
+        )}
 
         {/* Excluded suppliers (non-blocked, with explicit reason) */}
         {excludedSuppliers.length > 0 && (
