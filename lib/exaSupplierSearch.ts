@@ -133,10 +133,41 @@ function wordOverlapScore(a: string, b: string): number {
   return bWords.reduce((score, word) => score + (aWords.has(word) ? 1 : 0), 0);
 }
 
+function inferPricingRegion(region?: string): "EU" | "US" | "APAC" | "CH" | null {
+  if (!region) return null;
+  const normalized = region.trim().toUpperCase();
+  const euCountries = new Set([
+    "AT", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU",
+    "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK", "UK",
+  ]);
+  const usCountries = new Set(["US", "CA", "BR", "MX"]);
+  const apacCountries = new Set(["SG", "AU", "JP", "IN", "UAE"]);
+
+  if (normalized === "CH" || normalized === "SWITZERLAND") return "CH";
+  if (euCountries.has(normalized)) return "EU";
+  if (usCountries.has(normalized)) return "US";
+  if (apacCountries.has(normalized)) return "APAC";
+  if (/(EUROPE|GERMANY|FRANCE|NETHERLANDS|BELGIUM|SWITZERLAND|ITALY|SPAIN|POLAND|AUSTRIA)/i.test(region)) return "EU";
+  if (/(UNITED STATES|CANADA|BRAZIL|MEXICO|AMERICA)/i.test(region)) return "US";
+  if (/(SINGAPORE|AUSTRALIA|JAPAN|INDIA|UAE|APAC|ASIA)/i.test(region)) return "APAC";
+  return null;
+}
+
+function hasDirectCoverage(serviceRegions: string[] | undefined, region?: string): boolean {
+  if (!serviceRegions?.length || !region) return false;
+  const normalizedRegion = region.trim().toLowerCase();
+  return serviceRegions.some((serviceRegion) => {
+    const normalizedServiceRegion = serviceRegion.trim().toLowerCase();
+    return normalizedServiceRegion === normalizedRegion
+      || normalizedRegion.includes(normalizedServiceRegion)
+      || normalizedServiceRegion.includes(normalizedRegion);
+  });
+}
+
 function buildDatasetFallbackCandidate(productCategory: string, region?: string) {
   const { suppliers, pricing } = loadData() as { suppliers: SupplierRow[]; pricing: PricingRow[] };
   const normalizedCategory = productCategory.toLowerCase();
-  const normalizedRegion = (region ?? "").toLowerCase();
+  const targetPricingRegion = inferPricingRegion(region);
 
   const scoredRows = suppliers
     .filter((row) => !row.is_restricted)
@@ -144,36 +175,49 @@ function buildDatasetFallbackCandidate(productCategory: string, region?: string)
       const categoryText = `${row.category_l1 ?? ""} ${row.category_l2 ?? ""}`.trim();
       const categoryScore =
         (row.category_l2 ?? "").toLowerCase() === normalizedCategory
-          ? 10
-          : wordOverlapScore(categoryText, productCategory) * 2;
-      const regionScore = (row.service_regions ?? []).some((serviceRegion) => serviceRegion.toLowerCase() === normalizedRegion)
-        ? 3
-        : normalizedRegion && (row.service_regions ?? []).some((serviceRegion) => normalizedRegion.includes(serviceRegion.toLowerCase()) || serviceRegion.toLowerCase().includes(normalizedRegion))
-        ? 2
+          ? 14
+          : wordOverlapScore(categoryText, productCategory) * 3;
+
+      const matchingPricing = pricing.filter(
+        (priceRow) =>
+          priceRow.supplier_id === row.supplier_id &&
+          priceRow.category_l2 === row.category_l2 &&
+          priceRow.category_l1 === row.category_l1,
+      );
+      const pricedRegions = new Set(matchingPricing.map((priceRow) => String(priceRow.region ?? "")).filter(Boolean));
+      const directCoverage = hasDirectCoverage(row.service_regions, region);
+      const pricingRegionMatch = targetPricingRegion ? pricedRegions.has(targetPricingRegion) : false;
+      const regionScore = directCoverage ? 8 : pricingRegionMatch ? 4 : 0;
+      const fastestLeadTime = matchingPricing
+        .map((priceRow) => Number(priceRow.standard_lead_time_days))
+        .filter((value) => Number.isFinite(value))
+        .sort((a, b) => a - b)[0];
+      const leadTimeScore = Number.isFinite(fastestLeadTime)
+        ? Math.max(0, 4 - Math.floor((fastestLeadTime as number) / 10))
         : 0;
       const commercialScore =
         (row.preferred_supplier ? 2 : 0)
         + (String(row.contract_status ?? "").toLowerCase() === "active" ? 1 : 0)
         + ((Number(row.quality_score) || 0) >= 80 ? 1 : 0)
-        + ((Number(row.risk_score) || 100) <= 25 ? 1 : 0);
+        + ((Number(row.risk_score) || 100) <= 25 ? 1 : 0)
+        + leadTimeScore;
 
       return {
         row,
+        matchingPricing,
+        directCoverage,
+        pricingRegionMatch,
         score: categoryScore + regionScore + commercialScore,
       };
     })
     .filter((entry) => entry.score > 0);
 
   scoredRows.sort((a, b) => b.score - a.score);
-  const best = scoredRows[0]?.row;
-  if (!best?.supplier_name) return null;
+  const bestEntry = scoredRows[0];
+  const best = bestEntry?.row;
+  if (!best?.supplier_name || !bestEntry) return null;
 
-  const matchingPricing = pricing.filter(
-    (priceRow) =>
-      priceRow.supplier_id === best.supplier_id &&
-      priceRow.category_l2 === best.category_l2 &&
-      priceRow.category_l1 === best.category_l1,
-  );
+  const matchingPricing = bestEntry.matchingPricing;
 
   const pricedRegions = Array.from(new Set(matchingPricing.map((row) => row.region).filter(Boolean))).join(", ");
   const leadTime = matchingPricing
@@ -183,9 +227,14 @@ function buildDatasetFallbackCandidate(productCategory: string, region?: string)
   const supportedRegions = (best.service_regions ?? []).slice(0, 4).join(", ");
 
   const reasonParts = [
-    `Exa could not return a live candidate, so the app proposed the nearest known supplier from the current supplier master for ${productCategory}.`,
-    `${best.supplier_name} already covers ${best.category_l2 ?? best.category_l1 ?? "this category"}`,
-    supportedRegions ? `with service coverage including ${supportedRegions}` : null,
+    `Exa could not return a live candidate, so the app proposed the nearest supplier from the current supplier master for ${productCategory}.`,
+    bestEntry.directCoverage && region
+      ? `${best.supplier_name} directly covers ${region} for ${best.category_l2 ?? best.category_l1 ?? "this category"}`
+      : region
+      ? `No direct supplier coverage was found for ${region}, so ${best.supplier_name} was selected as the nearest approved match for ${best.category_l2 ?? best.category_l1 ?? "this category"}`
+      : `${best.supplier_name} is the strongest internal match for ${best.category_l2 ?? best.category_l1 ?? "this category"}`,
+    bestEntry.pricingRegionMatch && targetPricingRegion ? `It has active pricing support for the ${targetPricingRegion} pricing region` : null,
+    supportedRegions ? `with documented service coverage including ${supportedRegions}` : null,
     pricedRegions ? `and pricing data available for ${pricedRegions}` : null,
     Number.isFinite(leadTime) ? `with a documented standard lead time from ${leadTime} days` : null,
     best.preferred_supplier ? "It is also flagged as a preferred supplier in the internal dataset." : null,
