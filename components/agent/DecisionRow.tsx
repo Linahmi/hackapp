@@ -19,10 +19,18 @@ type Escalation = {
 
 type RecommendationData = {
   decision_summary?: string;
+  justification?: string;
   rationale?: string;
   key_reasons?: string[];
   risks?: string[];
   next_action?: string;
+};
+
+type TopSupplierSnapshot = {
+  score: number;
+  unitPrice: number | null;
+  leadTime: number | null;
+  currency: string;
 };
 
 export type DecisionRowProps = {
@@ -33,6 +41,7 @@ export type DecisionRowProps = {
   escalations?: Escalation[];
   recommendation?: RecommendationData;
   requestId?: string;
+  topSupplier?: TopSupplierSnapshot;
 };
 
 // ─── Modal content helpers ────────────────────────────────────────────────────
@@ -123,6 +132,7 @@ function ReviewDetailsModal({
   isAutoApproved,
   escalations,
   recommendation,
+  topSupplier,
   onClose,
 }: {
   requestId?: string;
@@ -131,6 +141,7 @@ function ReviewDetailsModal({
   isAutoApproved: boolean;
   escalations: Escalation[];
   recommendation?: RecommendationData;
+  topSupplier?: TopSupplierSnapshot;
   onClose: () => void;
 }) {
   const reasoningBullets = buildReasoningBullets(bestName, status, isAutoApproved, escalations, recommendation);
@@ -164,7 +175,9 @@ function ReviewDetailsModal({
   }, [onClose]);
 
   const blockingEscalations = escalations.filter(e => e.blocking);
-  const decisionSummary = recommendation?.decision_summary;
+  const decisionSummary  = recommendation?.decision_summary;
+  const justification    = recommendation?.justification;
+  const risks            = recommendation?.risks ?? [];
 
   const modal = (
     <>
@@ -249,47 +262,102 @@ function ReviewDetailsModal({
           {/* ── Scrollable body ── */}
           <div className="review-modal-print-body flex-1 overflow-y-auto px-7 py-6 space-y-8">
 
-            {/* Section 1 — Why this cannot proceed (blocking escalations) */}
+            {/* Section 1 — Blocking escalations */}
             {blockingEscalations.length > 0 && (
               <div>
-                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">
-                  Why this cannot proceed
-                </h2>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">Why this cannot proceed</h2>
                 <div className="h-px bg-gray-100 dark:bg-white/5 mb-4" />
                 <div className="space-y-2">
                   {blockingEscalations.map((e, i) => (
                     <div key={i} className="rounded-lg border-l-4 border-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 px-4 py-3">
                       <p className="text-xs font-bold uppercase tracking-wide text-red-600 dark:text-red-400 mb-0.5">{e.rule}</p>
                       <p className="text-sm leading-snug text-red-800 dark:text-red-200">{e.trigger}</p>
+                      {e.action && (
+                        <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 font-medium">
+                          Required action: {e.action}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Section 2 — AI reasoning */}
+            {/* Section 2 — Top supplier snapshot (only when a supplier exists) */}
+            {topSupplier && topSupplier.score > 0 && (
+              <div>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">Recommended supplier at a glance</h2>
+                <div className="h-px bg-gray-100 dark:bg-white/5 mb-4" />
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex-1 min-w-[120px] rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-3 text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">Composite Score</p>
+                    <p className="text-2xl font-black tabular-nums text-gray-900 dark:text-white">{topSupplier.score}<span className="text-sm font-semibold text-gray-400">/100</span></p>
+                  </div>
+                  {topSupplier.unitPrice != null && (
+                    <div className="flex-1 min-w-[120px] rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-3 text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">Total Price</p>
+                      <p className="text-2xl font-black tabular-nums text-gray-900 dark:text-white">
+                        {topSupplier.unitPrice.toLocaleString()}
+                        <span className="text-sm font-semibold text-gray-400 ml-1">{topSupplier.currency}</span>
+                      </p>
+                    </div>
+                  )}
+                  {topSupplier.leadTime != null && (
+                    <div className="flex-1 min-w-[120px] rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-4 py-3 text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">Lead Time</p>
+                      <p className="text-2xl font-black tabular-nums text-gray-900 dark:text-white">{topSupplier.leadTime}<span className="text-sm font-semibold text-gray-400 ml-1">days</span></p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Section 3 — Detailed justification paragraph */}
+            {justification && (
+              <div>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">Decision justification</h2>
+                <div className="h-px bg-gray-100 dark:bg-white/5 mb-4" />
+                <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">{justification}</p>
+              </div>
+            )}
+
+            {/* Section 4 — AI reasoning bullets */}
             <div>
-              <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">
-                How the AI reasoned through this
-              </h2>
+              <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">How the AI reasoned through this</h2>
               <div className="h-px bg-gray-100 dark:bg-white/5 mb-4" />
               <ul className="space-y-3">
                 {reasoningBullets.map((bullet, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 dark:bg-gray-500 shrink-0" />
-                    <p className="text-base leading-snug text-gray-700 dark:text-gray-300">
-                      {bullet}
-                    </p>
+                    <p className="text-sm leading-snug text-gray-700 dark:text-gray-300">{bullet}</p>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Section 3 — Next actions */}
+            {/* Section 5 — Risk factors */}
+            {risks.length > 0 && (
+              <div>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">Risk factors to monitor</h2>
+                <div className="h-px bg-gray-100 dark:bg-white/5 mb-4" />
+                <ul className="space-y-2">
+                  {risks.map((risk, i) => (
+                    <li key={i} className="flex items-start gap-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 px-4 py-2.5">
+                      <span className="mt-1 text-amber-500 shrink-0">
+                        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                      <p className="text-sm leading-snug text-amber-800 dark:text-amber-200">{risk}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Section 6 — Next actions */}
             <div>
-              <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">
-                What needs to happen next
-              </h2>
+              <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">What needs to happen next</h2>
               <div className="h-px bg-gray-100 dark:bg-white/5 mb-4" />
               <ul className="space-y-3">
                 {nextActions.map((action, i) => (
@@ -297,18 +365,16 @@ function ReviewDetailsModal({
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-gray-300 dark:border-white/15 bg-white dark:bg-white/5 text-[10px] font-bold text-gray-500 dark:text-gray-400">
                       {i + 1}
                     </span>
-                    <p className="text-base leading-snug text-gray-700 dark:text-gray-300">
-                      {action}
-                    </p>
+                    <p className="text-sm leading-snug text-gray-700 dark:text-gray-300">{action}</p>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Section 4 — DECISION summary box */}
+            {/* Section 7 — Decision summary box */}
             {decisionSummary && (
               <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-5 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Decision</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Decision summary</p>
                 <p className="text-sm leading-relaxed text-gray-800 dark:text-gray-200">{decisionSummary}</p>
               </div>
             )}
@@ -352,6 +418,7 @@ export function DecisionRow({
   escalations = [],
   recommendation,
   requestId,
+  topSupplier,
 }: DecisionRowProps) {
   const [approvedSupplier, setApprovedSupplier] = useState<string | null>(null);
   const [showModal,  setShowModal]  = useState(false);
@@ -361,10 +428,6 @@ export function DecisionRow({
 
   function handleApprove() {
     setApprovedSupplier(bestName);
-  }
-
-  function handleReview() {
-    document.getElementById("supplier-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
@@ -478,7 +541,7 @@ export function DecisionRow({
                       Approve supplier
                     </button>
                     <button
-                      onClick={handleReview}
+                      onClick={() => setShowModal(true)}
                       className="rounded-xl px-5 py-2.5 text-sm font-bold transition-all bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-white/10 shadow-sm"
                     >
                       Review details
@@ -509,6 +572,7 @@ export function DecisionRow({
           isAutoApproved={isAutoApproved}
           escalations={escalations}
           recommendation={recommendation}
+          topSupplier={topSupplier}
           onClose={() => setShowModal(false)}
         />
       )}

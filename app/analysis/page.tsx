@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProgressStepper       from "@/components/ProgressStepper";
 import BundlingOpportunityCard from "@/components/BundlingOpportunityCard";
@@ -325,6 +325,14 @@ export default function AnalysisPage() {
   const [intelFetched, setIntelFetched] = useState(false);
   const [intelError, setIntelError] = useState(false);
   const [validated, setValidated] = useState(false);
+  const intelFetchStarted = useRef(false);
+
+  // Hydrate from sessionStorage only on client — avoids server/client mismatch
+  useEffect(() => {
+    const stored = readStoredResult();
+    setResult(stored);
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -339,7 +347,7 @@ export default function AnalysisPage() {
 
   // Auto-trigger live supplier intel when result loads
   useEffect(() => {
-    if (!result || intelFetched || intelLoading) return;
+    if (!result || intelFetchStarted.current) return;
 
     const shortlist = result.supplier_shortlist ?? [];
     const category = result.request_interpretation?.category_l2 ?? result.request_interpretation?.category_l1 ?? "enterprise hardware";
@@ -348,44 +356,46 @@ export default function AnalysisPage() {
     if (!shortlist.length && result.case_type !== "NO_SUPPLIER_AVAILABLE") return;
 
     const discoveryMode = shortlist.length === 0;
-    let isCancelled = false;
+    const controller = new AbortController();
 
-    async function loadIntel() {
-      setIntelLoading(true);
-      try {
-        const response = await fetch("/api/supplier-intel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            discoveryMode
-              ? { category, region, discoveryMode: true }
-              : { suppliers: shortlist.map((supplier) => supplier.supplier_name), category, region }
-          ),
-        });
-        if (!response.ok) throw new Error("intel fetch failed");
-        const data = await response.json() as { results?: SupplierIntelResult[]; mode?: "shortlist" | "discovery" };
-        if (!isCancelled) {
-          setMarketIntel(data.results ?? []);
-          setIntelMode(data.mode === "discovery" ? "discovery" : "shortlist");
-          setIntelError(false);
-        }
-      } catch {
-        if (!isCancelled) {
-          setIntelError(true);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIntelLoading(false);
-          setIntelFetched(true);
-        }
-      }
-    }
+    intelFetchStarted.current = true;
+    setIntelLoading(true);
+    console.log("[MarketIntel] starting fetch, ref=", intelFetchStarted.current);
 
-    void loadIntel();
+    fetch("/api/supplier-intel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        discoveryMode
+          ? { category, region, discoveryMode: true }
+          : { suppliers: shortlist.map((s) => s.supplier_name), category, region }
+      ),
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("intel fetch failed");
+        return res.json() as Promise<{ results?: SupplierIntelResult[]; mode?: "shortlist" | "discovery" }>;
+      })
+      .then((data) => {
+        console.log("[MarketIntel] fetch success, results=", data);
+        setMarketIntel(data.results ?? []);
+        setIntelMode(data.mode === "discovery" ? "discovery" : "shortlist");
+        setIntelError(false);
+      })
+      .catch((err: unknown) => {
+        console.log("[MarketIntel] fetch error:", err);
+        setIntelError(true);
+      })
+      .finally(() => {
+        console.log("[MarketIntel] finally, setting loading false");
+        setIntelLoading(false);
+        setIntelFetched(true);
+      });
+
     return () => {
-      isCancelled = true;
+      controller.abort();
     };
-  }, [result, intelFetched, intelLoading]);
+  }, [result]);
 
   if (!mounted || !result) return null;
 
