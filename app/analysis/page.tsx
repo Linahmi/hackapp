@@ -16,6 +16,7 @@ const CASE_CONFIG: Record<string, { bg: string; border: string; iconColor: strin
   NO_SUPPLIER_AVAILABLE: { bg: "rgba(220,38,38,0.06)", border: "rgba(220,38,38,0.3)",   iconColor: "#dc2626", title: "No compliant supplier found",          desc: "No supplier in the approved panel can fulfill this request with the given constraints. A sourcing specialist will need to intervene." },
   SIMILAR_NOT_EXACT_MATCH:{ bg: "rgba(99,102,241,0.06)", border: "rgba(99,102,241,0.3)", iconColor: "#6366f1", title: "Similar alternatives found",            desc: "The exact product or configuration requested is not available. The suppliers below offer the closest compliant alternatives." },
   READY_FOR_VALIDATION:  { bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.3)",   iconColor: "#22c55e", title: "Ready for validation",                 desc: "All compliance checks passed and suppliers are available. Review the recommendation below and validate to proceed." },
+  PENDING_RESOLUTION:    { bg: "rgba(220,38,38,0.06)", border: "rgba(220,38,38,0.3)",   iconColor: "#dc2626", title: "Pending Resolution",                   desc: "One or more blocking escalations must be resolved before this request can proceed. Validate Order is unavailable until all blockers are cleared." },
 };
 
 function SummaryCard({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "good" | "warn" | "danger" }) {
@@ -177,16 +178,23 @@ export default function AnalysisPage() {
 
   const approvalThreshold = result.policy_evaluation?.approval_threshold ?? null;
   const blockingEscalations = (result.escalations ?? []).filter((e: any) => e.blocking);
+  const hasBlockers = blockingEscalations.length > 0;
+
+  // Override case type: never show READY_FOR_VALIDATION when blocking escalations exist
+  const effectiveCaseType: string = (() => {
+    if (hasBlockers && result.case_type === "READY_FOR_VALIDATION") return "PENDING_RESOLUTION";
+    if (result.recommendation?.status === "cannot_proceed" && result.case_type === "READY_FOR_VALIDATION") return "PENDING_RESOLUTION";
+    return result.case_type ?? "";
+  })();
+
   const topSupplier = result.supplier_shortlist?.[0]?.supplier_name ?? "No compliant supplier found";
   const nextAction = result.recommendation?.next_action
-    ?? (blockingEscalations.length > 0
+    ?? (hasBlockers
       ? `Escalate to ${blockingEscalations[0]?.escalate_to ?? "Procurement"}`
       : "Validate and continue");
   const summaryTone =
-    result.recommendation?.status === "cannot_proceed"
+    result.recommendation?.status === "cannot_proceed" || hasBlockers
       ? "danger"
-      : blockingEscalations.length > 0
-      ? "warn"
       : "good";
 
   return (
@@ -219,11 +227,11 @@ export default function AnalysisPage() {
         />
       </div>
 
-      {result.case_type && (
+      {effectiveCaseType && (
         <div className="w-full max-w-2xl animate-fade-slide-up delay-100">
           <CaseBanner
-            caseType={result.case_type}
-            onValidate={result.case_type === "READY_FOR_VALIDATION" && !validated ? () => setValidated(true) : undefined}
+            caseType={effectiveCaseType}
+            onValidate={effectiveCaseType === "READY_FOR_VALIDATION" && !validated ? () => setValidated(true) : undefined}
           />
           {validated && (
             <div className="mt-3 rounded-lg px-4 py-3 text-sm font-semibold text-emerald-400 flex items-center gap-2" style={{ backgroundColor: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)" }}>
@@ -236,7 +244,7 @@ export default function AnalysisPage() {
 
       <div className="w-full max-w-2xl animate-fade-slide-up delay-125">
         <div className="grid gap-3 sm:grid-cols-2">
-          <SummaryCard label="Case Status" value={CASE_CONFIG[result.case_type]?.title ?? result.case_type ?? "Analysis complete"} tone={summaryTone} />
+          <SummaryCard label="Case Status" value={CASE_CONFIG[effectiveCaseType]?.title ?? effectiveCaseType ?? "Analysis complete"} tone={summaryTone} />
           <SummaryCard label="Recommended Supplier" value={topSupplier} tone={result.recommendation?.status === "cannot_proceed" ? "warn" : "good"} />
           <SummaryCard label="Blocking Escalations" value={`${blockingEscalations.length}`} tone={blockingEscalations.length > 0 ? "danger" : "good"} />
           <SummaryCard label="Next Action" value={nextAction} tone={summaryTone} />
@@ -251,7 +259,7 @@ export default function AnalysisPage() {
         <PolicySnapshot threshold={approvalThreshold} />
       </div>
 
-      {result.case_type === "READY_FOR_VALIDATION" && (
+      {effectiveCaseType === "READY_FOR_VALIDATION" && (
         <div className="w-full max-w-2xl animate-fade-slide-up delay-300">
           <PolicyCheck validation={result.validation} />
         </div>
@@ -293,7 +301,7 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      {(result.case_type === 'READY_FOR_VALIDATION' || result.case_type === 'SIMILAR_NOT_EXACT_MATCH') && (
+      {(effectiveCaseType === 'READY_FOR_VALIDATION' || effectiveCaseType === 'SIMILAR_NOT_EXACT_MATCH') && (
         <div className="w-full max-w-2xl animate-fade-slide-up delay-450">
           <BundlingOpportunityCard bundlingOpportunity={result.bundling_opportunity ?? null} />
         </div>
