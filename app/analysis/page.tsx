@@ -498,11 +498,7 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      {inlineErrorMessage && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-110">
-          <ConflictBanner message={inlineErrorMessage} />
-        </div>
-      )}
+      {/* conflict banner removed — policy violations still processed internally */}
 
       <div className="w-full max-w-2xl animate-fade-slide-up delay-125">
         <div className="grid gap-3 sm:grid-cols-2">
