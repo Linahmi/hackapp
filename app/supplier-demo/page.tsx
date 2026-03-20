@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TrendingDown, TrendingUp, CheckCircle, AlertTriangle } from "lucide-react";
 import { useProcurement } from "@/contexts/ProcurementContext";
 import { DecisionRow } from "@/components/agent/DecisionRow";
+import { DecisionJustification } from "@/components/agent/DecisionJustification";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
 
 type ScoreBreakdown = {
@@ -172,6 +173,63 @@ const DEMO_META: Record<string, MetaEntry> = {
 
 const DEMO_REQUEST = "Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF, prefer Dell";
 
+// ─── Demo DecisionJustification data ──────────────────────────────────────────
+
+const DEMO_TOP_SUPPLIER = {
+  supplier_name: "Dell Geneva",
+  rank: 1,
+  unit_price: 774,
+  total_price: 387000,
+  currency: "CHF",
+  risk_score: 12,
+  quality_score: 88,
+  esg_score: 92,
+  standard_lead_time_days: 8,
+  composite_score: 0.79,
+  tco: 412000,
+  score_breakdown: { price: 0.55, lead_time: 0.80, quality: 0.88, risk: 0.95, esg: 0.92, historical: 7 },
+  historical_flags: [
+    "+5 pts based on 4 past awards",
+    "+2 pts recent award (last 12 months)",
+    "+2 pts reliable (no past escalations)",
+    "Clamped from 9 to 8 pts — max historical adjustment applied",
+  ],
+  recommendation_note: "Preferred supplier — lowest risk, highest ESG",
+};
+
+const DEMO_RUNNER_UP = {
+  supplier_name: "HP EMEA",
+  rank: 2,
+  unit_price: 724,
+  total_price: 362000,
+  currency: "CHF",
+  risk_score: 45,
+  quality_score: 72,
+  esg_score: 35,
+  standard_lead_time_days: 12,
+  composite_score: 0.63,
+  tco: 389000,
+  score_breakdown: { price: 0.85, lead_time: 0.75, quality: 0.72, risk: 0.42, esg: 0.35, historical: -3 },
+  historical_flags: ["-3 pts based on 1 past rejection"],
+};
+
+const DEMO_RECOMMENDATION = {
+  status: "recommended",
+  is_auto_approved: true,
+  decision_summary: "Dell Geneva is recommended as the best compliant supplier for this request.",
+  justification: "Dell Geneva leads on risk compliance (95/100) and ESG (92/100), which together account for 50% of the current weight configuration. It is the preferred supplier for the Geneva region with a strong historical track record of 4 past awards and zero escalations.",
+  next_action: "Client to validate the order — no further approvals required.",
+  key_reasons: [
+    "Lowest risk profile in shortlist (risk score 12/100) — well below policy threshold",
+    "Preferred supplier for CH region with consistent past performance (+7 pts historical)",
+    "ESG grade A — meets sustainability requirements, leads shortlist on environmental criteria",
+  ],
+  risks: [
+    "Unit price is above HP EMEA (CHF 774 vs CHF 724) — TCO difference remains within acceptable range",
+    "Standard lead time of 8 days is tight — expedited shipping should be confirmed at order stage",
+  ],
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function riskLabel(score: number): "Low" | "Med" | "High" {
@@ -290,6 +348,17 @@ export default function SupplierDemoPage() {
   const hasBlocking = realEscalations.some((e) => e.blocking);
   const isAutoApproved         = apiResult?.recommendation?.is_auto_approved
     ?? (bestName !== "" && meta[bestName]?.risk === "Low");
+
+  // ─── DecisionJustification data (demo or API) ─────────────────────────────
+  const djTopSupplier = isFromApi
+    ? (apiResult?.supplier_shortlist?.[0] ?? null)
+    : DEMO_TOP_SUPPLIER;
+  const djRunnerUp = isFromApi
+    ? (apiResult?.supplier_shortlist?.[1] ?? null)
+    : DEMO_RUNNER_UP;
+  const djRecommendation = isFromApi
+    ? (apiResult?.recommendation ?? null)
+    : DEMO_RECOMMENDATION;
 
   const confidence   = apiResult?.confidence_score ?? null;
   const confidenceDetails = apiResult?.confidence_details ?? [];
@@ -465,6 +534,16 @@ export default function SupplierDemoPage() {
             escalations={realEscalations}
             recommendation={apiResult?.recommendation}
             requestId={apiResult?.request_id}
+          />
+        </div>
+
+        {/* Decision justification — shown in both demo and API mode */}
+        <div className="animate-fade-slide-up delay-200">
+          <DecisionJustification
+            recommendation={djRecommendation}
+            topSupplier={djTopSupplier}
+            runnerUp={djRunnerUp}
+            currency={ri?.currency ?? "CHF"}
           />
         </div>
 
