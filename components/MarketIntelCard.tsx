@@ -17,6 +17,7 @@ export interface SupplierIntelResult {
 interface Props {
   results: SupplierIntelResult[];
   loading?: boolean;
+  mode?: "shortlist" | "discovery";
 }
 
 function extractDomain(url: string): string {
@@ -127,7 +128,8 @@ function LoadingSkeleton() {
   );
 }
 
-export default function MarketIntelCard({ results, loading }: Props) {
+export default function MarketIntelCard({ results, loading, mode = "shortlist" }: Props) {
+  const isDiscovery = mode === "discovery";
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1A1D27] p-6 shadow-sm mb-16 transition-colors duration-300">
       <div className="flex items-center justify-between mb-5">
@@ -138,7 +140,7 @@ export default function MarketIntelCard({ results, loading }: Props) {
             </svg>
           </div>
           <h3 className="text-base font-bold text-gray-900 dark:text-white">
-            Market Intelligence
+            {isDiscovery ? "External Sourcing Discovery" : "Market Intelligence"}
           </h3>
           <span className="rounded-full border border-blue-200 dark:border-[#3B82F6]/25 bg-blue-50 dark:bg-[#3B82F6]/10 px-2.5 py-1 text-[10px] font-bold text-blue-600 dark:text-[#3B82F6] uppercase tracking-widest">
             External Signal
@@ -150,10 +152,14 @@ export default function MarketIntelCard({ results, loading }: Props) {
       </div>
 
       <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 max-w-2xl">
-        Public web signals gathered through Exa to enrich the sourcing view with pricing, reviews, and availability context.
+        {isDiscovery
+          ? "No approved supplier is currently available, so Exa is being used to surface external market candidates for sourcing review."
+          : "Public web signals gathered through Exa to enrich the sourcing view with pricing, reviews, and availability context."}
       </p>
       <p className="text-xs text-gray-400 dark:text-gray-500 mb-6 max-w-2xl">
-        These signals support the recommendation, but they do not override procurement policy or approved-supplier rules.
+        {isDiscovery
+          ? "These are external leads for human sourcing teams. They are not part of the approved shortlist and do not override procurement policy."
+          : "These signals support the recommendation, but they do not override procurement policy or approved-supplier rules."}
       </p>
 
       {loading ? <LoadingSkeleton /> : (

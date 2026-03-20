@@ -114,6 +114,7 @@ export default function AnalysisPage() {
   const router = useRouter();
   const [result, setResult] = useState<any>(null);
   const [marketIntel, setMarketIntel] = useState<SupplierIntelResult[]>([]);
+  const [intelMode, setIntelMode] = useState<"shortlist" | "discovery">("shortlist");
   const [intelLoading, setIntelLoading] = useState(false);
   const [intelFetched, setIntelFetched] = useState(false);
   const [intelError, setIntelError] = useState(false);
@@ -138,21 +139,39 @@ export default function AnalysisPage() {
 
   // Auto-trigger live supplier intel when result loads
   useEffect(() => {
-    if (!result?.supplier_shortlist?.length || intelFetched || intelLoading) return;
-    setIntelLoading(true);
-    const names = result.supplier_shortlist.map((s: any) => s.supplier_name);
+    if (!result || intelFetched || intelLoading) return;
+
+    const shortlist = result.supplier_shortlist ?? [];
     const category = result.request_interpretation?.category_l2 ?? result.request_interpretation?.category_l1 ?? "enterprise hardware";
     const region = result.request_interpretation?.delivery_countries?.[0] ?? "Europe";
+
+    if (!shortlist.length && result.case_type !== "NO_SUPPLIER_AVAILABLE") return;
+
+    setIntelLoading(true);
+    const discoveryMode = shortlist.length === 0;
+    if (discoveryMode) {
+      setIntelMode("discovery");
+    } else {
+      setIntelMode("shortlist");
+    }
+
     fetch("/api/supplier-intel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ suppliers: names, category, region }),
+      body: JSON.stringify(
+        discoveryMode
+          ? { category, region, discoveryMode: true }
+          : { suppliers: shortlist.map((s: any) => s.supplier_name), category, region }
+      ),
     })
       .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((data) => setMarketIntel(data.results ?? []))
+      .then((data) => {
+        setMarketIntel(data.results ?? []);
+        setIntelMode(data.mode === "discovery" ? "discovery" : "shortlist");
+      })
       .catch(() => setIntelError(true))
       .finally(() => { setIntelLoading(false); setIntelFetched(true); });
-  }, [result]);
+  }, [result, intelFetched, intelLoading]);
 
   if (!result) return null;
 
@@ -285,7 +304,7 @@ export default function AnalysisPage() {
 
         {(intelLoading || intelFetched) && !intelError && (
           <div className="w-full mt-8 animate-fade-slide-up delay-600">
-            <MarketIntelCard results={marketIntel} loading={intelLoading} />
+            <MarketIntelCard results={marketIntel} loading={intelLoading} mode={intelMode} />
           </div>
         )}
         {intelFetched && intelError && (
