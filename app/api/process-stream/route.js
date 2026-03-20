@@ -11,7 +11,7 @@ import { explainConfidence } from '@/lib/confidenceScorer';
 
 const HARD_BLOCK_CASE_TYPES = ['FAILED_IMPOSSIBLE_DATE', 'MORE_INFO_REQUIRED', 'NO_SUPPLIER_AVAILABLE', 'PENDING_RESOLUTION'];
 
-function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required, historicalContext) {
+function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days_until_required, budget_amount, historicalContext) {
   const eligible = getEligibleSuppliers(l1, l2, countries, qty, currency);
   const { policies } = getData();
   const restricted_suppliers = {};
@@ -24,9 +24,8 @@ function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days
       };
     }
   }
-  const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, historicalContext };
-  const { shortlist } = newScoreSuppliers(eligible, { restricted_suppliers }, mockReq);
-  return shortlist;
+  const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, budget_amount, historicalContext };
+  return newScoreSuppliers(eligible, { restricted_suppliers }, mockReq);
 }
 
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
@@ -72,11 +71,22 @@ export async function POST(req) {
           budget: enrichedRequest.budget_amount ? `${enrichedRequest.currency || 'EUR'} ${enrichedRequest.budget_amount.toLocaleString()}` : null,
           supplier: enrichedRequest.preferred_supplier_stated,
         };
-        send('step', { step: 'parsing', status: 'done', pct: 20, thinking: `Extracted: ${parsed.category}, qty ${parsed.quantity ?? '?'}, budget ${parsed.budget ?? 'not specified'}, supplier ${parsed.supplier ?? 'none stated'}` });
+        const inferredFields = enrichedRequest.assumptions?.length
+          ? `Inferred from history: ${enrichedRequest.assumptions.slice(0,2).join(' · ')}`
+          : historicalContext.length > 0
+          ? `${historicalContext.length} historical award(s) consulted — no gaps to fill`
+          : 'No historical context found for this category/region';
+        send('step', { step: 'parsing', status: 'done', pct: 20, thinking: `Extracted: ${parsed.category} · qty ${parsed.quantity ?? '?'} · budget ${parsed.budget ?? 'not stated'} · supplier ${parsed.supplier ?? 'none stated'}\n${inferredFields}` });
 
         // ── Step 2: Rules Check (40%) ────────────────────────────────
         await delay(1000); // min delay so users see each step
-        send('step', { step: 'rules', status: 'active', pct: 25, thinking: 'Running compliance engine — checking approval tiers, supplier restrictions, budget sufficiency, lead-time feasibility…' });
+        const rulesChecking = [
+          `Approval tier: ${enrichedRequest.budget_amount ? `${enrichedRequest.currency ?? 'EUR'} ${enrichedRequest.budget_amount?.toLocaleString()}` : 'budget unknown'}`,
+          enrichedRequest.preferred_supplier_stated ? `Preferred supplier: ${enrichedRequest.preferred_supplier_stated}` : 'No preferred supplier stated',
+          enrichedRequest.days_until_required != null ? `Delivery: ${enrichedRequest.days_until_required} days` : 'No delivery date',
+          `Countries: ${(enrichedRequest.delivery_countries ?? []).join(', ') || 'not specified'}`,
+        ].join(' · ');
+        send('step', { step: 'rules', status: 'active', pct: 25, thinking: `Checking compliance rules…\n${rulesChecking}` });
 
         const issues = [];
         if (structuredRequest.demand_reframe_flag) issues.push({ issue_id:'V-000', severity:'warning', type:'contradictory_request', description:'Request contains contradictory or unreasonable information — AI flagged this for review', action_required:'Clarify the request before proceeding' });
@@ -93,18 +103,25 @@ export async function POST(req) {
         const policyResult = { approval_threshold: approvalThreshold, preferred_supplier: preferredCheck, category_rules: categoryRules, geography_rules: geoRules, violations: [] };
 
         await delay(800);
-        const rulesSummary = issues.length === 0 ? 'All compliance checks passed ✓' : `Found ${issues.length} issue(s): ${issues.map(i => i.type).join(', ')}`;
+        const tierLabel = approvalThreshold ? `Approval tier: ${approvalThreshold.rule_applied} (${approvalThreshold.quotes_required} quote(s) required)` : 'Tier: below threshold';
+        const rulesSummary = issues.length === 0
+          ? `All compliance checks passed ✓ · ${tierLabel}`
+          : `${issues.length} issue(s) found · ${issues.map(i => i.description).join(' · ')} · ${tierLabel}`;
         send('step', { step: 'rules', status: 'done', pct: 40, thinking: rulesSummary });
 
         // ── Step 3: Scoring (60%) ────────────────────────────────────
         await delay(1000);
-        send('step', { step: 'scoring', status: 'active', pct: 45, thinking: 'Evaluating eligible suppliers — comparing unit prices, lead times, risk profiles, ESG ratings…' });
+        const eligibleCount = getEligibleSuppliers(
+          enrichedRequest.category_l1, enrichedRequest.category_l2,
+          enrichedRequest.delivery_countries || [], enrichedRequest.quantity > 0 ? enrichedRequest.quantity : 1, enrichedRequest.currency || 'EUR'
+        ).length;
+        send('step', { step: 'scoring', status: 'active', pct: 45, thinking: `Found ${eligibleCount} eligible supplier(s) for ${enrichedRequest.category_l2 ?? enrichedRequest.category_l1 ?? 'this category'} in [${(enrichedRequest.delivery_countries ?? []).join(', ')}] · Scoring on price (30%), lead time (30%), quality (20%), risk (10%), ESG (10%)…` });
 
-        const rankedSuppliers = scoreSuppliersLocal(
+        const { shortlist: rankedSuppliers, excluded: excludedSuppliers } = scoreSuppliersLocal(
           enrichedRequest.category_l1, enrichedRequest.category_l2,
           enrichedRequest.delivery_countries || [],
           (enrichedRequest.quantity > 0 ? enrichedRequest.quantity : 1), enrichedRequest.currency || 'EUR',
-          originalRequest, enrichedRequest.days_until_required, historicalContext
+          originalRequest, enrichedRequest.days_until_required, enrichedRequest.budget_amount, historicalContext
         );
         rankedSuppliers.forEach(s => {
           if (s.supplier_id === originalRequest?.incumbent_supplier) s.incumbent = true;
@@ -124,8 +141,8 @@ export async function POST(req) {
 
         await delay(800);
         const scoringSummary = rankedSuppliers.length > 0
-          ? `Ranked ${rankedSuppliers.length} suppliers. Top: ${rankedSuppliers[0].supplier_name} (score ${rankedSuppliers[0].composite_score}/100, ${rankedSuppliers[0].unit_price} ${enrichedRequest.currency || 'EUR'}/unit)`
-          : 'No eligible suppliers found for this configuration';
+          ? `Ranked ${rankedSuppliers.length} supplier(s)${excludedSuppliers?.length ? ` · ${excludedSuppliers.length} excluded` : ''} · #1: ${rankedSuppliers[0].supplier_name} — score ${Math.round(rankedSuppliers[0].composite_score * 100)}/100, ${rankedSuppliers[0].unit_price?.toLocaleString()} ${enrichedRequest.currency ?? 'EUR'}/unit, lead time ${rankedSuppliers[0].standard_lead_time_days}d`
+          : `No eligible suppliers found for ${enrichedRequest.category_l2 ?? 'this category'} in [${(enrichedRequest.delivery_countries ?? []).join(', ')}]`;
         send('step', { step: 'scoring', status: 'done', pct: 60, thinking: scoringSummary });
 
         // ── Step 4: Decision (85%) ───────────────────────────────────
@@ -200,7 +217,16 @@ export async function POST(req) {
           escalations.splice(0, escalations.length, ...escalations.filter(e => e.blocking));
         }
 
-        let decisionThinking = `Evaluating ${rankedSuppliers.length} suppliers against ${issues.length} issues and ${escalations.length} escalations...\n\n`;
+        const blockingCount = escalations.filter(e => e.blocking).length;
+        const caseTypeLabel = {
+          READY_FOR_VALIDATION:  'Ready for validation',
+          FAILED_IMPOSSIBLE_DATE:'Blocked — impossible deadline',
+          MORE_INFO_REQUIRED:    'Blocked — unclear request',
+          PENDING_RESOLUTION:    'Blocked — pending resolution',
+          NO_SUPPLIER_AVAILABLE: 'Blocked — no compliant supplier',
+          SIMILAR_NOT_EXACT_MATCH: 'Partial match — demand reframed',
+        }[case_type] ?? case_type;
+        let decisionThinking = `Case type: ${caseTypeLabel} · ${blockingCount} blocking escalation(s) · ${rankedSuppliers.length} supplier(s) shortlisted\n\n`;
         send('step', { step: 'decision', status: 'active', pct: 65, thinking: decisionThinking });
 
         const decision = await generateDecision(enrichedRequest, validationResult, policyResult, rankedSuppliers, escalations, historicalContext, (chunk) => {
@@ -217,7 +243,10 @@ export async function POST(req) {
           ? detectBundlingOpportunity(enrichedRequest, rankedSuppliers)
           : null;
 
-        send('step', { step: 'decision', status: 'done', pct: 85, thinking: decision.status === 'recommended' ? `Recommending ${decision.preferred_supplier_if_resolved || rankedSuppliers[0]?.supplier_name || 'top supplier'}` : 'Cannot auto-approve — escalation required' });
+        const decisionDone = decision.status === 'recommended'
+          ? `✓ Recommending ${decision.preferred_supplier_if_resolved || rankedSuppliers[0]?.supplier_name} — ${decision.decision_summary ?? ''}`
+          : `✗ Cannot proceed — ${escalations.filter(e=>e.blocking).map(e=>e.rule).join(', ')} · ${decision.decision_summary ?? 'manual intervention required'}`;
+        send('step', { step: 'decision', status: 'done', pct: 85, thinking: decisionDone });
 
         // ── Step 5: Logged (100%) ────────────────────────────────────
         await delay(600);
@@ -252,7 +281,10 @@ export async function POST(req) {
         const confidence = confidenceResult.score;
 
         await delay(500);
-        send('step', { step: 'logged', status: 'done', pct: 100, thinking: `Confidence: ${confidence}%. ${isAutoApproved ? 'Auto-approved ✓' : `Requires approval from ${requiredApprover}`}` });
+        const loggedDone = isAutoApproved
+          ? `Confidence: ${confidence}% · Auto-approved ✓ · Audit trail written · ${rankedSuppliers.length} supplier(s) evaluated`
+          : `Confidence: ${confidence}% · Requires sign-off from ${requiredApprover} · ${escalations.length} escalation(s) raised · Audit trail written`;
+        send('step', { step: 'logged', status: 'done', pct: 100, thinking: loggedDone });
 
         // ── Final result ─────────────────────────────────────────────
         const result = {
@@ -264,10 +296,20 @@ export async function POST(req) {
           validation: validationResult,
           policy_evaluation: policyResult,
           supplier_shortlist: rankedSuppliers.map(s => ({ ...s, composite_score_pct: Math.round(s.composite_score * 100) })),
+          suppliers_excluded: excludedSuppliers ?? [],
           escalations,
           bundling_opportunity: bundlingOpportunity,
           case_type,
-          recommendation: { ...decision, is_auto_approved: isAutoApproved, required_approver: requiredApprover },
+          recommendation: {
+            ...decision,
+            is_auto_approved: isAutoApproved,
+            required_approver: requiredApprover,
+            minimum_budget_required: minimumRequired,
+            minimum_budget_currency: minimumRequired ? (enrichedRequest.currency ?? 'EUR') : null,
+            savings_vs_budget_pct: (enrichedRequest.budget_amount && rankedSuppliers[0]?.total_price)
+              ? Math.round(((enrichedRequest.budget_amount - rankedSuppliers[0].total_price) / enrichedRequest.budget_amount) * 100)
+              : null,
+          },
           audit_trail: {
             policies_checked: ['AT-001','AT-002','AT-003','AT-004','AT-005','ER-001','ER-002','ER-004','ER-005'],
             supplier_ids_evaluated: rankedSuppliers.map(s => s.supplier_id),
