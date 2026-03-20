@@ -46,6 +46,16 @@ export default function Navbar() {
         >
           Supplier Portal
         </Link>
+        <Link
+          href="/dashboard"
+          className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+            pathname?.startsWith("/dashboard")
+              ? "text-[color:var(--text-main)] bg-white/10"
+              : "text-[color:var(--text-muted)] hover:text-[color:var(--text-main)] hover:bg-white/5"
+          }`}
+        >
+          Analytics
+        </Link>
       </div>
 
       <div className="flex items-center gap-2">
