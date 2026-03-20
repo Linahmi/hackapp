@@ -12,10 +12,8 @@ import {
   AuditEntry,
 } from "@/components/agent/SupplierComparisonTable";
 import { DecisionRow } from "@/components/agent/DecisionRow";
-import { EscalationRow } from "@/components/agent/EscalationRow";
 import { DecisionJustification } from "@/components/agent/DecisionJustification";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
-import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
 // ─── Demo fallback data (used when no API result is in sessionStorage) ────────
 
@@ -60,6 +58,30 @@ const DEMO_AUDIT: AuditEntry[] = [
 
 const DEMO_REQUEST = "Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF, prefer Dell";
 
+function SummaryTile({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "good" | "warn" | "danger";
+}) {
+  const tones = {
+    default: "border-gray-200 dark:border-[#1e2130] bg-white dark:bg-[#12151f]",
+    good: "border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/8",
+    warn: "border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/8",
+    danger: "border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/8",
+  };
+
+  return (
+    <div className={`rounded-2xl border px-5 py-4 shadow-sm ${tones[tone]}`}>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug">{value}</p>
+    </div>
+  );
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function riskLabel(score: number): "Low" | "Med" | "High" {
@@ -95,54 +117,6 @@ function computeFinalScore(name: string, w: Weights, rawData: RawScores): number
   );
 }
 
-const FACTOR_LABELS: { key: keyof Weights; label: string }[] = [
-  { key: "price",    label: "price efficiency" },
-  { key: "risk",     label: "risk compliance"  },
-  { key: "delivery", label: "delivery speed"   },
-  { key: "esg",      label: "ESG score"        },
-];
-
-function generateExplanation(bestName: string, runnerUp: string, w: Weights, rawData: RawScores): string {
-  if (!bestName) return "No eligible supplier found with current weights.";
-  const sorted = [...FACTOR_LABELS].sort((a, b) => w[b.key] - w[a.key]);
-  const top    = sorted[0];
-  const second = sorted[1];
-  const bestRaw   = rawData[bestName];
-  const runnerRaw = runnerUp ? rawData[runnerUp] : null;
-  const topScore    = bestRaw?.[top.key]    ?? 0;
-  const secondScore = bestRaw?.[second.key] ?? 0;
-  let lead = "";
-  if (runnerRaw) {
-    const diff = topScore - (runnerRaw[top.key] ?? 0);
-    if (diff > 20) lead = ` It leads by ${diff} points on ${top.label} vs. ${runnerUp}.`;
-  }
-  const totalWeight = w.price + w.risk + w.delivery + w.esg;
-  const topPct    = totalWeight > 0 ? Math.round((w[top.key]    / totalWeight) * 100) : 0;
-  const secondPct = totalWeight > 0 ? Math.round((w[second.key] / totalWeight) * 100) : 0;
-  return (
-    `${bestName} is recommended because it scores highest on ${top.label} (${topScore}/100) ` +
-    `and ${second.label} (${secondScore}/100), which together account for ${topPct + secondPct}% ` +
-    `of the current weight configuration.${lead}`
-  );
-}
-
-// ─── Why panel ────────────────────────────────────────────────────────────────
-
-function WhyPanel({ text }: { text: string }) {
-  return (
-    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-[#1A1D27]/80 backdrop-blur-md px-6 py-5 shadow-sm transition-all hover:shadow-md animate-slide-in-right delay-400">
-      <div className="flex items-center gap-2.5 mb-3">
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-        </span>
-        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-600 dark:text-gray-400">Why this recommendation?</h3>
-      </div>
-      <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium">{text}</p>
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SupplierDemoPage() {
@@ -151,10 +125,6 @@ export default function SupplierDemoPage() {
   const [apiResult,    setApiResult]    = useState<any>(null);
   const [buyerRequest, setBuyerRequest] = useState(DEMO_REQUEST);
   const [mounted, setMounted] = useState(false);
-  const [marketIntel, setMarketIntel] = useState<SupplierIntelResult[]>([]);
-  const [intelLoading, setIntelLoading] = useState(false);
-  const [intelFetched, setIntelFetched] = useState(false);
-  const [intelError, setIntelError] = useState(false);
 
   // Prefer context result (survives SPA navigation, reset on refresh).
   // Fall back to sessionStorage for direct page loads where context may be empty.
@@ -175,27 +145,6 @@ export default function SupplierDemoPage() {
   }, [contextResult]);
 
 
-  // ─── Market Intelligence auto-trigger ────────────────────────────────────
-
-  useEffect(() => {
-    if (!apiResult?.supplier_shortlist?.length || intelFetched || intelLoading) return;
-    const validSuppliers = apiResult.supplier_shortlist.filter((s: any) => s?.supplier_id);
-    if (!validSuppliers.length) return;
-    setIntelLoading(true);
-    const names = validSuppliers.map((s: any) => s.supplier_name);
-    const category = apiResult.request_interpretation?.category_l2 ?? apiResult.request_interpretation?.category_l1 ?? "enterprise hardware";
-    const region = apiResult.request_interpretation?.delivery_countries?.[0] ?? "Europe";
-    fetch("/api/supplier-intel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ suppliers: names, category, region }),
-    })
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((data) => setMarketIntel(data.results ?? []))
-      .catch(() => setIntelError(true))
-      .finally(() => { setIntelLoading(false); setIntelFetched(true); });
-  }, [apiResult?.supplier_shortlist]);
-
   // ─── Multi-Language detection ─────────────────────────────────────────────
   
   const detectedLanguage = useMemo(() => {
@@ -212,8 +161,12 @@ export default function SupplierDemoPage() {
   // ─── Derive RAW scores and META from API or fall back to demo data ─────────
 
   const { rawScores, meta, isFromApi } = useMemo(() => {
+    if (!apiResult) {
+      return { rawScores: DEMO_RAW, meta: DEMO_META, isFromApi: false };
+    }
+
     const shortlist = apiResult?.supplier_shortlist;
-    if (!shortlist?.length) return { rawScores: DEMO_RAW, meta: DEMO_META, isFromApi: false };
+    if (!shortlist?.length) return { rawScores: {}, meta: {}, isFromApi: true };
 
     const rawScores: RawScores                  = {};
     const meta: Record<string, MetaEntry>       = {};
@@ -320,12 +273,6 @@ export default function SupplierDemoPage() {
   const isAutoApproved         = apiResult?.recommendation?.is_auto_approved
     ?? (bestName !== "" && meta[bestName]?.risk === "Low");
 
-  const anySavings = realEscalations.find((e: any) => (e.estimated_savings ?? 0) > 0);
-  const savingsStr = anySavings?.estimated_savings
-    ? formatAmount(anySavings.estimated_savings, apiResult?.request_interpretation?.currency ?? "CHF")
-    : null;
-
-
   // ─── Assemble Supplier[] for table ────────────────────────────────────────
 
   const suppliers: Supplier[] = scored.map(({ name, score }) => {
@@ -349,11 +296,16 @@ export default function SupplierDemoPage() {
     };
   });
 
-  const runnerName    = eligibleRanked[1]?.name ?? "";
-  const explanation    = generateExplanation(bestName, runnerName, weights, rawScores);
-
   const confidence   = apiResult?.confidence_score ?? null;
   const ri           = apiResult?.request_interpretation;
+  const approvalThreshold = apiResult?.policy_evaluation?.approval_threshold ?? null;
+  const nextAction = apiResult?.recommendation?.next_action
+    ?? (realEscalations.find((e: any) => e.blocking)?.action || "Review supplier details");
+  const caseSummary = apiResult?.case_type
+    ? apiResult.case_type.replace(/_/g, " ").toLowerCase()
+    : isAutoApproved
+    ? "ready for approval"
+    : "manual review required";
 
   // ─── Market Price Benchmark (only from API — no client-side estimation) ──────
 
@@ -373,7 +325,7 @@ export default function SupplierDemoPage() {
   // ─── Validation issues (severity-tagged) ─────────────────────────────────
 
   const validationIssues = useMemo(() => {
-    return (apiResult?.validation?.issues_detected as any[]) ?? [];
+    return (apiResult?.validation?.issues as any[]) ?? [];
   }, [apiResult]);
 
   // ─── Excluded suppliers (non-blocking filter reasons) ─────────────────────
@@ -501,6 +453,29 @@ export default function SupplierDemoPage() {
           </div>
         </div>
 
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 animate-fade-slide-up delay-350">
+          <SummaryTile
+            label="Case Status"
+            value={caseSummary}
+            tone={hasBlocking ? "danger" : isAutoApproved ? "good" : "warn"}
+          />
+          <SummaryTile
+            label="Policy Rule"
+            value={approvalThreshold ? `${approvalThreshold.rule_applied}${approvalThreshold.tier ? ` · Tier ${approvalThreshold.tier}` : ""}` : "No threshold found"}
+            tone={approvalThreshold ? "default" : "warn"}
+          />
+          <SummaryTile
+            label="Best Supplier"
+            value={bestName || "No compliant supplier found"}
+            tone={bestName && !hasBlocking ? "good" : "warn"}
+          />
+          <SummaryTile
+            label="Next Action"
+            value={nextAction}
+            tone={hasBlocking ? "danger" : "default"}
+          />
+        </div>
+
         {/* Decision + Justification — most important, shown first */}
         <div className="animate-fade-slide-up delay-150">
           <DecisionRow
@@ -592,14 +567,64 @@ export default function SupplierDemoPage() {
           </div>
         )}
 
-        <div id="supplier-table" className="animate-scale-fade-in delay-700">
-          <SupplierComparisonTable
-            suppliers={suppliers}
-            sourceTags={sourceTags}
-            conflicts={conflicts}
-            auditTrail={auditTrail}
-          />
-        </div>
+        {approvalThreshold && (
+          <div className="animate-fade-slide-up delay-650 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
+            <div className="px-6 py-3.5 border-b border-gray-200 dark:border-[#1e2130] flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Policy Application</span>
+            </div>
+            <div className="grid gap-4 px-6 py-5 md:grid-cols-3">
+              <SummaryTile
+                label="Approval Rule"
+                value={`${approvalThreshold.rule_applied ?? "N/A"}${approvalThreshold.tier ? ` · Tier ${approvalThreshold.tier}` : ""}`}
+              />
+              <SummaryTile
+                label="Quotes Required"
+                value={approvalThreshold.quotes_required != null ? `${approvalThreshold.quotes_required}` : "N/A"}
+              />
+              <SummaryTile
+                label="Approver"
+                value={approvalThreshold.approver || approvalThreshold.approvers?.join(", ") || "N/A"}
+                tone={approvalThreshold.tier && approvalThreshold.tier > 1 ? "warn" : "default"}
+              />
+            </div>
+            {approvalThreshold.deviation_approval && (
+              <div className="px-6 pb-5">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Deviation approval: <span className="font-semibold text-gray-700 dark:text-gray-200">{approvalThreshold.deviation_approval}</span>
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {suppliers.length > 0 ? (
+          <>
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Step 4</p>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Supplier Comparison</h2>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Compliant options ranked on price, risk, delivery, and ESG</p>
+            </div>
+            <div id="supplier-table" className="animate-scale-fade-in delay-700">
+              <SupplierComparisonTable
+                suppliers={suppliers}
+                sourceTags={sourceTags}
+                conflicts={conflicts}
+                auditTrail={auditTrail}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="animate-scale-fade-in delay-700 rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/8 px-6 py-5 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 mb-2">Step 4</p>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">No Compliant Supplier Available</h2>
+            <p className="mt-2 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+              No supplier in the approved panel can fulfill this request within the current constraints. This is different from a similar-match scenario:
+              here there are zero compliant supplier options to rank.
+            </p>
+          </div>
+        )}
 
         {/* Excluded suppliers (non-blocked, with explicit reason) */}
         {excludedSuppliers.length > 0 && (
@@ -628,7 +653,7 @@ export default function SupplierDemoPage() {
         )}
 
         {/* Live Market Benchmark */}
-        {marketBenchmark && (
+        {marketBenchmark && suppliers.length > 0 && (
           <div className="animate-slide-in-right delay-900 rounded-2xl px-6 py-5 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -662,40 +687,24 @@ export default function SupplierDemoPage() {
 
         <div className="animate-fade-slide-up delay-600">
 
-          {/* Hierarchy panel for API results, legacy EscalationRow for demo */}
+          {/* Hierarchy panel for API results */}
           {isFromApi && realEscalations.length > 0 ? (
-            <EscalationHierarchyPanel
-              escalations={realEscalations}
-              currency={apiResult?.request_interpretation?.currency ?? "EUR"}
-            />
-          ) : !isFromApi ? (
-            <EscalationRow
-              label="Escalation required"
-              title="Bundle opportunity detected"
-              description="Procurement Manager approval required to combine compatible orders"
-              note="Potential savings identified, but human validation is needed"
-              estimatedSavings={savingsStr}
-              approver="Procurement Manager"
-              recipientName="Michael Torres"
-              recipientDept="Procurement Office"
-              actionRequired="Approve or reject the bundle consolidation to unlock potential cost savings before orders are placed separately."
-              responseTime="Response needed within 24–48 hours"
-              responseEmoji="📋"
-            />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Step 5</p>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">Escalation Routing</h2>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Human approval path for blocking or policy-sensitive cases</p>
+              </div>
+              <EscalationHierarchyPanel
+                escalations={realEscalations}
+                currency={apiResult?.request_interpretation?.currency ?? "EUR"}
+              />
+            </div>
           ) : null}
         </div>
 
-
-        {(intelLoading || intelFetched) && !intelError && (
-          <div className="animate-fade-slide-up delay-900">
-            <MarketIntelCard results={marketIntel} loading={intelLoading} />
-          </div>
-        )}
-        {intelFetched && intelError && (
-          <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-5 py-4 text-sm font-medium text-amber-700 dark:text-amber-400 animate-fade-slide-up">
-            Live market intelligence unavailable — Exa.ai search could not be reached.
-          </div>
-        )}
 
       </div>
       </div>

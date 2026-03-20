@@ -101,7 +101,7 @@ function SupplierSection({ result }: { result: SupplierIntelResult }) {
 
       {!hasResults && (
         <div className="px-6 pb-5 pt-2">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-600 italic">No market data found for this supplier.</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-600 italic">No public market signals were retrieved for this supplier.</p>
         </div>
       )}
     </div>
@@ -141,7 +141,7 @@ export default function MarketIntelCard({ results, loading }: Props) {
             Market Intelligence
           </h3>
           <span className="rounded-full border border-blue-200 dark:border-[#3B82F6]/25 bg-blue-50 dark:bg-[#3B82F6]/10 px-2.5 py-1 text-[10px] font-bold text-blue-600 dark:text-[#3B82F6] uppercase tracking-widest">
-            Live
+            External Signal
           </span>
         </div>
         <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest font-bold">
@@ -149,8 +149,11 @@ export default function MarketIntelCard({ results, loading }: Props) {
         </span>
       </div>
 
-      <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-6 max-w-2xl">
-        Real-time web intelligence — pricing signals, reviews, and availability data gathered from public sources.
+      <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 max-w-2xl">
+        Public web signals gathered through Exa to enrich the sourcing view with pricing, reviews, and availability context.
+      </p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-6 max-w-2xl">
+        These signals support the recommendation, but they do not override procurement policy or approved-supplier rules.
       </p>
 
       {loading ? <LoadingSkeleton /> : (

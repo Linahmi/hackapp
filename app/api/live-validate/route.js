@@ -1,5 +1,21 @@
 import { NextResponse } from "next/server";
 
+function getAzureChatCompletionsUrl() {
+  const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+  if (!endpoint) return null;
+
+  if (endpoint.includes("/models/chat/completions")) {
+    return endpoint;
+  }
+
+  const trimmedEndpoint = endpoint.replace(/\/$/, "");
+  return `${trimmedEndpoint}/openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=2024-05-01-preview`;
+}
+
+function usesModelRoutedEndpoint() {
+  return process.env.AZURE_OPENAI_ENDPOINT?.includes("/models/chat/completions");
+}
+
 export async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -21,8 +37,13 @@ export async function POST(request) {
       });
     }
 
+    const azureChatUrl = getAzureChatCompletionsUrl();
+    if (!azureChatUrl) {
+      throw new Error("Missing Azure chat completions endpoint");
+    }
+
     const response = await fetch(
-      `${process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=2024-05-01-preview`,
+      azureChatUrl,
       {
         method: 'POST',
         headers: {
@@ -30,6 +51,7 @@ export async function POST(request) {
           'api-key': process.env.AZURE_OPENAI_KEY
         },
         body: JSON.stringify({
+          ...(usesModelRoutedEndpoint() ? { model: process.env.AZURE_OPENAI_DEPLOYMENT } : {}),
           messages: [
             { role: 'system', content: 'Analyze the procurement request snippet (it may be in any language, e.g., English, French). Return JSON with exactly these 4 boolean keys indicating if the concept is mentioned: "quantity", "budget", "location" (e.g., city, country, office), "timeline" (e.g., tomorrow, demain matin, urgent). Reply ONLY with JSON.' },
             { role: 'user', content: text }

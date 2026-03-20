@@ -14,7 +14,7 @@ const SEVERITY_BADGE = {
 
 export default function ValidationPanel({ validation }) {
   if (!validation) return null;
-  const { completeness, issues_detected = [] } = validation;
+  const { completeness, issues = [] } = validation;
   const pass = completeness === "pass";
 
   return (
@@ -30,11 +30,11 @@ export default function ValidationPanel({ validation }) {
         </span>
       </div>
 
-      {issues_detected.length === 0 ? (
+      {issues.length === 0 ? (
         <p className="px-5 py-4 text-sm" style={{ color: "var(--text-muted)" }}>No issues detected.</p>
       ) : (
         <ul>
-          {issues_detected.map((issue) => {
+          {issues.map((issue) => {
             const isLow = issue.severity === "low" || !SEVERITY_STYLES[issue.severity];
             return (
               <li

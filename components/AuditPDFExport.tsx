@@ -238,10 +238,10 @@ export default function AuditPDFExport({ data }: Props) {
             <tbody>
               {data.validation.issues.map((iss: any, i: number) => (
                 <tr key={i}>
-                  <td className="mono">{iss.id || "N/A"}</td>
+                  <td className="mono">{iss.issue_id || "N/A"}</td>
                   <td><strong>{iss.type || "N/A"}</strong><br/>{iss.severity?.toUpperCase() || "N/A"}</td>
                   <td>{iss.description || "N/A"}</td>
-                  <td>{iss.action || "N/A"}</td>
+                  <td>{iss.action_required || "N/A"}</td>
                 </tr>
               ))}
             </tbody>
@@ -257,11 +257,11 @@ export default function AuditPDFExport({ data }: Props) {
         <tbody>
           <tr>
             <td style={{ width: "30%" }}><strong>Approval Tier</strong></td>
-            <td>Tier {data.policy_evaluation?.approval_tier?.tier ?? "N/A"} ({data.policy_evaluation?.approval_tier?.approver || "N/A"})</td>
+            <td>{data.policy_evaluation?.approval_threshold?.rule_applied ?? "N/A"}{data.policy_evaluation?.approval_threshold?.tier ? ` (Tier ${data.policy_evaluation.approval_threshold.tier})` : ""} ({data.policy_evaluation?.approval_threshold?.approver || data.policy_evaluation?.approval_threshold?.approvers?.[0] || "N/A"})</td>
           </tr>
           <tr>
             <td><strong>Quotes Required</strong></td>
-            <td>{data.policy_evaluation?.approval_tier?.quotes_required ?? "N/A"}</td>
+            <td>{data.policy_evaluation?.approval_threshold?.quotes_required ?? "N/A"}</td>
           </tr>
           <tr>
             <td><strong>Preferred Supplier Check</strong></td>
@@ -324,7 +324,7 @@ export default function AuditPDFExport({ data }: Props) {
           <tbody>
             {data.escalations.map((e: any, i: number) => (
               <tr key={i} style={{ color: e.blocking ? "#d32f2f" : "inherit", fontWeight: e.blocking ? "bold" : "normal" }}>
-                <td className="mono">{e.id || "N/A"}</td>
+                <td className="mono">{e.escalation_id || "N/A"}</td>
                 <td>{e.trigger || "N/A"}</td>
                 <td><strong>{e.escalate_to || "N/A"}</strong></td>
                 <td><strong>{e.blocking ? "BLOCKING" : "FYI"}</strong></td>

@@ -90,6 +90,15 @@ function computeAdvantages(supplier: Supplier, allSuppliers: Supplier[]): Advant
   return result;
 }
 
+function ScorePill({ label, value, muted = false }: { label: string; value: number; muted?: boolean }) {
+  return (
+    <div className={`rounded-lg border px-2.5 py-2 ${muted ? "border-gray-200/70 dark:border-white/5 bg-gray-50/70 dark:bg-white/[0.02] text-gray-400 dark:text-gray-500" : "border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] text-gray-700 dark:text-gray-300"}`}>
+      <div className="text-[10px] font-bold uppercase tracking-widest">{label}</div>
+      <div className="mt-1 text-sm font-semibold tabular-nums">{value} / 100</div>
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function SupplierComparisonTable({
@@ -257,6 +266,20 @@ export function SupplierComparisonTable({
                       <p className="mt-2.5 text-xs font-medium text-red-600 dark:text-red-400">
                         ✗ {s.blockedReason}
                       </p>
+                    )}
+
+                    {/* Criterion-level breakdown */}
+                    {s.breakdown.length > 0 && (
+                      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {s.breakdown.map((item) => (
+                          <ScorePill
+                            key={item.label}
+                            label={item.label}
+                            value={item.value}
+                            muted={isBlocked}
+                          />
+                        ))}
+                      </div>
                     )}
 
                   </div>

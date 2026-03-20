@@ -40,7 +40,7 @@ function computeConfidenceLocal(caseType, escalations, issues, preferredAvailabl
   return Math.min(95, Math.max(50, score));
 }
 
-const delay = (ms) => new Promise(r => setTimeout(r, ms));
+const delay = () => new Promise(r => setTimeout(r, 0)); // Artificial UI delays removed!
 
 export async function POST(req) {
   const body = await req.json();
@@ -90,18 +90,18 @@ export async function POST(req) {
         send('step', { step: 'rules', status: 'active', pct: 25, thinking: 'Running compliance engine — checking approval tiers, supplier restrictions, budget sufficiency, lead-time feasibility…' });
 
         const issues = [];
-        if (structuredRequest.demand_reframe_flag) issues.push({ id:'V-000', severity:'warning', type:'contradictory_request', description:'Request contains contradictory or unreasonable information — AI flagged this for review', action:'Clarify the request before proceeding' });
-        if (!enrichedRequest.quantity || enrichedRequest.quantity <= 0) issues.push({ id:'V-001', severity:'critical', type:'missing_quantity', description:'Quantity not specified or invalid (must be > 0)', action:'Provide a valid quantity' });
-        if (!enrichedRequest.budget_amount) issues.push({ id:'V-002', severity:'critical', type:'missing_budget', description:'Budget not specified', action:'Provide budget' });
-        if (enrichedRequest.days_until_required !== null && enrichedRequest.days_until_required < 0) issues.push({ id:'V-003', severity:'critical', type:'deadline_passed', description:`Requested delivery date is in the past (${Math.abs(enrichedRequest.days_until_required)} days ago)`, action:'Provide a valid future delivery date' });
-        else if (enrichedRequest.days_until_required !== null && enrichedRequest.days_until_required < 10) issues.push({ id:'V-003', severity:'high', type:'lead_time_critical', description:'Delivery deadline is extremely tight', action:'Confirm if deadline is flexible' });
+        if (structuredRequest.demand_reframe_flag) issues.push({ issue_id:'V-000', severity:'warning', type:'contradictory_request', description:'Request contains contradictory or unreasonable information — AI flagged this for review', action_required:'Clarify the request before proceeding' });
+        if (!enrichedRequest.quantity || enrichedRequest.quantity <= 0) issues.push({ issue_id:'V-001', severity:'critical', type:'missing_quantity', description:'Quantity not specified or invalid (must be > 0)', action_required:'Provide a valid quantity' });
+        if (!enrichedRequest.budget_amount) issues.push({ issue_id:'V-002', severity:'critical', type:'missing_budget', description:'Budget not specified', action_required:'Provide budget' });
+        if (enrichedRequest.days_until_required !== null && enrichedRequest.days_until_required < 0) issues.push({ issue_id:'V-003', severity:'critical', type:'deadline_passed', description:`Requested delivery date is in the past (${Math.abs(enrichedRequest.days_until_required)} days ago)`, action_required:'Provide a valid future delivery date' });
+        else if (enrichedRequest.days_until_required !== null && enrichedRequest.days_until_required < 10) issues.push({ issue_id:'V-003', severity:'high', type:'lead_time_critical', description:'Delivery deadline is extremely tight', action_required:'Confirm if deadline is flexible' });
 
         const totalValue = enrichedRequest.budget_amount || 0;
-        const approvalTier = checkApprovalTier(totalValue, enrichedRequest.currency);
+        const approvalThreshold = checkApprovalTier(totalValue, enrichedRequest.currency);
         const preferredCheck = enrichedRequest.preferred_supplier_stated ? checkPreferredSupplier(enrichedRequest.preferred_supplier_stated, enrichedRequest.category_l2, enrichedRequest.delivery_countries?.[0] || 'DE') : null;
         const categoryRules = checkCategoryRules(enrichedRequest.category_l1, enrichedRequest.category_l2);
         const geoRules = checkGeographyRules(enrichedRequest.delivery_countries || [], originalRequest?.data_residency_constraint || false);
-        const policyResult = { approval_tier: approvalTier, preferred_supplier: preferredCheck, category_rules: categoryRules, geography_rules: geoRules, violations: [] };
+        const policyResult = { approval_threshold: approvalThreshold, preferred_supplier: preferredCheck, category_rules: categoryRules, geography_rules: geoRules, violations: [] };
 
         await delay(800);
         const rulesSummary = issues.length === 0 ? 'All compliance checks passed ✓' : `Found ${issues.length} issue(s): ${issues.map(i => i.type).join(', ')}`;
@@ -127,7 +127,7 @@ export async function POST(req) {
           const lowestUnitPrice = Math.min(...rankedSuppliers.map(s => s.unit_price));
           minimumRequired = lowestUnitPrice * enrichedRequest.quantity;
           if (enrichedRequest.budget_amount < minimumRequired) {
-            issues.push({ id:'V-004', severity:'critical', type:'budget_insufficient', description:`Budget of ${enrichedRequest.budget_amount} ${enrichedRequest.currency} cannot cover ${enrichedRequest.quantity} units. Minimum required: ${minimumRequired.toFixed(2)} ${enrichedRequest.currency}`, action:'Increase budget or reduce quantity', minimum_required: minimumRequired });
+            issues.push({ issue_id:'V-004', severity:'critical', type:'budget_insufficient', description:`Budget of ${enrichedRequest.budget_amount} ${enrichedRequest.currency} cannot cover ${enrichedRequest.quantity} units. Minimum required: ${minimumRequired.toFixed(2)} ${enrichedRequest.currency}`, action_required:'Increase budget or reduce quantity', minimum_required: minimumRequired });
           }
         }
 
@@ -147,14 +147,14 @@ export async function POST(req) {
         if (enrichedRequest.days_until_required && rankedSuppliers.length > 0) {
           const fastestExpedited = Math.min(...rankedSuppliers.map(s => s.expedited_lead_time_days || 999));
           if (fastestExpedited > enrichedRequest.days_until_required) {
-            issues.push({ id:'V-005', severity:'critical', type:'lead_time_infeasible', description:`Required in ${enrichedRequest.days_until_required} days but fastest supplier delivers in ${fastestExpedited} days.`, action:'Negotiate expedited delivery or revise deadline' });
+            issues.push({ issue_id:'V-005', severity:'critical', type:'lead_time_infeasible', description:`Required in ${enrichedRequest.days_until_required} days but fastest supplier delivers in ${fastestExpedited} days.`, action_required:'Negotiate expedited delivery or revise deadline' });
           }
         }
         // Policy conflict (single-supplier override attempt)
-        if (approvalTier && approvalTier.tier >= 2 && enrichedRequest.preferred_supplier_stated) {
+        if (approvalThreshold && approvalThreshold.tier >= 2 && enrichedRequest.preferred_supplier_stated) {
           const requestText = (originalRequest?.request_text || text || '').toLowerCase();
           if (requestText.includes('no exception') || requestText.includes('only') || requestText.includes('must use')) {
-            issues.push({ id:'V-006', severity:'high', type:'policy_conflict', description:`Policy AT-00${approvalTier.tier} requires ${approvalTier.quotes_required} quotes. Single-supplier instruction cannot override.` });
+            issues.push({ issue_id:'V-006', severity:'high', type:'policy_conflict', description:`Policy ${approvalThreshold.rule_applied} requires ${approvalThreshold.quotes_required} quotes. Single-supplier instruction cannot override.` });
           }
         }
 
@@ -174,12 +174,7 @@ export async function POST(req) {
           esg_requirement: originalRequest?.esg_requirement,
         };
 
-        const escalations = routeEscalations(
-          { ...validationResult, issues_detected: issues },
-          policyResult,
-          rankedSuppliers,
-          enrichedForEscalation
-        );
+        const escalations = routeEscalations(validationResult, policyResult, rankedSuppliers, enrichedForEscalation);
 
         const estimatedSavings = enrichedRequest.budget_amount && rankedSuppliers[0]
           ? Math.max(0, Math.round(enrichedRequest.budget_amount - rankedSuppliers[0].total_price))
@@ -188,15 +183,15 @@ export async function POST(req) {
 
         // ER-003: inject approval-tier sign-off escalation for tier >= 2 if not already present
         const TIER_ESCALATION_TARGETS = { 2: 'Procurement Manager', 3: 'Head of Category', 4: 'Head of Strategic Sourcing', 5: 'CPO' };
-        if (approvalTier?.tier >= 2 && !escalations.some(e => e.rule === 'ER-003')) {
-          const target = TIER_ESCALATION_TARGETS[approvalTier.tier] || 'Procurement Manager';
-          const isBlocking = approvalTier.tier >= 4;
+        if (approvalThreshold?.tier >= 2 && !escalations.some(e => e.rule === 'ER-003')) {
+          const target = TIER_ESCALATION_TARGETS[approvalThreshold.tier] || 'Procurement Manager';
+          const isBlocking = approvalThreshold.tier >= 4;
           escalations.push({
             escalation_id: `ESC-${String(escalations.length + 1).padStart(3, '0')}`,
             rule: 'ER-003',
-            trigger: `Tier ${approvalTier.tier} spend requires ${target} sign-off (${approvalTier.quotes_required} quote(s) required, value: ${enrichedRequest.budget_amount?.toLocaleString() ?? '?'} ${enrichedRequest.currency ?? ''}).`,
+            trigger: `Tier ${approvalThreshold.tier} spend requires ${target} sign-off (${approvalThreshold.quotes_required} quote(s) required, value: ${enrichedRequest.budget_amount?.toLocaleString() ?? '?'} ${enrichedRequest.currency ?? ''}).`,
             escalate_to: target,
-            hierarchy_level: approvalTier.tier + 1,
+            hierarchy_level: approvalThreshold.tier + 1,
             hierarchy_label: target,
             hierarchy_color: isBlocking ? '#f43f5e' : '#a78bfa',
             blocking: isBlocking,
@@ -245,7 +240,7 @@ export async function POST(req) {
         // Auto-approve ONLY when: tier 1, no escalations, no critical validation issues
         const hasBlockingValidationIssue = issues.some(i => i.severity === 'critical');
         const isAutoApproved =
-          approvalTier?.tier === 1 &&
+          approvalThreshold?.tier === 1 &&
           escalations.length === 0 &&
           !hasBlockingValidationIssue;
 
@@ -256,7 +251,7 @@ export async function POST(req) {
             const sorted = [...escalations].sort((a, b) => (b.hierarchy_level || 0) - (a.hierarchy_level || 0));
             requiredApprover = sorted[0].escalate_to;
           } else {
-            requiredApprover = approvalTier?.approver || 'Procurement Manager';
+            requiredApprover = approvalThreshold?.approver || approvalThreshold?.approvers?.[0] || 'Procurement Manager';
           }
         }
 

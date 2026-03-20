@@ -11,7 +11,7 @@ interface Issue {
 interface Props {
   validation?: {
     completeness: "pass" | "fail";
-    issues_detected: Issue[];
+    issues: Issue[];
   };
 }
 
@@ -39,7 +39,7 @@ const SEVERITY_CFG = {
 export default function PolicyCheck({ validation }: Props) {
   if (!validation) return null;
 
-  const issues = (validation as any)?.issues ?? validation?.issues_detected ?? [];
+  const issues = validation.issues ?? [];
   const pass = validation.completeness === "pass";
 
   return (

@@ -14,10 +14,10 @@ const STEP_INDEX: Record<string, number> = {
 };
 
 const SCENARIOS = [
-  { icon: Laptop, title: "Standard Demo", desc: "REQ-000004 · IT docking station order with strict specs.", text: "Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception." },
-  { icon: Package, title: "Fleet Refresh", desc: "REQ-000038 · Large-scale laptop procurement.", text: "Need 500 laptops for fleet refresh & onboarding across all EU offices. Delivery within 3 weeks to Geneva, Zurich and Berlin. Budget 400k CHF. Prefer Dell but open to alternatives. Must include 3-year warranty and next-business-day support." },
-  { icon: AlertTriangle, title: "Edge Case", desc: "Complex logistics with partial budget constraints.", text: "Required 50 specialized medical transport coolers to Kigali by end of month. Budget 12k USD, unsure about import duties." },
-  { icon: Search, title: "Missing Info", desc: "Vague request requiring interpretation.", text: "Need more screens for the newly hired analysts. Send them ASAP." }
+  { icon: Laptop, title: "Standard Case", desc: "Complete request with a policy conflict.", text: "Need 240 docking stations matching existing laptop fleet. Must be delivered by 2026-03-20 with premium specification. Budget capped at 25 199.55 EUR. Please use Dell Enterprise Europe with no exception." },
+  { icon: Package, title: "Cross-Border Case", desc: "Logistics request with uncertain duties and constraints.", text: "Required 50 specialized medical transport coolers to Kigali by end of month. Budget 12k USD, unsure about import duties." },
+  { icon: AlertTriangle, title: "High-Value Case", desc: "Software renewal that should trigger approval logic.", text: "Need to renew Autodesk Maya licenses for 15 designers and add 5 new seats. Total budget 45k." },
+  { icon: Search, title: "Missing Information", desc: "Vague request requiring clarification before sourcing.", text: "Need more screens for the newly hired analysts. Send them ASAP." }
 ];
 
 export default function Home() {
@@ -29,8 +29,6 @@ export default function Home() {
   // Counters
   const [reqProcessed, setReqProcessed] = useState(0);
   const [autoApproved, setAutoApproved] = useState(0);
-  const [statsTarget, setStatsTarget] = useState({ total: 304, autoApprovedPct: 78 });
-
   // Real-time pipeline state
   const [activeStep, setActiveStep] = useState(0);
   const [thinkingText, setThinkingText] = useState("");
@@ -69,7 +67,6 @@ export default function Home() {
       .then((r) => r.ok ? r.json() : Promise.resolve(null))
       .then((data) => {
         const target = data ?? { total: 0, autoApprovedPct: 0 };
-        setStatsTarget(target);
         const duration = 2000;
         const intervalMs = 20;
         const steps = duration / intervalMs;
@@ -229,9 +226,9 @@ export default function Home() {
 
       <div className="relative z-10 w-full max-w-5xl flex flex-col items-center mt-8 mb-16">
         {/* Animated Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 text-sm font-semibold mb-8 animate-pulse-slow">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-red-500/30 bg-red-500/10 text-red-500 text-sm font-semibold mb-8 animate-pulse-slow">
           <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          AI-Powered · Enterprise Grade · Audit-Ready
+          Procurement Rules Engine · Supplier Ranking · Audit Trail
         </div>
 
         {/* Large Title with word-by-word fade in */}
@@ -244,8 +241,11 @@ export default function Home() {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 font-medium mb-12 text-center max-w-2xl transition-colors duration-300">
-          Autonomous sourcing decisions in seconds
+        <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 font-medium mb-5 text-center max-w-3xl transition-colors duration-300">
+          Turn unstructured purchase requests into compliant supplier decisions with clear escalation logic.
+        </p>
+        <p className="text-sm md:text-base text-gray-500 dark:text-gray-500 font-medium mb-12 text-center max-w-3xl transition-colors duration-300">
+          The workflow extracts requirements, flags missing or conflicting inputs, applies policy rules, ranks suppliers, and explains when human approval is required.
         </p>
 
         {/* Stat Counters */}

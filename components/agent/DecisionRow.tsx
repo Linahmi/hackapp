@@ -40,6 +40,8 @@ export type DecisionRowProps = {
 
 function buildReasoningBullets(
   bestName: string,
+  status: string,
+  isAutoApproved: boolean,
   escalations: Escalation[],
   recommendation?: RecommendationData
 ): string[] {
@@ -65,7 +67,13 @@ function buildReasoningBullets(
     });
     if (!blocking.length && !recommendation?.rationale) {
       bullets.push("All policy rules were evaluated against the submitted request and supplier shortlist.");
-      bullets.push("One or more blocking conditions were detected that prevent automatic approval.");
+      bullets.push(
+        status === "cannot_proceed"
+          ? "A blocking compliance or routing condition prevents the request from progressing automatically."
+          : isAutoApproved
+          ? "The request can proceed automatically because the recommendation satisfies the current approval conditions."
+          : "The recommendation is viable, but a human reviewer still needs to validate the decision before it proceeds."
+      );
     }
   }
 
@@ -73,6 +81,8 @@ function buildReasoningBullets(
 }
 
 function buildNextActions(
+  status: string,
+  isAutoApproved: boolean,
   escalations: Escalation[],
   recommendation?: RecommendationData
 ): string[] {
@@ -90,8 +100,16 @@ function buildNextActions(
     });
 
   if (actions.length === 0) {
-    actions.push("Review the blocking issues listed above with your procurement manager.");
-    actions.push("Resolve each policy violation before resubmitting the request for approval.");
+    if (status === "cannot_proceed") {
+      actions.push("Review the blocking issues listed above with your procurement manager.");
+      actions.push("Resolve each policy violation before resubmitting the request for approval.");
+    } else if (isAutoApproved) {
+      actions.push("Proceed with the recommended supplier and capture the decision in the audit trail.");
+      actions.push("Use the export or audit functions if a record of the automated decision is needed.");
+    } else {
+      actions.push("Review the recommended supplier and supporting rationale with the responsible approver.");
+      actions.push("Approve the request or escalate if additional policy concerns remain unresolved.");
+    }
   }
 
   return actions.slice(0, 4);
@@ -102,18 +120,40 @@ function buildNextActions(
 function ReviewDetailsModal({
   requestId,
   bestName,
+  status,
+  isAutoApproved,
   escalations,
   recommendation,
   onClose,
 }: {
   requestId?: string;
   bestName: string;
+  status: string;
+  isAutoApproved: boolean;
   escalations: Escalation[];
   recommendation?: RecommendationData;
   onClose: () => void;
 }) {
-  const reasoningBullets = buildReasoningBullets(bestName, escalations, recommendation);
-  const nextActions      = buildNextActions(escalations, recommendation);
+  const reasoningBullets = buildReasoningBullets(bestName, status, isAutoApproved, escalations, recommendation);
+  const nextActions      = buildNextActions(status, isAutoApproved, escalations, recommendation);
+  const modalTone =
+    status === "cannot_proceed"
+      ? {
+          label: "Cannot Proceed",
+          classes: "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400",
+          dot: "bg-red-500",
+        }
+      : isAutoApproved
+      ? {
+          label: "Auto-Approved",
+          classes: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+          dot: "bg-emerald-500",
+        }
+      : {
+          label: "Requires Review",
+          classes: "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+          dot: "bg-amber-500",
+        };
 
   // Close on Escape key
   useEffect(() => {
@@ -133,16 +173,32 @@ function ReviewDetailsModal({
       <style>{`
         @media print {
           body > * { visibility: hidden !important; }
-          .review-modal-print-content,
-          .review-modal-print-content * { visibility: visible !important; }
-          .review-modal-print-content {
+          .review-modal-print-shell,
+          .review-modal-print-shell * { visibility: visible !important; }
+          .review-modal-print-shell {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
-            padding: 2.5rem !important;
+            max-width: none !important;
+            max-height: none !important;
+            padding: 0 !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
             background: white !important;
             color: black !important;
+          }
+          .review-modal-print-body {
+            overflow: visible !important;
+            max-height: none !important;
+            padding: 1.5rem 2.5rem 2rem !important;
+          }
+          .review-modal-print-shell .line-clamp-2 {
+            overflow: visible !important;
+            display: block !important;
+            -webkit-line-clamp: unset !important;
+            -webkit-box-orient: unset !important;
           }
           .review-modal-no-print { display: none !important; }
         }
@@ -158,12 +214,12 @@ function ReviewDetailsModal({
       >
         {/* Card — stop click propagation so clicks inside don't close the modal */}
         <div
-          className="relative w-full max-w-[680px] flex flex-col bg-white dark:bg-[#12151f] rounded-2xl border border-gray-200 dark:border-[#1e2130] shadow-2xl overflow-hidden"
+          className="review-modal-print-shell relative w-full max-w-[680px] max-h-[88vh] flex flex-col bg-white dark:bg-[#12151f] rounded-2xl border border-gray-200 dark:border-[#1e2130] shadow-2xl overflow-hidden"
           style={{ maxHeight: "90vh" }}
           onClick={e => e.stopPropagation()}
         >
           {/* ── Header ── */}
-          <div className="flex items-start justify-between gap-4 px-7 py-5 border-b border-gray-100 dark:border-white/5 shrink-0 review-modal-print-content">
+          <div className="flex items-start justify-between gap-4 px-7 py-5 border-b border-gray-100 dark:border-white/5 shrink-0">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-1">
                 ProcureTrace — Request Review
@@ -174,9 +230,9 @@ function ReviewDetailsModal({
                     {requestId}
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-xs font-bold text-red-600 dark:text-red-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                  Cannot Proceed
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold ${modalTone.classes}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${modalTone.dot}`} />
+                  {modalTone.label}
                 </span>
               </div>
             </div>
@@ -191,8 +247,8 @@ function ReviewDetailsModal({
             </button>
           </div>
 
-          {/* ── Scrollable body — ALL content lives here ── */}
-          <div className="flex-1 overflow-y-auto px-7 py-6 space-y-8 review-modal-print-content" style={{ maxHeight: "calc(90vh - 130px)" }}>
+          {/* ── Scrollable body ── */}
+          <div className="review-modal-print-body flex-1 overflow-y-auto px-7 py-6 space-y-8">
 
             {/* Section 1 — Why this cannot proceed (blocking escalations) */}
             {blockingEscalations.length > 0 && (
@@ -222,7 +278,7 @@ function ReviewDetailsModal({
                 {reasoningBullets.map((bullet, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 dark:bg-gray-500 shrink-0" />
-                    <p className="text-sm leading-snug text-gray-700 dark:text-gray-300">
+                    <p className="text-base leading-snug text-gray-700 dark:text-gray-300">
                       {bullet}
                     </p>
                   </li>
@@ -242,7 +298,7 @@ function ReviewDetailsModal({
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-gray-300 dark:border-white/15 bg-white dark:bg-white/5 text-[10px] font-bold text-gray-500 dark:text-gray-400">
                       {i + 1}
                     </span>
-                    <p className="text-sm leading-snug text-gray-700 dark:text-gray-300">
+                    <p className="text-base leading-snug text-gray-700 dark:text-gray-300">
                       {action}
                     </p>
                   </li>
@@ -493,6 +549,8 @@ export function DecisionRow({
         <ReviewDetailsModal
           requestId={requestId}
           bestName={bestName}
+          status={status}
+          isAutoApproved={isAutoApproved}
           escalations={escalations}
           recommendation={recommendation}
           onClose={() => setShowModal(false)}

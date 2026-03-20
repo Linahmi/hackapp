@@ -18,11 +18,71 @@ const CASE_CONFIG: Record<string, { bg: string; border: string; iconColor: strin
   READY_FOR_VALIDATION:  { bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.3)",   iconColor: "#22c55e", title: "Ready for validation",                 desc: "All compliance checks passed and suppliers are available. Review the recommendation below and validate to proceed." },
 };
 
+function SummaryCard({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "good" | "warn" | "danger" }) {
+  const toneClasses = {
+    default: "border-gray-200 dark:border-white/10 bg-white dark:bg-[#12151f]",
+    good: "border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/8",
+    warn: "border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/8",
+    danger: "border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/8",
+  };
+
+  return (
+    <div className={`rounded-xl border px-4 py-4 shadow-sm ${toneClasses[tone]}`}>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug">{value}</p>
+    </div>
+  );
+}
+
+function PolicySnapshot({
+  threshold,
+}: {
+  threshold?: {
+    rule_applied?: string;
+    tier?: number;
+    quotes_required?: number;
+    approver?: string;
+    approvers?: string[];
+    deviation_approval?: string | null;
+  } | null;
+}) {
+  if (!threshold) return null;
+
+  return (
+    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12151f] px-5 py-4 shadow-sm">
+      <div className="flex items-center gap-2.5 mb-3">
+        <span className="h-2 w-2 rounded-full bg-blue-500" />
+        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Policy Snapshot</h3>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <SummaryCard
+          label="Approval Rule"
+          value={`${threshold.rule_applied ?? "N/A"}${threshold.tier ? ` · Tier ${threshold.tier}` : ""}`}
+        />
+        <SummaryCard
+          label="Quotes Required"
+          value={threshold.quotes_required != null ? `${threshold.quotes_required}` : "N/A"}
+        />
+        <SummaryCard
+          label="Approver"
+          value={threshold.approver || threshold.approvers?.join(", ") || "N/A"}
+          tone={threshold.tier && threshold.tier > 1 ? "warn" : "default"}
+        />
+      </div>
+      {threshold.deviation_approval && (
+        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+          Deviation approval: <span className="font-semibold text-gray-700 dark:text-gray-200">{threshold.deviation_approval}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CaseBanner({ caseType, onValidate }: { caseType: string; onValidate?: () => void }) {
   const cfg = CASE_CONFIG[caseType];
   if (!cfg) return null;
   return (
-    <div className="rounded-xl px-5 py-4 flex items-start gap-4 bg-white dark:bg-[#12151f]" style={{ border: `1px solid ${cfg.border}` }}>
+    <div className="rounded-xl px-5 py-4 flex items-start gap-4" style={{ backgroundColor: cfg.bg, border: `1px solid ${cfg.border}` }}>
       <div className="mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: cfg.border }}>
         {caseType === "READY_FOR_VALIDATION" ? (
           <svg className="w-4 h-4" style={{ color: cfg.iconColor }} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
@@ -96,29 +156,23 @@ export default function AnalysisPage() {
 
   if (!result) return null;
 
-  return (
-    <div className="relative flex flex-col items-center gap-8 px-4 py-16 min-h-[calc(100vh-65px)] bg-gray-50 dark:bg-[#0f1117] transition-colors duration-300">
-      {/* Mesh Gradient Background — matches home page */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none transition-colors duration-1000">
-        {/* Glowing orbs */}
-        <div className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vh] rounded-full bg-blue-500/30 dark:bg-blue-600/30 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" />
-        <div className="absolute top-[10%] -right-[10%] w-[50vw] h-[60vh] rounded-full bg-red-400/30 dark:bg-red-600/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: "2s" }} />
-        <div className="absolute -bottom-[20%] left-[10%] w-[70vw] h-[60vh] rounded-full bg-purple-500/30 dark:bg-indigo-600/20 blur-[140px] mix-blend-multiply dark:mix-blend-screen animate-pulse-slow" style={{ animationDelay: "4s" }} />
+  const approvalThreshold = result.policy_evaluation?.approval_threshold ?? null;
+  const blockingEscalations = (result.escalations ?? []).filter((e: any) => e.blocking);
+  const topSupplier = result.supplier_shortlist?.[0]?.supplier_name ?? "No compliant supplier found";
+  const nextAction = result.recommendation?.next_action
+    ?? (blockingEscalations.length > 0
+      ? `Escalate to ${blockingEscalations[0]?.escalate_to ?? "Procurement"}`
+      : "Validate and continue");
+  const summaryTone =
+    result.recommendation?.status === "cannot_proceed"
+      ? "danger"
+      : blockingEscalations.length > 0
+      ? "warn"
+      : "good";
 
-        {/* Enterprise Grid Lines */}
-        <div
-          className="absolute inset-0 opacity-[0.25] dark:opacity-[0.10]"
-          style={{
-            backgroundImage: `linear-gradient(to right, #6b7280 1px, transparent 1px), linear-gradient(to bottom, #6b7280 1px, transparent 1px)`,
-            backgroundSize: `4rem 4rem`,
-            maskImage: `radial-gradient(ellipse at 50% 30%, black 40%, transparent 80%)`,
-            WebkitMaskImage: `radial-gradient(ellipse at 50% 30%, black 40%, transparent 80%)`,
-          }}
-        />
-        {/* Smooth gradient fade to page background */}
-        <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-gray-50 dark:from-[#0f1117] to-transparent" />
-      </div>
-      <div className="w-full max-w-2xl pt-4 mb-4 relative z-10">
+  return (
+    <div className="flex flex-col items-center gap-8 px-4 py-16 min-h-[calc(100vh-65px)] bg-gray-50 dark:bg-[#0f1117] transition-colors duration-300">
+      <div className="w-full max-w-2xl pt-4 mb-4">
         <button
           onClick={() => {
             sessionStorage.clear();
@@ -132,7 +186,7 @@ export default function AnalysisPage() {
         </button>
       </div>
 
-      <div className="w-full max-w-2xl animate-fade-slide-up delay-0 relative z-10">
+      <div className="w-full max-w-2xl animate-fade-slide-up delay-0">
         <ProgressStepper
           activeStep={5}
           thinkingText=""
@@ -147,7 +201,7 @@ export default function AnalysisPage() {
       </div>
 
       {result.case_type && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-100 relative z-10">
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-100">
           <CaseBanner
             caseType={result.case_type}
             onValidate={result.case_type === "READY_FOR_VALIDATION" && !validated ? () => setValidated(true) : undefined}
@@ -161,18 +215,31 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      <div className="w-full max-w-2xl animate-fade-slide-up delay-150 relative z-10">
+      <div className="w-full max-w-2xl animate-fade-slide-up delay-125">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <SummaryCard label="Case Status" value={CASE_CONFIG[result.case_type]?.title ?? result.case_type ?? "Analysis complete"} tone={summaryTone} />
+          <SummaryCard label="Recommended Supplier" value={topSupplier} tone={result.recommendation?.status === "cannot_proceed" ? "warn" : "good"} />
+          <SummaryCard label="Blocking Escalations" value={`${blockingEscalations.length}`} tone={blockingEscalations.length > 0 ? "danger" : "good"} />
+          <SummaryCard label="Next Action" value={nextAction} tone={summaryTone} />
+        </div>
+      </div>
+
+      <div className="w-full max-w-2xl animate-fade-slide-up delay-150">
         <RequestInterpretation interpretation={result.request_interpretation} />
       </div>
 
+      <div className="w-full max-w-2xl animate-fade-slide-up delay-225">
+        <PolicySnapshot threshold={approvalThreshold} />
+      </div>
+
       {result.case_type === "READY_FOR_VALIDATION" && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-300 relative z-10">
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-300">
           <PolicyCheck validation={result.validation} />
         </div>
       )}
 
       {(result?.recommendation?.decision_summary || result?.recommendation?.rationale) && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-350 relative z-10">
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-350">
           <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12151f] px-6 py-5 shadow-sm">
             <div className="flex items-center gap-2.5 mb-4">
               <span className="relative flex h-2.5 w-2.5">
@@ -208,12 +275,12 @@ export default function AnalysisPage() {
       )}
 
       {(result.case_type === 'READY_FOR_VALIDATION' || result.case_type === 'SIMILAR_NOT_EXACT_MATCH') && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-450 relative z-10">
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-450">
           <BundlingOpportunityCard bundlingOpportunity={result.bundling_opportunity ?? null} />
         </div>
       )}
 
-      <div className="w-full max-w-2xl animate-fade-slide-up delay-600 relative z-10">
+      <div className="w-full max-w-2xl animate-fade-slide-up delay-600">
         <AuditPDFExport data={result} />
 
         {(intelLoading || intelFetched) && !intelError && (
