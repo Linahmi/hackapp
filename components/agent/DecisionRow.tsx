@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -123,7 +124,10 @@ function ReviewDetailsModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
+  const blockingEscalations = escalations.filter(e => e.blocking);
+  const decisionSummary = recommendation?.decision_summary;
+
+  const modal = (
     <>
       {/* Print-only CSS: hides everything except modal content */}
       <style>{`
@@ -144,17 +148,18 @@ function ReviewDetailsModal({
         }
       `}</style>
 
-      {/* Overlay */}
+      {/* Overlay — rendered via portal so fixed positioning is always relative to the viewport */}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
         onClick={onClose}
         aria-modal="true"
         role="dialog"
         aria-label="Request review details"
       >
-        {/* Card — stop click propagation */}
+        {/* Card — stop click propagation so clicks inside don't close the modal */}
         <div
-          className="relative w-full max-w-[680px] max-h-[88vh] flex flex-col bg-white dark:bg-[#12151f] rounded-2xl border border-gray-200 dark:border-[#1e2130] shadow-2xl overflow-hidden"
+          className="relative w-full max-w-[680px] flex flex-col bg-white dark:bg-[#12151f] rounded-2xl border border-gray-200 dark:border-[#1e2130] shadow-2xl overflow-hidden"
+          style={{ maxHeight: "90vh" }}
           onClick={e => e.stopPropagation()}
         >
           {/* ── Header ── */}
@@ -186,10 +191,28 @@ function ReviewDetailsModal({
             </button>
           </div>
 
-          {/* ── Scrollable body ── */}
-          <div className="flex-1 overflow-y-auto px-7 py-6 space-y-8 review-modal-print-content">
+          {/* ── Scrollable body — ALL content lives here ── */}
+          <div className="flex-1 overflow-y-auto px-7 py-6 space-y-8 review-modal-print-content" style={{ maxHeight: "calc(90vh - 130px)" }}>
 
-            {/* Section 1 — AI reasoning */}
+            {/* Section 1 — Why this cannot proceed (blocking escalations) */}
+            {blockingEscalations.length > 0 && (
+              <div>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">
+                  Why this cannot proceed
+                </h2>
+                <div className="h-px bg-gray-100 dark:bg-white/5 mb-4" />
+                <div className="space-y-2">
+                  {blockingEscalations.map((e, i) => (
+                    <div key={i} className="rounded-lg border-l-4 border-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 px-4 py-3">
+                      <p className="text-xs font-bold uppercase tracking-wide text-red-600 dark:text-red-400 mb-0.5">{e.rule}</p>
+                      <p className="text-sm leading-snug text-red-800 dark:text-red-200">{e.trigger}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Section 2 — AI reasoning */}
             <div>
               <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">
                 How the AI reasoned through this
@@ -199,7 +222,7 @@ function ReviewDetailsModal({
                 {reasoningBullets.map((bullet, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 dark:bg-gray-500 shrink-0" />
-                    <p className="text-base leading-snug text-gray-700 dark:text-gray-300 line-clamp-2">
+                    <p className="text-sm leading-snug text-gray-700 dark:text-gray-300">
                       {bullet}
                     </p>
                   </li>
@@ -207,7 +230,7 @@ function ReviewDetailsModal({
               </ul>
             </div>
 
-            {/* Section 2 — Next actions */}
+            {/* Section 3 — Next actions */}
             <div>
               <h2 className="text-base font-bold text-gray-900 dark:text-white mb-1">
                 What needs to happen next
@@ -219,13 +242,21 @@ function ReviewDetailsModal({
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-gray-300 dark:border-white/15 bg-white dark:bg-white/5 text-[10px] font-bold text-gray-500 dark:text-gray-400">
                       {i + 1}
                     </span>
-                    <p className="text-base leading-snug text-gray-700 dark:text-gray-300 line-clamp-2">
+                    <p className="text-sm leading-snug text-gray-700 dark:text-gray-300">
                       {action}
                     </p>
                   </li>
                 ))}
               </ul>
             </div>
+
+            {/* Section 4 — DECISION summary box */}
+            {decisionSummary && (
+              <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.03] px-5 py-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Decision</p>
+                <p className="text-sm leading-relaxed text-gray-800 dark:text-gray-200">{decisionSummary}</p>
+              </div>
+            )}
 
           </div>
 
@@ -252,6 +283,8 @@ function ReviewDetailsModal({
       </div>
     </>
   );
+
+  return typeof document !== "undefined" ? createPortal(modal, document.body) : null;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
