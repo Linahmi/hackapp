@@ -65,10 +65,9 @@ export async function searchSupplier(
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch("https://api.exa.ai/search", {
       method: "POST",
-      signal: AbortSignal.timeout(8000),
+      signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
@@ -81,9 +80,7 @@ export async function searchSupplier(
           text: { maxCharacters: 500 },
         },
       }),
-      signal: controller.signal,
     });
-    clearTimeout(timeout);
 
     if (!res.ok) {
       const err = await res.text();
@@ -426,7 +423,7 @@ export async function searchMarketCandidates(
     const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch("https://api.exa.ai/search", {
       method: "POST",
-      signal: AbortSignal.timeout(8000),
+      signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
@@ -439,7 +436,6 @@ export async function searchMarketCandidates(
           text: { maxCharacters: 500 },
         },
       }),
-      signal: controller.signal,
     });
     clearTimeout(timeout);
 

@@ -713,7 +713,7 @@ export default function SupplierDemoPage() {
               isAutoApproved={isAutoApproved}
               status={hasBlocking ? "cannot_proceed" : "pending_approval"}
               escalations={realEscalations}
-              recommendation={apiResult?.recommendation}
+              recommendation={apiResult?.recommendation ?? undefined}
               requestId={apiResult?.request_id}
               topSupplier={apiResult?.supplier_shortlist?.[0] ? {
                 score: Math.round((apiResult.supplier_shortlist[0].composite_score ?? 0) * 100),
@@ -728,9 +728,9 @@ export default function SupplierDemoPage() {
           {(djTopSupplier || !isFromApi) && (
             <div className="animate-fade-slide-up delay-200">
               <DecisionJustification
-                recommendation={djRecommendation}
-                topSupplier={djTopSupplier}
-                runnerUp={djRunnerUp}
+                recommendation={djRecommendation ? { ...djRecommendation, status: djRecommendation.status ?? "pending" } : null}
+                topSupplier={djTopSupplier as never}
+                runnerUp={djRunnerUp as never}
                 currency={ri?.currency ?? "CHF"}
               />
             </div>
@@ -876,7 +876,7 @@ export default function SupplierDemoPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400">Human approval path for blocking or policy-sensitive cases</p>
                 </div>
                 <EscalationHierarchyPanel
-                  escalations={realEscalations}
+                  escalations={realEscalations as never}
                   currency={apiResult?.request_interpretation?.currency ?? "EUR"}
                 />
               </div>

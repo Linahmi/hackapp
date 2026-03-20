@@ -1,5 +1,5 @@
 {
-  "counter": 80,
+  "counter": 87,
   "requests": [
     {
       "id": "R-0001",
@@ -608,6 +608,38 @@
       "quantity": 120,
       "budget": 180000,
       "status": "recommended"
+    },
+    {
+      "id": "R-0081",
+      "timestamp": "2026-03-20T03:31:00.774Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0085",
+      "timestamp": "2026-03-20T04:13:20.182Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 28000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0086",
+      "timestamp": "2026-03-20T04:15:12.497Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0087",
+      "timestamp": "2026-03-20T04:20:36.419Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 28000,
+      "status": "cannot_proceed"
     }
   ]
 }
