@@ -48,8 +48,53 @@ const SCORE_LABELS: Record<string, string> = {
 
 // Weights must match computeFinalScore() in supplier-demo/page.tsx
 const SCORE_WEIGHTS: Record<string, number> = {
-  price: 25, lead_time: 20, risk: 40, esg: 15,
+  price: 30, lead_time: 30, quality: 20, risk: 10, esg: 10,
 };
+
+function formatPercent(value: number) {
+  return `${Math.round(value * 100)}/100`;
+}
+
+function buildWinnerReasons(topSupplier: Supplier, runnerUp: Supplier | null) {
+  const breakdown = topSupplier.score_breakdown ?? {};
+  const weighted = Object.entries(breakdown)
+    .filter(([key, value]) => key !== "historical" && typeof value === "number")
+    .map(([key, value]) => ({
+      key,
+      raw: value as number,
+      weight: SCORE_WEIGHTS[key] ?? 0,
+      contribution: (value as number) * (SCORE_WEIGHTS[key] ?? 0),
+    }))
+    .sort((a, b) => b.contribution - a.contribution);
+
+  const reasons: string[] = [];
+  const strongest = weighted.slice(0, 2);
+  strongest.forEach((item) => {
+    reasons.push(
+      `${SCORE_LABELS[item.key] ?? item.key} carried meaningful weight (${item.weight}%) and scored ${formatPercent(item.raw)} for ${topSupplier.supplier_name}.`
+    );
+  });
+
+  if (runnerUp) {
+    if (topSupplier.total_price < runnerUp.total_price) {
+      reasons.push(
+        `${topSupplier.supplier_name} is cheaper than ${runnerUp.supplier_name} by ${topSupplier.currency} ${(runnerUp.total_price - topSupplier.total_price).toLocaleString()}.`
+      );
+    }
+    if (topSupplier.standard_lead_time_days < runnerUp.standard_lead_time_days) {
+      reasons.push(
+        `${topSupplier.supplier_name} delivers faster than ${runnerUp.supplier_name} (${topSupplier.standard_lead_time_days}d vs ${runnerUp.standard_lead_time_days}d standard lead time).`
+      );
+    }
+    if (topSupplier.composite_score > runnerUp.composite_score) {
+      reasons.push(
+        `${topSupplier.supplier_name} leads the shortlist on composite score (${Math.round(topSupplier.composite_score * 100)} vs ${Math.round(runnerUp.composite_score * 100)}).`
+      );
+    }
+  }
+
+  return reasons.slice(0, 3);
+}
 
 function ScoreBar({ value, max = 1 }: { value: number; max?: number }) {
   const pct = Math.round((value / max) * 100);
@@ -70,6 +115,7 @@ export function DecisionJustification({ recommendation, topSupplier, runnerUp, c
   const { rationale, decision_summary, justification, next_action, key_reasons, risks, status } = recommendation;
   const bd = topSupplier.score_breakdown ?? {};
   const isBlocked = status === "cannot_proceed";
+  const winnerReasons = !isBlocked ? buildWinnerReasons(topSupplier, runnerUp) : [];
 
   return (
     <div className="mt-4 rounded-xl" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}>
@@ -132,6 +178,16 @@ export function DecisionJustification({ recommendation, topSupplier, runnerUp, c
             <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
               Why {topSupplier.supplier_name}?
             </p>
+            {winnerReasons.length > 0 && (
+              <div className="mb-4 flex flex-col gap-2">
+                {winnerReasons.map((reason, i) => (
+                  <div key={i} className="rounded-lg px-3 py-2 text-sm" style={{ backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.18)", color: "var(--text-main)" }}>
+                    <span className="font-semibold text-emerald-400 mr-1">{i + 1}.</span>
+                    {reason}
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-4">
               <div>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>Unit price</p>

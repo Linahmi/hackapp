@@ -12,6 +12,11 @@ export interface SupplierIntelResult {
   supplier: string;
   excerpts: IntelExcerpt[];
   searchQuery: string;
+  suggestedCandidate?: {
+    name: string;
+    reason: string;
+    url: string;
+  } | null;
 }
 
 interface Props {
@@ -130,6 +135,9 @@ function LoadingSkeleton() {
 
 export default function MarketIntelCard({ results, loading, mode = "shortlist" }: Props) {
   const isDiscovery = mode === "discovery";
+  const suggestedCandidate = isDiscovery
+    ? results.find((r) => r.suggestedCandidate)?.suggestedCandidate ?? null
+    : null;
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1A1D27] p-6 shadow-sm mb-16 transition-colors duration-300">
       <div className="flex items-center justify-between mb-5">
@@ -161,6 +169,28 @@ export default function MarketIntelCard({ results, loading, mode = "shortlist" }
           ? "These are external leads for human sourcing teams. They are not part of the approved shortlist and do not override procurement policy."
           : "These signals support the recommendation, but they do not override procurement policy or approved-supplier rules."}
       </p>
+
+      {suggestedCandidate && (
+        <div className="mb-6 rounded-xl border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/8 px-5 py-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Best External Lead</p>
+          <div className="mt-1 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{suggestedCandidate.name}</p>
+              <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{suggestedCandidate.reason}</p>
+            </div>
+            {suggestedCandidate.url && (
+              <a
+                href={suggestedCandidate.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 rounded-lg border border-blue-200 dark:border-blue-500/20 px-3 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-100/60 dark:hover:bg-blue-500/10 transition-colors"
+              >
+                Open source
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {loading ? <LoadingSkeleton /> : (
         <div className="space-y-3">
