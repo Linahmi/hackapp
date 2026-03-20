@@ -9,11 +9,18 @@ export type Supplier = {
   name: string;
   price: string;
   tco: string;
+  totalPriceValue?: number;
+  tcoValue?: number;
+  leadTimeDays?: number;
   risk: "Low" | "Med" | "High";
   esg: "A" | "B" | "C" | "D";
   score: number | null;
   badge: "best" | "blocked" | "normal";
   blockedReason?: string;
+  recommendationNote?: string;
+  historicalFlags?: string[];
+  preferred?: boolean;
+  incumbent?: boolean;
   breakdown: { label: string; value: number }[];
 };
 
@@ -58,36 +65,98 @@ function Chip({ children, className }: { children: React.ReactNode; className: s
   );
 }
 
-// ─── Advantage tag computation ─────────────────────────────────────────────────
-// A tag appears only if this supplier strictly leads on that criterion vs all others.
+function findBreakdownValue(supplier: Supplier, label: string): number {
+  return supplier.breakdown.find((item) => item.label === label)?.value ?? 0;
+}
 
-type AdvantageTag = "Best price" | "Lowest risk" | "Fastest delivery" | "Best ESG";
+function formatDelta(value: number) {
+  return value.toLocaleString("en");
+}
 
-const ADVANTAGE_KEYS: { tag: AdvantageTag; breakdown: string }[] = [
-  { tag: "Best price",       breakdown: "Price"    },
-  { tag: "Lowest risk",      breakdown: "Risk"     },
-  { tag: "Fastest delivery", breakdown: "Delivery" },
-  { tag: "Best ESG",         breakdown: "ESG"      },
-];
+function normalizeSentence(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
 
-function computeAdvantages(supplier: Supplier, allSuppliers: Supplier[]): AdvantageTag[] {
-  const eligible = allSuppliers.filter(s => s.badge !== "blocked");
-  if (eligible.length <= 1) return [];
+function buildEvidenceParagraph(supplier: Supplier, allSuppliers: Supplier[]) {
+  const eligible = allSuppliers.filter((item) => item.badge !== "blocked");
+  const winner = eligible.find((item) => item.badge === "best") ?? eligible[0] ?? null;
+  const lines: string[] = [];
 
-  const getVal = (s: Supplier, key: string): number =>
-    s.breakdown.find(b => b.label === key)?.value ?? 0;
-
-  const result: AdvantageTag[] = [];
-  for (const { tag, breakdown: key } of ADVANTAGE_KEYS) {
-    const myVal    = getVal(supplier, key);
-    const allVals  = eligible.map(s => getVal(s, key));
-    const maxVal   = Math.max(...allVals);
-    const countMax = allVals.filter(v => v === maxVal).length;
-    // Only award tag if this supplier strictly leads (no tie)
-    if (myVal === maxVal && countMax === 1) result.push(tag);
-    if (result.length === 3) break;
+  if (supplier.badge === "blocked") {
+    if (supplier.blockedReason) {
+      lines.push(`Restricted by policy: ${normalizeSentence(supplier.blockedReason)}`);
+    }
+    lines.push("This supplier was excluded before final ranking, so its score is not used for recommendation.");
+    return lines.slice(0, 2).join(" ");
   }
-  return result;
+
+  if (supplier.recommendationNote && supplier.recommendationNote !== "Evaluated supplier.") {
+    lines.push(normalizeSentence(supplier.recommendationNote));
+  }
+
+  const metrics = [
+    {
+      label: "Price",
+      explain: () =>
+        supplier.totalPriceValue != null
+          ? `Lowest shortlisted total price at ${supplier.price}.`
+          : `Strongest price score in the shortlist (${findBreakdownValue(supplier, "Price")}/100).`,
+    },
+    {
+      label: "Risk",
+      explain: () => `Lowest supplier risk in the shortlist (${findBreakdownValue(supplier, "Risk")}/100).`,
+    },
+    {
+      label: "Delivery",
+      explain: () =>
+        supplier.leadTimeDays != null
+          ? `Fastest available standard delivery at ${supplier.leadTimeDays} day${supplier.leadTimeDays === 1 ? "" : "s"}.`
+          : `Strongest delivery score in the shortlist (${findBreakdownValue(supplier, "Delivery")}/100).`,
+    },
+    {
+      label: "ESG",
+      explain: () => `Highest ESG performance in the shortlist (${findBreakdownValue(supplier, "ESG")}/100).`,
+    },
+  ];
+
+  metrics.forEach((metric) => {
+    const myValue = findBreakdownValue(supplier, metric.label);
+    const values = eligible.map((item) => findBreakdownValue(item, metric.label));
+    const maxValue = Math.max(...values);
+    const leadsUniquely = myValue === maxValue && values.filter((value) => value === maxValue).length === 1;
+    if (leadsUniquely) {
+      lines.push(metric.explain());
+    }
+  });
+
+  if (supplier.preferred) {
+    lines.push("Preferred supplier policy applies for this category and geography.");
+  }
+  if (supplier.incumbent) {
+    lines.push("Incumbent supplier history is available for audit comparison.");
+  }
+
+  if (winner && winner.name !== supplier.name) {
+    const priceGap = supplier.totalPriceValue != null && winner.totalPriceValue != null
+      ? supplier.totalPriceValue - winner.totalPriceValue
+      : null;
+    const leadGap = supplier.leadTimeDays != null && winner.leadTimeDays != null
+      ? supplier.leadTimeDays - winner.leadTimeDays
+      : null;
+    const myTopWeakness = [...supplier.breakdown].sort((a, b) => a.value - b.value)[0];
+
+    if (priceGap != null && priceGap > 0) {
+      lines.push(`${supplier.name} is priced ${formatDelta(priceGap)} higher than ${winner.name} on total cost.`);
+    } else if (leadGap != null && leadGap > 0) {
+      lines.push(`${supplier.name} is slower than ${winner.name} by ${leadGap} day${leadGap === 1 ? "" : "s"} on standard delivery.`);
+    } else if (myTopWeakness) {
+      lines.push(`${supplier.name} trails the winner most on ${myTopWeakness.label.toLowerCase()} (${myTopWeakness.value}/100).`);
+    }
+  }
+
+  return Array.from(new Set(lines.filter(Boolean))).slice(0, 3).join(" ");
 }
 
 function ScorePill({ label, value, muted = false }: { label: string; value: number; muted?: boolean }) {
@@ -179,7 +248,7 @@ export function SupplierComparisonTable({
           {suppliers.map((s) => {
             const isBest    = s.badge === "best";
             const isBlocked = s.badge === "blocked";
-            const advantages = isBlocked ? [] : computeAdvantages(s, suppliers);
+            const evidenceParagraph = buildEvidenceParagraph(s, suppliers);
 
             return (
               <div
@@ -213,7 +282,7 @@ export function SupplierComparisonTable({
                       </span>
                       {isBest && (
                         <span className="inline-block rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 leading-none">
-                          Best match
+                          Rank #1
                         </span>
                       )}
                       {isBlocked && (
@@ -222,20 +291,6 @@ export function SupplierComparisonTable({
                         </span>
                       )}
                     </div>
-
-                    {/* Advantage tags — only for eligible, only if leads */}
-                    {advantages.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-3">
-                        {advantages.map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/40"
-                          >
-                            ✦ {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
 
                     {/* Price + TCO */}
                     <div className="flex items-baseline gap-1.5 mb-3">
@@ -266,6 +321,17 @@ export function SupplierComparisonTable({
                       <p className="mt-2.5 text-xs font-medium text-red-600 dark:text-red-400">
                         ✗ {s.blockedReason}
                       </p>
+                    )}
+
+                    {evidenceParagraph && (
+                      <div className="mt-3 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50/80 dark:bg-white/[0.03] px-3 py-3">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+                          Structured justification
+                        </p>
+                        <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                          {evidenceParagraph}
+                        </p>
+                      </div>
                     )}
 
                     {/* Criterion-level breakdown */}

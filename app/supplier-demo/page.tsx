@@ -16,6 +16,144 @@ import { DecisionJustification } from "@/components/agent/DecisionJustification"
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
 import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
+type ScoreBreakdown = {
+  price?: number;
+  risk?: number;
+  lead_time?: number;
+  esg?: number;
+};
+
+type ShortlistSupplier = {
+  rank?: number;
+  supplier_id?: string;
+  supplier_name: string;
+  currency?: string;
+  total_price: number;
+  tco?: number | null;
+  risk_score?: number;
+  esg_score?: number;
+  preferred?: boolean;
+  incumbent?: boolean;
+  composite_score?: number;
+  score_breakdown?: ScoreBreakdown;
+  standard_lead_time_days?: number;
+  recommendation_note?: string;
+  historical_flags?: string[];
+};
+
+type EscalationData = {
+  escalation_id?: string;
+  rule: string;
+  trigger: string;
+  escalate_to?: string;
+  hierarchy_level?: number;
+  hierarchy_label?: string;
+  blocking: boolean;
+  action?: string;
+  estimated_savings?: number | null;
+};
+
+type RequestInterpretationData = {
+  field_sources?: Record<string, string>;
+  quantity?: number | null;
+  budget_amount?: number | null;
+  currency?: string | null;
+  delivery_countries?: string[];
+  days_until_required?: number | null;
+  preferred_supplier_stated?: string | null;
+  category_l1?: string | null;
+  category_l2?: string | null;
+};
+
+type AuditTrailData = {
+  policies_checked?: string[];
+  suppliers_evaluated?: string[];
+  historical_awards_consulted?: boolean;
+  uncertainty_flags?: string[];
+};
+
+type ConfidenceDriver = { tone: "good" | "warn" | "danger"; label: string };
+
+type ApprovalThreshold = {
+  rule_applied?: string;
+  tier?: number;
+  quotes_required?: number;
+  approver?: string;
+  approvers?: string[];
+  deviation_approval?: string | null;
+};
+
+type ValidationIssue = {
+  issue_id?: string;
+  severity?: string;
+  description: string;
+  action_required?: string;
+  type?: string;
+};
+
+type ExcludedSupplier = {
+  supplier_id?: string;
+  supplier_name: string;
+  reason: string;
+};
+
+type MarketBenchmark = {
+  category?: string;
+  market_min?: number;
+  market_max?: number;
+  best_offer_unit_price?: number;
+  currency?: string;
+  is_above_market?: boolean;
+};
+
+type RecommendationData = {
+  status?: string;
+  is_auto_approved?: boolean;
+  next_action?: string;
+  decision_summary?: string;
+  rationale?: string;
+  justification?: string;
+  key_reasons?: string[];
+  risks?: string[];
+};
+
+type ApiResult = {
+  supplier_shortlist?: ShortlistSupplier[];
+  escalations?: EscalationData[];
+  request_interpretation?: RequestInterpretationData;
+  audit_trail?: AuditTrailData;
+  confidence_score?: number | null;
+  confidence_details?: ConfidenceDriver[];
+  policy_evaluation?: { approval_threshold?: ApprovalThreshold | null };
+  recommendation?: RecommendationData | null;
+  case_type?: string;
+  market_benchmark?: MarketBenchmark | null;
+  validation?: { issues?: ValidationIssue[] };
+  suppliers_excluded?: ExcludedSupplier[];
+  request_id?: string;
+};
+
+function readStoredResult(): ApiResult | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem("procuretrace_result");
+    return raw ? JSON.parse(raw) as ApiResult : null;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredRequestText() {
+  if (typeof window === "undefined") return DEMO_REQUEST;
+  try {
+    return sessionStorage.getItem("procuretrace_request_text")
+      || localStorage.getItem("buyer_request")
+      || DEMO_REQUEST;
+  } catch {
+    return DEMO_REQUEST;
+  }
+}
+
 // ─── Demo fallback data (used when no API result is in sessionStorage) ────────
 
 const DEMO_RAW: Record<string, { price: number; risk: number; delivery: number; esg: number }> = {
@@ -29,6 +167,9 @@ type MetaEntry = {
   risk: "Low" | "Med" | "High"; esg: "A" | "B" | "C" | "D";
   blocked: boolean; blockedReason?: string;
   preferred?: boolean; incumbent?: boolean;
+  totalPriceValue?: number; tcoValue?: number; leadTimeDays?: number;
+  recommendationNote?: string; historicalFlags?: string[];
+  supplierId?: string;
 };
 
 const DEMO_META: Record<string, MetaEntry> = {
@@ -107,6 +248,7 @@ function formatAmount(amount: number, currency: string): string {
 
 type Weights   = { price: number; risk: number; delivery: number; esg: number };
 type RawScores = Record<string, { price: number; risk: number; delivery: number; esg: number }>;
+const FALLBACK_WEIGHTS: Weights = { price: 25, risk: 40, delivery: 20, esg: 15 };
 
 function computeFinalScore(name: string, w: Weights, rawData: RawScores): number {
   const total = w.price + w.risk + w.delivery + w.esg;
@@ -122,32 +264,13 @@ function computeFinalScore(name: string, w: Weights, rawData: RawScores): number
 
 export default function SupplierDemoPage() {
   const router = useRouter();
-  const { result: contextResult } = useProcurement();
-  const [apiResult,    setApiResult]    = useState<any>(null);
-  const [buyerRequest, setBuyerRequest] = useState(DEMO_REQUEST);
-  const [mounted, setMounted] = useState(false);
+  const { result: contextResult } = useProcurement() as { result: ApiResult | null };
+  const [storedApiResult] = useState<ApiResult | null>(() => readStoredResult());
+  const [buyerRequest] = useState(() => readStoredRequestText());
   const [marketIntel,  setMarketIntel]  = useState<SupplierIntelResult[]>([]);
   const [intelLoading, setIntelLoading] = useState(false);
   const [intelFetched, setIntelFetched] = useState(false);
-
-  // Prefer context result (survives SPA navigation, reset on refresh).
-  // Fall back to sessionStorage for direct page loads where context may be empty.
-  useEffect(() => {
-    setMounted(true);
-    if (contextResult) {
-      setApiResult(contextResult);
-    } else {
-      try {
-        const raw = sessionStorage.getItem("procuretrace_result");
-        if (raw) setApiResult(JSON.parse(raw));
-      } catch {}
-    }
-    try {
-      const savedText = sessionStorage.getItem("procuretrace_request_text") || localStorage.getItem("buyer_request");
-      if (savedText) setBuyerRequest(savedText);
-    } catch {}
-  }, [contextResult]);
-
+  const apiResult = contextResult ?? storedApiResult;
 
   // ─── Market Intelligence fetch ────────────────────────────────────────────
 
@@ -160,22 +283,42 @@ export default function SupplierDemoPage() {
     const region = countries.some((c: string) => ["US","CA"].includes(c)) ? "US"
       : countries.some((c: string) => ["SG","JP","AU"].includes(c)) ? "APAC"
       : "EU";
-    setIntelLoading(true);
-    setIntelFetched(true);
-    fetch("/api/supplier-intel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        suppliers: shortlist.slice(0, 3).map((s: any) => s.supplier_name),
-        category,
-        region,
-      }),
-    })
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then((data) => setMarketIntel(data.results ?? []))
-      .catch(() => {})
-      .finally(() => setIntelLoading(false));
-  }, [apiResult?.supplier_shortlist, intelFetched, intelLoading]);
+    let isCancelled = false;
+
+    async function loadMarketIntel() {
+      setIntelLoading(true);
+      setIntelFetched(true);
+      try {
+        const response = await fetch("/api/supplier-intel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            suppliers: shortlist.slice(0, 3).map((supplier) => supplier.supplier_name),
+            category,
+            region,
+          }),
+        });
+        if (!response.ok) throw new Error("intel fetch failed");
+        const data = await response.json() as { results?: SupplierIntelResult[] };
+        if (!isCancelled) {
+          setMarketIntel(data.results ?? []);
+        }
+      } catch {
+        if (!isCancelled) {
+          setMarketIntel([]);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIntelLoading(false);
+        }
+      }
+    }
+
+    void loadMarketIntel();
+    return () => {
+      isCancelled = true;
+    };
+  }, [apiResult, intelFetched, intelLoading]);
 
   // ─── Multi-Language detection ─────────────────────────────────────────────
   
@@ -202,7 +345,7 @@ export default function SupplierDemoPage() {
 
     const rawScores: RawScores                  = {};
     const meta: Record<string, MetaEntry>       = {};
-    shortlist.forEach((s: any) => {
+    shortlist.forEach((s) => {
       const bd       = s.score_breakdown || {};
       const currency = s.currency || "CHF";
       rawScores[s.supplier_name] = {
@@ -219,6 +362,12 @@ export default function SupplierDemoPage() {
         blocked:  false,
         preferred: s.preferred,
         incumbent: s.incumbent,
+        totalPriceValue: s.total_price,
+        tcoValue: s.tco ?? undefined,
+        leadTimeDays: s.standard_lead_time_days,
+        recommendationNote: s.recommendation_note,
+        historicalFlags: s.historical_flags ?? [],
+        supplierId: s.supplier_id,
       };
     });
     return { rawScores, meta, isFromApi: true };
@@ -250,7 +399,7 @@ export default function SupplierDemoPage() {
 
   const conflicts: ConflictWarning[] = useMemo(() => {
     if (!apiResult?.escalations) return DEMO_CONFLICTS;
-    const blocking = (apiResult.escalations as any[]).filter(e => e.blocking);
+    const blocking = apiResult.escalations.filter((escalation) => escalation.blocking);
     return blocking.map(e => ({ message: e.trigger }));
   }, [apiResult]);
 
@@ -264,7 +413,7 @@ export default function SupplierDemoPage() {
     if (at.policies_checked?.length) {
       entries.push({ text: `${at.policies_checked.length} policies applied: ${at.policies_checked.slice(0, 5).join(", ")}`, status: "approved" });
     }
-    (apiResult.escalations as any[] ?? []).forEach((e: any) => {
+    (apiResult.escalations ?? []).forEach((e) => {
       entries.push({ text: `${e.rule}: ${e.trigger}`, status: e.blocking ? "blocked" : "escalated" });
     });
     if (at.suppliers_evaluated?.length) {
@@ -279,20 +428,28 @@ export default function SupplierDemoPage() {
     return entries;
   }, [apiResult]);
 
-  // ─── Fixed internal weights (not exposed to user) ─────────────────────────
+  // ─── Compute displayed scores ─────────────────────────────────────────────
 
-  const weights: Weights = { price: 25, risk: 40, delivery: 20, esg: 15 };
+  const scored = useMemo(() => {
+    if (apiResult?.supplier_shortlist?.length) {
+      return [...apiResult.supplier_shortlist]
+        .sort((a, b) => (a.rank ?? Number.MAX_SAFE_INTEGER) - (b.rank ?? Number.MAX_SAFE_INTEGER))
+        .map((supplier) => ({
+          name: supplier.supplier_name,
+          score: typeof supplier.composite_score === "number"
+            ? Math.round(supplier.composite_score * 100)
+            : null,
+        }));
+    }
 
-  // ─── Compute weighted scores ──────────────────────────────────────────────
-
-  const names = Object.keys(rawScores);
-  const scored = names
-    .map(name => ({ name, score: meta[name]?.blocked ? null : computeFinalScore(name, weights, rawScores) }))
-    .sort((a, b) => {
-      if (a.score === null) return 1;
-      if (b.score === null) return -1;
-      return b.score - a.score;
-    });
+    return Object.keys(rawScores)
+      .map((name) => ({ name, score: meta[name]?.blocked ? null : computeFinalScore(name, FALLBACK_WEIGHTS, rawScores) }))
+      .sort((a, b) => {
+        if (a.score === null) return 1;
+        if (b.score === null) return -1;
+        return b.score - a.score;
+      });
+  }, [apiResult, meta, rawScores]);
 
   const eligibleRanked = scored.filter(s => s.score !== null);
   const bestName       = eligibleRanked[0]?.name ?? "";
@@ -300,8 +457,8 @@ export default function SupplierDemoPage() {
 
   // ─── Decision & escalation data ───────────────────────────────────────────
 
-  const realEscalations        = (apiResult?.escalations as any[]) ?? [];
-  const hasBlocking = realEscalations.some((e: any) => e.blocking);
+  const realEscalations = apiResult?.escalations ?? [];
+  const hasBlocking = realEscalations.some((e) => e.blocking);
   const isAutoApproved         = apiResult?.recommendation?.is_auto_approved
     ?? (bestName !== "" && meta[bestName]?.risk === "Low");
 
@@ -312,13 +469,21 @@ export default function SupplierDemoPage() {
     const r = rawScores[name] ?? { price: 50, risk: 50, delivery: 50, esg: 50 };
     return {
       name,
+      supplier_id:    m.supplierId,
       price:         m.price,
       tco:           m.tco,
+      totalPriceValue: m.totalPriceValue,
+      tcoValue:      m.tcoValue,
+      leadTimeDays:  m.leadTimeDays,
       risk:          m.risk,
       esg:           m.esg,
       score,
       badge:         m.blocked ? "blocked" : name === bestName ? "best" : "normal",
       blockedReason: m.blockedReason,
+      recommendationNote: m.recommendationNote,
+      historicalFlags: m.historicalFlags,
+      preferred:     m.preferred,
+      incumbent:     m.incumbent,
       breakdown: [
         { label: "Price",    value: r.price    },
         { label: "Risk",     value: r.risk     },
@@ -329,11 +494,11 @@ export default function SupplierDemoPage() {
   });
 
   const confidence   = apiResult?.confidence_score ?? null;
-  const confidenceDetails = (apiResult?.confidence_details as { tone: "good" | "warn" | "danger"; label: string }[] | undefined) ?? [];
+  const confidenceDetails = apiResult?.confidence_details ?? [];
   const ri           = apiResult?.request_interpretation;
   const approvalThreshold = apiResult?.policy_evaluation?.approval_threshold ?? null;
   const nextAction = apiResult?.recommendation?.next_action
-    ?? (realEscalations.find((e: any) => e.blocking)?.action || "Review supplier details");
+    ?? (realEscalations.find((e) => e.blocking)?.action || "Review supplier details");
   const caseSummary = apiResult?.case_type
     ? apiResult.case_type.replace(/_/g, " ").toLowerCase()
     : isAutoApproved
@@ -358,18 +523,16 @@ export default function SupplierDemoPage() {
   // ─── Validation issues (severity-tagged) ─────────────────────────────────
 
   const validationIssues = useMemo(() => {
-    return (apiResult?.validation?.issues as any[]) ?? [];
+    return apiResult?.validation?.issues ?? [];
   }, [apiResult]);
 
   // ─── Excluded suppliers (non-blocking filter reasons) ─────────────────────
 
   const excludedSuppliers = useMemo(() => {
-    return (apiResult?.suppliers_excluded as any[]) ?? [];
+    return apiResult?.suppliers_excluded ?? [];
   }, [apiResult]);
 
-  const isLocked = mounted && !apiResult;
-
-  if (!mounted) return null;
+  const isLocked = typeof window !== "undefined" && !apiResult;
 
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -505,7 +668,7 @@ export default function SupplierDemoPage() {
                 </span>
               )}
             </div>
-            <p className="text-base font-medium text-gray-900 dark:text-gray-100 leading-relaxed">"{buyerRequest}"</p>
+            <p className="text-base font-medium text-gray-900 dark:text-gray-100 leading-relaxed">&ldquo;{buyerRequest}&rdquo;</p>
           </div>
         </div>
 
@@ -592,7 +755,7 @@ export default function SupplierDemoPage() {
               <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 font-semibold border border-red-500/20">{validationIssues.length}</span>
             </div>
             <ul className="divide-y divide-gray-100 dark:divide-white/5">
-              {validationIssues.map((issue: any, i: number) => {
+              {validationIssues.map((issue, i) => {
                 const isCritical = issue.severity === "critical";
                 const isHigh     = issue.severity === "high";
                 return (
@@ -691,7 +854,7 @@ export default function SupplierDemoPage() {
               <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/10 text-gray-500 font-semibold border border-gray-500/20">{excludedSuppliers.length}</span>
             </div>
             <ul className="divide-y divide-gray-100 dark:divide-white/5">
-              {excludedSuppliers.map((s: any, i: number) => (
+              {excludedSuppliers.map((s, i: number) => (
                 <li key={s.supplier_id ?? i} className="px-6 py-3.5 flex items-start gap-3">
                   <span className="mt-0.5 shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide bg-gray-500/10 text-gray-400 border border-gray-500/20">
                     excluded

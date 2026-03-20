@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getData, getEligibleSuppliers } from '@/lib/dataLoader';
 import { parseRequest, fillGapsFromHistory } from '@/lib/intakeAgent';
-import { checkApprovalTier, checkPreferredSupplier, checkCategoryRules, checkGeographyRules, evaluatePolicy } from '@/lib/policyEngine';
+import { checkApprovalTier, checkPreferredSupplier, checkCategoryRules, checkGeographyRules } from '@/lib/policyEngine';
 import { scoreSuppliers as newScoreSuppliers } from '@/lib/supplierScorer';
 import { buildEscalations } from '@/lib/escalationRouter';
 import { explainConfidence } from '@/lib/confidenceScorer';
