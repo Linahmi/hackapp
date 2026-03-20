@@ -1,19 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TrendingDown, TrendingUp, CheckCircle, AlertTriangle } from "lucide-react";
 import { useProcurement } from "@/contexts/ProcurementContext";
-import {
-  SupplierComparisonTable,
-  Supplier,
-  SourceTag,
-  ConflictWarning,
-  AuditEntry,
-} from "@/components/agent/SupplierComparisonTable";
 import { DecisionRow } from "@/components/agent/DecisionRow";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
-import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
 type ScoreBreakdown = {
   price?: number;
@@ -178,25 +170,6 @@ const DEMO_META: Record<string, MetaEntry> = {
                    blockedReason: "Rule R-14: restricted supplier list" },
 };
 
-const DEMO_SOURCE_TAGS: SourceTag[] = [
-  { label: "Budget",   source: "under 400k CHF", method: "stated"   },
-  { label: "Location", source: "Geneva",         method: "stated"   },
-  { label: "Timeline", source: "ASAP",           method: "stated"   },
-  { label: "Keyboard", source: "ISO layout",     method: "inferred" },
-];
-
-const DEMO_CONFLICTS: ConflictWarning[] = [
-  { message: "ASAP requested but fastest compliant supplier: Delivery: 6 weeks." },
-];
-
-const DEMO_AUDIT: AuditEntry[] = [
-  { text: 'Parsed request: "Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF, prefer Dell"', status: "approved" },
-  { text: "Supplier list filtered by region: EU / Geneva compliant",       status: "approved"  },
-  { text: "Supplier X matched restricted list — rule R-14 triggered",      status: "blocked"   },
-  { text: "Delivery timeline conflict flagged — escalated for review",     status: "escalated" },
-  { text: "Best match computed from current weighted scores",              status: "approved"  },
-];
-
 const DEMO_REQUEST = "Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF, prefer Dell";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -219,22 +192,6 @@ function formatAmount(amount: number, currency: string): string {
   return `${Math.round(amount).toLocaleString("en")} ${currency}`;
 }
 
-// ─── Score helpers ────────────────────────────────────────────────────────────
-
-type Weights   = { price: number; risk: number; delivery: number; esg: number };
-type RawScores = Record<string, { price: number; risk: number; delivery: number; esg: number }>;
-const FALLBACK_WEIGHTS: Weights = { price: 25, risk: 40, delivery: 20, esg: 15 };
-
-function computeFinalScore(name: string, w: Weights, rawData: RawScores): number {
-  const total = w.price + w.risk + w.delivery + w.esg;
-  if (total === 0) return 0;
-  const r = rawData[name];
-  if (!r) return 0;
-  return Math.round(
-    (r.price * w.price + r.risk * w.risk + r.delivery * w.delivery + r.esg * w.esg) / total
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SupplierDemoPage() {
@@ -242,58 +199,7 @@ export default function SupplierDemoPage() {
   const { result: contextResult } = useProcurement() as { result: ApiResult | null };
   const [storedApiResult] = useState<ApiResult | null>(() => readStoredResult());
   const [buyerRequest] = useState(() => readStoredRequestText());
-  const [marketIntel,  setMarketIntel]  = useState<SupplierIntelResult[]>([]);
-  const [intelLoading, setIntelLoading] = useState(false);
-  const [intelFetched, setIntelFetched] = useState(false);
   const apiResult = contextResult ?? storedApiResult;
-
-  // ─── Market Intelligence fetch ────────────────────────────────────────────
-
-  useEffect(() => {
-    const shortlist = apiResult?.supplier_shortlist;
-    if (!shortlist?.length || intelFetched || intelLoading) return;
-    const category = apiResult?.request_interpretation?.category_l2;
-    if (!category) return;
-    const countries: string[] = apiResult?.request_interpretation?.delivery_countries ?? [];
-    const region = countries.some((c: string) => ["US","CA"].includes(c)) ? "US"
-      : countries.some((c: string) => ["SG","JP","AU"].includes(c)) ? "APAC"
-      : "EU";
-    let isCancelled = false;
-
-    async function loadMarketIntel() {
-      setIntelLoading(true);
-      setIntelFetched(true);
-      try {
-        const response = await fetch("/api/supplier-intel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            suppliers: shortlist.slice(0, 3).map((supplier) => supplier.supplier_name),
-            category,
-            region,
-          }),
-        });
-        if (!response.ok) throw new Error("intel fetch failed");
-        const data = await response.json() as { results?: SupplierIntelResult[] };
-        if (!isCancelled) {
-          setMarketIntel(data.results ?? []);
-        }
-      } catch {
-        if (!isCancelled) {
-          setMarketIntel([]);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIntelLoading(false);
-        }
-      }
-    }
-
-    void loadMarketIntel();
-    return () => {
-      isCancelled = true;
-    };
-  }, [apiResult, intelFetched, intelLoading]);
 
   // ─── Multi-Language detection ─────────────────────────────────────────────
   
@@ -310,25 +216,17 @@ export default function SupplierDemoPage() {
 
   // ─── Derive RAW scores and META from API or fall back to demo data ─────────
 
-  const { rawScores, meta, isFromApi } = useMemo(() => {
+  const { meta, isFromApi } = useMemo(() => {
     if (!apiResult) {
-      return { rawScores: DEMO_RAW, meta: DEMO_META, isFromApi: false };
+      return { meta: DEMO_META, isFromApi: false };
     }
 
     const shortlist = apiResult?.supplier_shortlist;
-    if (!shortlist?.length) return { rawScores: {}, meta: {}, isFromApi: true };
+    if (!shortlist?.length) return { meta: {}, isFromApi: true };
 
-    const rawScores: RawScores                  = {};
     const meta: Record<string, MetaEntry>       = {};
     shortlist.forEach((s) => {
-      const bd       = s.score_breakdown || {};
       const currency = s.currency || "CHF";
-      rawScores[s.supplier_name] = {
-        price:    Math.round((bd.price     ?? 0.5) * 100),
-        risk:     Math.round((bd.risk      ?? 0.5) * 100),
-        delivery: Math.round((bd.lead_time ?? 0.5) * 100),
-        esg:      Math.round((bd.esg       ?? 0.5) * 100),
-      };
       meta[s.supplier_name] = {
         price:    formatAmount(s.total_price, currency),
         tco:      s.tco != null ? formatAmount(s.tco, currency) : "N/A",
@@ -345,62 +243,7 @@ export default function SupplierDemoPage() {
         supplierId: s.supplier_id,
       };
     });
-    return { rawScores, meta, isFromApi: true };
-  }, [apiResult]);
-
-  // ─── Source tags ──────────────────────────────────────────────────────────
-
-  const sourceTags: SourceTag[] = useMemo(() => {
-    const ri = apiResult?.request_interpretation;
-    if (!ri) return DEMO_SOURCE_TAGS;
-    
-    const getMethod = (key: string): "stated" | "inferred" => {
-      const source = ri.field_sources?.[key];
-      if (!source) return "stated"; // fallback
-      return source.startsWith("inferred") ? "inferred" : "stated";
-    };
-
-    const tags: SourceTag[] = [];
-    if (ri.quantity)                   tags.push({ label: "Quantity",  source: `${ri.quantity} units`,                              method: getMethod("quantity") });
-    if (ri.budget_amount)              tags.push({ label: "Budget",    source: formatAmount(ri.budget_amount, ri.currency || "CHF"), method: getMethod("budget_amount") });
-    if (ri.delivery_countries?.length) tags.push({ label: "Location",  source: ri.delivery_countries.join(", "),                    method: getMethod("delivery_countries") });
-    if (ri.days_until_required)        tags.push({ label: "Timeline",  source: `${ri.days_until_required} days`,                    method: getMethod("required_by_date") });
-    if (ri.preferred_supplier_stated)  tags.push({ label: "Preferred", source: ri.preferred_supplier_stated,                        method: getMethod("preferred_supplier_stated") });
-    if (ri.category_l2)                tags.push({ label: "Category",  source: ri.category_l2,                                      method: getMethod("category_l2") });
-    return tags.length ? tags : DEMO_SOURCE_TAGS;
-  }, [apiResult]);
-
-  // ─── Conflict warnings (from blocking escalations) ────────────────────────
-
-  const conflicts: ConflictWarning[] = useMemo(() => {
-    if (!apiResult?.escalations) return DEMO_CONFLICTS;
-    const blocking = apiResult.escalations.filter((escalation) => escalation.blocking);
-    return blocking.map(e => ({ message: e.trigger }));
-  }, [apiResult]);
-
-  // ─── Audit trail ─────────────────────────────────────────────────────────
-
-  const auditTrail: AuditEntry[] = useMemo(() => {
-    if (!apiResult?.audit_trail) return DEMO_AUDIT;
-    const at = apiResult.audit_trail;
-    const entries: AuditEntry[] = [];
-    entries.push({ text: "Request parsed and interpreted by AI agent", status: "approved" });
-    if (at.policies_checked?.length) {
-      entries.push({ text: `${at.policies_checked.length} policies applied: ${at.policies_checked.slice(0, 5).join(", ")}`, status: "approved" });
-    }
-    (apiResult.escalations ?? []).forEach((e) => {
-      entries.push({ text: `${e.rule}: ${e.trigger}`, status: e.blocking ? "blocked" : "escalated" });
-    });
-    if (at.suppliers_evaluated?.length) {
-      entries.push({ text: `${at.suppliers_evaluated.length} supplier(s) evaluated`, status: "approved" });
-    }
-    if (at.historical_awards_consulted) {
-      entries.push({ text: "Historical award data consulted", status: "approved" });
-    }
-    (at.uncertainty_flags as string[] ?? []).forEach((flag: string) => {
-      entries.push({ text: `Uncertainty: ${flag}`, status: "escalated" });
-    });
-    return entries;
+    return { meta, isFromApi: true };
   }, [apiResult]);
 
   // ─── Compute displayed scores ─────────────────────────────────────────────
@@ -417,14 +260,16 @@ export default function SupplierDemoPage() {
         }));
     }
 
-    return Object.keys(rawScores)
-      .map((name) => ({ name, score: meta[name]?.blocked ? null : computeFinalScore(name, FALLBACK_WEIGHTS, rawScores) }))
+    return Object.keys(DEMO_RAW)
+      .map((name) => ({ name, score: DEMO_META[name]?.blocked ? null : Math.round(
+        (DEMO_RAW[name].price * 25 + DEMO_RAW[name].risk * 40 + DEMO_RAW[name].delivery * 20 + DEMO_RAW[name].esg * 15) / 100
+      ) }))
       .sort((a, b) => {
         if (a.score === null) return 1;
         if (b.score === null) return -1;
         return b.score - a.score;
       });
-  }, [apiResult, meta, rawScores]);
+  }, [apiResult]);
 
   const eligibleRanked = scored.filter(s => s.score !== null);
   const bestName       = eligibleRanked[0]?.name ?? "";
@@ -435,37 +280,6 @@ export default function SupplierDemoPage() {
   const hasBlocking = realEscalations.some((e) => e.blocking);
   const isAutoApproved         = apiResult?.recommendation?.is_auto_approved
     ?? (bestName !== "" && meta[bestName]?.risk === "Low");
-
-  // ─── Assemble Supplier[] for table ────────────────────────────────────────
-
-  const suppliers: Supplier[] = scored.map(({ name, score }) => {
-    const m = meta[name]     ?? { price: "—", tco: "—", risk: "Med" as const, esg: "B" as const, blocked: false };
-    const r = rawScores[name] ?? { price: 50, risk: 50, delivery: 50, esg: 50 };
-    return {
-      name,
-      supplier_id:    m.supplierId,
-      price:         m.price,
-      tco:           m.tco,
-      totalPriceValue: m.totalPriceValue,
-      tcoValue:      m.tcoValue,
-      leadTimeDays:  m.leadTimeDays,
-      risk:          m.risk,
-      esg:           m.esg,
-      score,
-      badge:         m.blocked ? "blocked" : name === bestName ? "best" : "normal",
-      blockedReason: m.blockedReason,
-      recommendationNote: m.recommendationNote,
-      historicalFlags: m.historicalFlags,
-      preferred:     m.preferred,
-      incumbent:     m.incumbent,
-      breakdown: [
-        { label: "Price",    value: r.price    },
-        { label: "Risk",     value: r.risk     },
-        { label: "Delivery", value: r.delivery },
-        { label: "ESG",      value: r.esg      },
-      ],
-    };
-  });
 
   const confidence   = apiResult?.confidence_score ?? null;
   const confidenceDetails = apiResult?.confidence_details ?? [];
@@ -484,12 +298,6 @@ export default function SupplierDemoPage() {
       isAbove:  mb.is_above_market ?? false,
     };
   }, [apiResult, ri]);
-
-  // ─── Validation issues (severity-tagged) ─────────────────────────────────
-
-  const validationIssues = useMemo(() => {
-    return apiResult?.validation?.issues ?? [];
-  }, [apiResult]);
 
   // ─── Excluded suppliers (non-blocking filter reasons) ─────────────────────
 
@@ -650,75 +458,6 @@ export default function SupplierDemoPage() {
           />
         </div>
 
-        {/* Validation issues (severity-tagged, from AI) */}
-        {validationIssues.length > 0 && (
-          <div className="animate-slide-in-left delay-600 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
-            <div className="px-6 py-3.5 border-b border-gray-200 dark:border-[#1e2130] flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Validation Issues</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 font-semibold border border-red-500/20">{validationIssues.length}</span>
-            </div>
-            <ul className="divide-y divide-gray-100 dark:divide-white/5">
-              {validationIssues.map((issue, i) => {
-                const isCritical = issue.severity === "critical";
-                const isHigh     = issue.severity === "high";
-                return (
-                  <li key={issue.issue_id ?? i} className="px-6 py-4">
-                    <div className="flex items-start gap-3">
-                      <span className={`mt-0.5 shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
-                        isCritical ? "bg-red-500/15 text-red-400 border border-red-500/30"
-                        : isHigh   ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                                   : "bg-gray-500/15 text-gray-400 border border-gray-500/30"
-                      }`}>
-                        {issue.severity ?? "info"}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">{issue.description}</p>
-                        {issue.action_required && (
-                          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
-                            Required: {issue.action_required}
-                          </p>
-                        )}
-                        {issue.issue_id && (
-                          <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500">{issue.issue_id} · {issue.type}</span>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-
-        {suppliers.length > 0 ? (
-          <>
-            <div className="flex items-center justify-between pt-2">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Step 4</p>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Supplier Comparison</h2>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Compliant options ranked on price, risk, delivery, and ESG</p>
-            </div>
-            <div id="supplier-table" className="animate-scale-fade-in delay-700">
-              <SupplierComparisonTable
-                suppliers={suppliers}
-                sourceTags={sourceTags}
-                conflicts={conflicts}
-                auditTrail={auditTrail}
-              />
-            </div>
-          </>
-        ) : (
-          <div className="animate-scale-fade-in delay-700 rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/8 px-6 py-5 shadow-sm">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 mb-2">Step 4</p>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">No Compliant Supplier Available</h2>
-            <p className="mt-2 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-              No supplier in the approved panel can fulfill this request within the current constraints. This is different from a similar-match scenario:
-              here there are zero compliant supplier options to rank.
-            </p>
-          </div>
-        )}
-
         {/* Excluded suppliers (non-blocked, with explicit reason) */}
         {excludedSuppliers.length > 0 && (
           <div className="animate-fade-slide-up delay-800 rounded-2xl overflow-hidden bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
@@ -746,7 +485,7 @@ export default function SupplierDemoPage() {
         )}
 
         {/* Live Market Benchmark */}
-        {marketBenchmark && suppliers.length > 0 && (
+        {marketBenchmark && apiResult?.supplier_shortlist?.length ? (
           <div className="animate-slide-in-right delay-900 rounded-2xl px-6 py-5 bg-white dark:bg-[#12151f] border border-gray-200 dark:border-[#1e2130] shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -776,7 +515,7 @@ export default function SupplierDemoPage() {
               </p>
             </div>
           </div>
-        )}
+        ) : null}
 
         <div className="animate-fade-slide-up delay-600">
 
@@ -797,13 +536,6 @@ export default function SupplierDemoPage() {
             </div>
           ) : null}
         </div>
-
-
-        {(intelLoading || marketIntel.length > 0) && (
-          <div className="animate-fade-slide-up delay-900">
-            <MarketIntelCard results={marketIntel} loading={intelLoading} />
-          </div>
-        )}
 
       </div>
       </div>
