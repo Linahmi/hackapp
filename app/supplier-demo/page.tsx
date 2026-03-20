@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TrendingDown, TrendingUp, CheckCircle, AlertTriangle } from "lucide-react";
 import { useProcurement } from "@/contexts/ProcurementContext";
@@ -197,9 +197,19 @@ function formatAmount(amount: number, currency: string): string {
 export default function SupplierDemoPage() {
   const router = useRouter();
   const { result: contextResult } = useProcurement() as { result: ApiResult | null };
-  const [storedApiResult] = useState<ApiResult | null>(() => readStoredResult());
-  const [buyerRequest] = useState(() => readStoredRequestText());
+  const [mounted, setMounted] = useState(false);
+  const [storedApiResult, setStoredApiResult] = useState<ApiResult | null>(null);
+  const [buyerRequest, setBuyerRequest] = useState(DEMO_REQUEST);
   const apiResult = contextResult ?? storedApiResult;
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setMounted(true);
+      setStoredApiResult(readStoredResult());
+      setBuyerRequest(readStoredRequestText());
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, []);
 
   // ─── Multi-Language detection ─────────────────────────────────────────────
   
@@ -305,7 +315,7 @@ export default function SupplierDemoPage() {
     return apiResult?.suppliers_excluded ?? [];
   }, [apiResult]);
 
-  const isLocked = typeof window !== "undefined" && !apiResult;
+  const isLocked = mounted && !apiResult;
 
 
   // ─── Render ───────────────────────────────────────────────────────────────

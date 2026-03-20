@@ -74,6 +74,15 @@ type AnalysisResult = {
   bundling_opportunity?: unknown;
   market_benchmark?: unknown;
   suppliers_excluded?: ExcludedSupplier[];
+  validation?: {
+    issues?: {
+      severity?: string;
+      description: string;
+      action_required?: string;
+      type?: string;
+      issue_id?: string;
+    }[];
+  } | unknown;
 };
 
 function riskLabel(score: number): "Low" | "Med" | "High" {
@@ -127,6 +136,105 @@ function SummaryCard({ label, value, tone = "default" }: { label: string; value:
     <div className={`rounded-xl border px-4 py-4 shadow-sm ${toneClasses[tone]}`}>
       <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</p>
       <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug">{value}</p>
+    </div>
+  );
+}
+
+function ConflictBanner({ message }: { message: string }) {
+  return (
+    <div className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 rounded-xl bg-amber-100 p-2 text-amber-600">
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <p className="text-base font-medium leading-relaxed text-amber-700">
+          <span className="font-bold">Conflict detected:</span> {message}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function LiveSupplierShortlist({
+  candidates,
+}: {
+  candidates: NonNullable<SupplierIntelResult["liveCandidates"]>;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-6 py-3.5">
+        <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
+          Updated Supplier Shortlist
+        </span>
+        <span className="text-xs font-medium text-gray-400">
+          {candidates.length} live candidates via Exa
+        </span>
+      </div>
+
+      <div className="divide-y divide-gray-100">
+        {candidates.map((candidate, index) => (
+          <div
+            key={`${candidate.name}-${candidate.url || index}`}
+            className={`px-6 py-5 ${index === 0 ? "bg-blue-50/40" : "bg-white"}`}
+            style={index === 0 ? { borderLeft: "3px solid #2563eb" } : { borderLeft: "3px solid transparent" }}
+          >
+            <div className="flex items-start justify-between gap-6">
+              <div className="min-w-0 flex-1">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="text-lg font-bold leading-tight text-gray-900">{candidate.name}</span>
+                  {index === 0 && (
+                    <span className="inline-block rounded border border-blue-500/40 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-blue-600 leading-none">
+                      Live Rank #1
+                    </span>
+                  )}
+                  <span className="inline-block rounded border border-blue-500/20 bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-blue-600 leading-none">
+                    {candidate.source === "exa" ? `${candidate.sourceCount} live source${candidate.sourceCount === 1 ? "" : "s"}` : "dataset fallback"}
+                  </span>
+                </div>
+
+                <div className="mb-3 flex items-baseline gap-1.5">
+                  <span className="text-base font-bold text-gray-900">External candidate</span>
+                  <span className="text-xs text-gray-400">· qualification required before award</span>
+                </div>
+
+                <div className="rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-3">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                    Live justification
+                  </p>
+                  <p className="text-xs leading-relaxed text-gray-600">
+                    {candidate.reason}
+                  </p>
+                  {candidate.url && (
+                    <a
+                      href={candidate.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-block text-xs font-semibold text-blue-600 hover:text-blue-800"
+                    >
+                      Open live source
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <div className="shrink-0 flex flex-col items-end justify-center pl-2">
+                <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  Score
+                </span>
+                <div className={`text-3xl font-black tabular-nums leading-none ${index === 0 ? "text-blue-600" : "text-gray-600"}`}>
+                  {candidate.score}
+                  <span className="text-sm font-medium text-gray-400"> / 100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 px-1 text-[10px] leading-relaxed text-gray-400">
+        This shortlist is generated from live Exa web search and is meant for sourcing discovery. It does not override procurement policy or approved-supplier controls.
+      </p>
     </div>
   );
 }
@@ -209,7 +317,8 @@ function CaseBanner({ caseType, onValidate }: { caseType: string; onValidate?: (
 
 export default function AnalysisPage() {
   const router = useRouter();
-  const [result] = useState<AnalysisResult | null>(() => readStoredResult());
+  const [mounted, setMounted] = useState(false);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
   const [marketIntel, setMarketIntel] = useState<SupplierIntelResult[]>([]);
   const [intelMode, setIntelMode] = useState<"shortlist" | "discovery">("shortlist");
   const [intelLoading, setIntelLoading] = useState(false);
@@ -218,10 +327,15 @@ export default function AnalysisPage() {
   const [validated, setValidated] = useState(false);
 
   useEffect(() => {
-    if (!result) {
+    setMounted(true);
+    setResult(readStoredResult());
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !result) {
       router.push("/");
     }
-  }, [result, router]);
+  }, [mounted, result, router]);
 
   // Auto-trigger live supplier intel when result loads
   useEffect(() => {
@@ -273,12 +387,13 @@ export default function AnalysisPage() {
     };
   }, [result, intelFetched, intelLoading]);
 
-  if (!result) return null;
+  if (!mounted || !result) return null;
 
   const approvalThreshold = result.policy_evaluation?.approval_threshold ?? null;
   const confidenceDetails = result.confidence_details ?? [];
   const blockingEscalations = (result.escalations ?? []).filter((e) => e.blocking);
   const hasBlockers = blockingEscalations.length > 0;
+  const validationIssues = (result.validation as { issues?: { description: string }[] } | undefined)?.issues ?? [];
 
   // Override case type: never show READY_FOR_VALIDATION when blocking escalations exist
   const effectiveCaseType: string = (() => {
@@ -322,6 +437,11 @@ export default function AnalysisPage() {
   const comparisonConflicts: ConflictWarning[] = blockingEscalations
     .filter((escalation) => escalation.trigger)
     .map((escalation) => ({ message: escalation.trigger! }));
+  const liveCandidates = marketIntel.find((entry) => entry.liveCandidates?.length)?.liveCandidates ?? [];
+  const inlineErrorMessage =
+    blockingEscalations[0]?.trigger
+    ?? validationIssues[0]?.description
+    ?? null;
 
   return (
     <div className="flex flex-col items-center gap-8 px-4 py-16 min-h-[calc(100vh-65px)] bg-gray-50 dark:bg-[#0f1117] transition-colors duration-300">
@@ -365,6 +485,12 @@ export default function AnalysisPage() {
               Order validated — sent to procurement for processing.
             </div>
           )}
+        </div>
+      )}
+
+      {inlineErrorMessage && (
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-110">
+          <ConflictBanner message={inlineErrorMessage} />
         </div>
       )}
 
@@ -430,6 +556,12 @@ export default function AnalysisPage() {
             suppliers={comparisonSuppliers}
             conflicts={comparisonConflicts}
           />
+        </div>
+      )}
+
+      {liveCandidates.length > 0 && (
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-340">
+          <LiveSupplierShortlist candidates={liveCandidates} />
         </div>
       )}
 

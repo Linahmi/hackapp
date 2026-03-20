@@ -279,28 +279,39 @@ export default function Home() {
 
         {/* Scenario Cards */}
         {!isLoading && stage !== "error" && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full mb-12">
-            {SCENARIOS.map((s, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={(e) => {
-                  handleTextChange(s.title === "Standard Case" ? getNextStandardCase() : s.text);
-                  const el = e.currentTarget;
-                  el.classList.add("scale-95");
-                  setTimeout(() => el.classList.remove("scale-95"), 150);
-                }}
-                className="flex flex-col items-start gap-4 p-5 rounded-2xl bg-white/90 dark:bg-[#12151f]/80 backdrop-blur-md border border-gray-200 dark:border-[#1e2130] text-left transition-all duration-300 hover:scale-[1.02] hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(220,38,38,0.2)] group"
-              >
-                <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">
-                  <s.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-gray-900 dark:text-white font-semibold text-sm mb-1.5 transition-colors duration-300">{s.title}</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-medium transition-colors duration-300">{s.desc}</p>
-                </div>
-              </button>
-            ))}
+          <div className="w-full mb-12">
+            <div className="mb-5 flex items-start gap-4 rounded-2xl border border-amber-300 bg-amber-50/90 px-5 py-4 text-left shadow-sm">
+              <div className="mt-0.5 rounded-xl bg-amber-100 p-2 text-amber-600">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <p className="text-base font-medium leading-relaxed text-amber-700">
+                <span className="font-bold">Conflict detected:</span> Requester&apos;s preferred supplier &apos;Dell&apos; is not on the approved supplier list, so manual review is required.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              {SCENARIOS.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={(e) => {
+                    handleTextChange(s.title === "Standard Case" ? getNextStandardCase() : s.text);
+                    const el = e.currentTarget;
+                    el.classList.add("scale-95");
+                    setTimeout(() => el.classList.remove("scale-95"), 150);
+                  }}
+                  className="flex flex-col items-start gap-4 rounded-2xl border border-gray-200 bg-white/90 p-5 text-left backdrop-blur-md transition-all duration-300 hover:scale-[1.02] hover:border-red-500/50 hover:shadow-[0_0_20px_rgba(220,38,38,0.2)] group dark:border-[#1e2130] dark:bg-[#12151f]/80"
+                >
+                  <div className="rounded-xl bg-red-50 p-2.5 text-red-600 transition-colors duration-300 group-hover:bg-red-500 group-hover:text-white dark:bg-red-500/10 dark:text-red-500">
+                    <s.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="mb-1.5 text-sm font-semibold text-gray-900 transition-colors duration-300 dark:text-white">{s.title}</h3>
+                    <p className="text-xs font-medium leading-relaxed text-gray-600 transition-colors duration-300 dark:text-gray-400">{s.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

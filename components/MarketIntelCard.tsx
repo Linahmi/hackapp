@@ -12,6 +12,14 @@ export interface SupplierIntelResult {
   supplier: string;
   excerpts: IntelExcerpt[];
   searchQuery: string;
+  liveCandidates?: {
+    name: string;
+    url: string;
+    reason: string;
+    score: number;
+    sourceCount: number;
+    source: "exa" | "dataset_fallback";
+  }[];
   suggestedCandidate?: {
     name: string;
     reason: string;

@@ -10,6 +10,14 @@ export interface SupplierIntel {
   excerpts: { title: string; content: string; url: string }[];
   searchQuery: string;
   suggestedCandidate?: { name: string; reason: string; url: string; source: "exa" | "dataset_fallback" } | null;
+  liveCandidates?: {
+    name: string;
+    url: string;
+    reason: string;
+    score: number;
+    sourceCount: number;
+    source: "exa" | "dataset_fallback";
+  }[];
 }
 
 type SupplierRow = {
@@ -58,6 +66,7 @@ export async function searchSupplier(
   try {
     const res = await fetch("https://api.exa.ai/search", {
       method: "POST",
+      signal: AbortSignal.timeout(8000),
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
@@ -289,6 +298,97 @@ function buildSuggestedCandidate(results: ExaResultRow[], productCategory: strin
   };
 }
 
+function buildLiveCandidates(results: ExaResultRow[], productCategory: string, region?: string) {
+  if (!results?.length) {
+    const fallback = buildDatasetFallbackCandidate(productCategory, region);
+    return fallback ? [{
+      name: fallback.name,
+      url: fallback.url,
+      reason: fallback.reason,
+      score: 62,
+      sourceCount: 1,
+      source: "dataset_fallback" as const,
+    }] : [];
+  }
+
+  const categoryWords = productCategory.toLowerCase().split(/\s+/).filter(Boolean);
+  const regionWords = (region ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+  const aggregate = new Map<string, {
+    name: string;
+    url: string;
+    sourceCount: number;
+    bestScore: number;
+    directRegionMatch: boolean;
+    commercialSignal: boolean;
+  }>();
+
+  for (const result of results) {
+    const name = titleToCandidateName(result.title ?? "", result.url ?? "");
+    if (!name) continue;
+
+    const haystack = `${result.title ?? ""} ${result.text ?? result.snippet ?? ""} ${result.url ?? ""}`.toLowerCase();
+    let score = 40;
+    for (const word of categoryWords) {
+      if (word.length > 2 && haystack.includes(word)) score += 8;
+    }
+    for (const word of regionWords) {
+      if (word.length > 1 && haystack.includes(word)) score += 6;
+    }
+    const commercialSignal = /pricing|availability|delivery|lead time|distributor|reseller|supplier|vendor|manufacturer/i.test(haystack);
+    if (commercialSignal) score += 12;
+    const directRegionMatch = regionWords.some((word) => word.length > 1 && haystack.includes(word));
+    if (directRegionMatch) score += 8;
+
+    const current = aggregate.get(name) ?? {
+      name,
+      url: result.url ?? "",
+      sourceCount: 0,
+      bestScore: 0,
+      directRegionMatch: false,
+      commercialSignal: false,
+    };
+
+    current.sourceCount += 1;
+    current.bestScore = Math.max(current.bestScore, score);
+    current.directRegionMatch = current.directRegionMatch || directRegionMatch;
+    current.commercialSignal = current.commercialSignal || commercialSignal;
+    if (!current.url && result.url) current.url = result.url;
+
+    aggregate.set(name, current);
+  }
+
+  return Array.from(aggregate.values())
+    .sort((a, b) => {
+      if (b.bestScore !== a.bestScore) return b.bestScore - a.bestScore;
+      return b.sourceCount - a.sourceCount;
+    })
+    .slice(0, 4)
+    .map((candidate, index) => {
+      const parts = [
+        candidate.directRegionMatch && region
+          ? `Live search found market signals tied to ${region}.`
+          : region
+          ? `Live search found the closest market candidate for ${region}.`
+          : "Live search found a relevant market candidate.",
+        candidate.commercialSignal
+          ? "Public sources reference supply, distribution, or commercial availability."
+          : "Public sources show category relevance and vendor presence.",
+        candidate.sourceCount > 1
+          ? `${candidate.sourceCount} supporting sources were retrieved.`
+          : "One supporting source was retrieved.",
+      ];
+
+      return {
+        name: candidate.name,
+        url: candidate.url,
+        reason: parts.join(" "),
+        score: Math.max(55, Math.min(96, candidate.bestScore - index * 2)),
+        sourceCount: candidate.sourceCount,
+        source: "exa" as const,
+      };
+    });
+}
+
 export async function searchMarketCandidates(
   productCategory: string,
   region?: string,
@@ -304,12 +404,23 @@ export async function searchMarketCandidates(
       excerpts: [],
       searchQuery: query,
       suggestedCandidate: buildDatasetFallbackCandidate(productCategory, region),
+      liveCandidates: buildDatasetFallbackCandidate(productCategory, region)
+        ? [{
+            name: buildDatasetFallbackCandidate(productCategory, region)!.name,
+            url: buildDatasetFallbackCandidate(productCategory, region)!.url,
+            reason: buildDatasetFallbackCandidate(productCategory, region)!.reason,
+            score: 62,
+            sourceCount: 1,
+            source: "dataset_fallback" as const,
+          }]
+        : [],
     }];
   }
 
   try {
     const res = await fetch("https://api.exa.ai/search", {
       method: "POST",
+      signal: AbortSignal.timeout(8000),
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
@@ -332,6 +443,7 @@ export async function searchMarketCandidates(
         excerpts: [],
         searchQuery: query,
         suggestedCandidate: buildDatasetFallbackCandidate(productCategory, region),
+        liveCandidates: buildLiveCandidates([], productCategory, region),
       }];
     }
 
@@ -343,6 +455,7 @@ export async function searchMarketCandidates(
       url: r.url ?? "",
     }));
     const suggestedCandidate = buildSuggestedCandidate(rawResults, productCategory, region);
+    const liveCandidates = buildLiveCandidates(rawResults, productCategory, region);
 
     return [
       {
@@ -350,6 +463,7 @@ export async function searchMarketCandidates(
         excerpts,
         searchQuery: query,
         suggestedCandidate,
+        liveCandidates,
       },
     ];
   } catch (err) {
@@ -359,6 +473,7 @@ export async function searchMarketCandidates(
       excerpts: [],
       searchQuery: query,
       suggestedCandidate: buildDatasetFallbackCandidate(productCategory, region),
+      liveCandidates: buildLiveCandidates([], productCategory, region),
     }];
   }
 }
