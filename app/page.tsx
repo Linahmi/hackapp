@@ -280,15 +280,6 @@ export default function Home() {
         {/* Scenario Cards */}
         {!isLoading && stage !== "error" && (
           <div className="w-full mb-12">
-            <div className="mb-5 flex items-start gap-4 rounded-2xl border border-amber-300 bg-amber-50/90 px-5 py-4 text-left shadow-sm">
-              <div className="mt-0.5 rounded-xl bg-amber-100 p-2 text-amber-600">
-                <AlertTriangle className="h-5 w-5" />
-              </div>
-              <p className="text-base font-medium leading-relaxed text-amber-700">
-                <span className="font-bold">Conflict detected:</span> Requester&apos;s preferred supplier &apos;Dell&apos; is not on the approved supplier list, so manual review is required.
-              </p>
-            </div>
-
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               {SCENARIOS.map((s, i) => (
                 <button

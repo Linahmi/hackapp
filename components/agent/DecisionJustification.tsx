@@ -319,10 +319,10 @@ export function DecisionJustification({ recommendation, topSupplier, runnerUp, c
         )}
 
         {/* ── TCO note ── */}
-        {!isBlocked && topSupplier.tco_note && (
+        {!isBlocked && topSupplier?.tco_note && (
           <div className="rounded-lg px-4 py-3 text-xs leading-relaxed border border-white/5" style={{ backgroundColor: "rgba(59,130,246,0.06)", color: "var(--text-muted)" }}>
             <span className="font-semibold text-blue-400">TCO breakdown: </span>
-            {topSupplier.tco_note}
+            {topSupplier?.tco_note}
           </div>
         )}
 

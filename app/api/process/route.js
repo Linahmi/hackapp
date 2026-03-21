@@ -25,8 +25,7 @@ function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days
     }
   }
   const mockReq = { quantity: qty, currency, days_until_required, incumbent_supplier: originalReq?.incumbent_supplier, budget_amount, historicalContext };
-  const { shortlist } = newScoreSuppliers(eligible, { restricted_suppliers }, mockReq);
-  return shortlist;
+  return newScoreSuppliers(eligible, { restricted_suppliers }, mockReq);
 }
 
 export async function POST(req) {
@@ -63,7 +62,7 @@ export async function POST(req) {
     const policyResult = { approval_threshold: approvalThreshold, preferred_supplier: preferredCheck, category_rules: categoryRules, geography_rules: geoRules, violations: [] };
 
     // 7. Score
-    const rankedSuppliers = scoreSuppliersLocal(
+    const { shortlist: rankedSuppliers, excluded: excludedSuppliers } = scoreSuppliersLocal(
       enrichedRequest.category_l1,
       enrichedRequest.category_l2,
       enrichedRequest.delivery_countries || [],
@@ -225,12 +224,18 @@ export async function POST(req) {
         ...s,
         composite_score_pct: Math.round(s.composite_score * 100)
       })),
+      suppliers_excluded: excludedSuppliers ?? [],
       escalations: escalations,
       bundling_opportunity: bundlingOpportunity,
       recommendation: {
         ...decision,
         is_auto_approved: isAutoApproved,
         required_approver: requiredApprover,
+        minimum_budget_required: minimumRequired,
+        minimum_budget_currency: minimumRequired ? (enrichedRequest.currency ?? 'EUR') : null,
+        savings_vs_budget_pct: (enrichedRequest.budget_amount && rankedSuppliers[0]?.total_price)
+          ? Math.round(((enrichedRequest.budget_amount - rankedSuppliers[0].total_price) / enrichedRequest.budget_amount) * 100)
+          : null,
       },
       audit_trail: {
         policies_checked: ['AT-001','AT-002','AT-003','AT-004','AT-005','ER-001','ER-002','ER-004','ER-005'],

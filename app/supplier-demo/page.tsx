@@ -12,6 +12,7 @@ import {
   AuditEntry,
 } from "@/components/agent/SupplierComparisonTable";
 import { DecisionRow } from "@/components/agent/DecisionRow";
+import { DecisionJustification } from "@/components/agent/DecisionJustification";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
 import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
@@ -200,6 +201,63 @@ const DEMO_AUDIT: AuditEntry[] = [
 ];
 
 const DEMO_REQUEST = "Need 500 laptops for Geneva office, 2 weeks, budget 400k CHF, prefer Dell";
+
+// ─── Demo DecisionJustification data ──────────────────────────────────────────
+
+const DEMO_TOP_SUPPLIER = {
+  supplier_name: "Dell Geneva",
+  rank: 1,
+  unit_price: 774,
+  total_price: 387000,
+  currency: "CHF",
+  risk_score: 12,
+  quality_score: 88,
+  esg_score: 92,
+  standard_lead_time_days: 8,
+  composite_score: 0.79,
+  tco: 412000,
+  score_breakdown: { price: 0.55, lead_time: 0.80, quality: 0.88, risk: 0.95, esg: 0.92, historical: 7 },
+  historical_flags: [
+    "+5 pts based on 4 past awards",
+    "+2 pts recent award (last 12 months)",
+    "+2 pts reliable (no past escalations)",
+    "Clamped from 9 to 8 pts — max historical adjustment applied",
+  ],
+  recommendation_note: "Preferred supplier — lowest risk, highest ESG",
+};
+
+const DEMO_RUNNER_UP = {
+  supplier_name: "HP EMEA",
+  rank: 2,
+  unit_price: 724,
+  total_price: 362000,
+  currency: "CHF",
+  risk_score: 45,
+  quality_score: 72,
+  esg_score: 35,
+  standard_lead_time_days: 12,
+  composite_score: 0.63,
+  tco: 389000,
+  score_breakdown: { price: 0.85, lead_time: 0.75, quality: 0.72, risk: 0.42, esg: 0.35, historical: -3 },
+  historical_flags: ["-3 pts based on 1 past rejection"],
+};
+
+const DEMO_RECOMMENDATION = {
+  status: "recommended",
+  is_auto_approved: true,
+  decision_summary: "Dell Geneva is recommended as the best compliant supplier for this request.",
+  justification: "Dell Geneva leads on risk compliance (95/100) and ESG (92/100), which together account for 50% of the current weight configuration. It is the preferred supplier for the Geneva region with a strong historical track record of 4 past awards and zero escalations.",
+  next_action: "Client to validate the order — no further approvals required.",
+  key_reasons: [
+    "Lowest risk profile in shortlist (risk score 12/100) — well below policy threshold",
+    "Preferred supplier for CH region with consistent past performance (+7 pts historical)",
+    "ESG grade A — meets sustainability requirements, leads shortlist on environmental criteria",
+  ],
+  risks: [
+    "Unit price is above HP EMEA (CHF 774 vs CHF 724) — TCO difference remains within acceptable range",
+    "Standard lead time of 8 days is tight — expedited shipping should be confirmed at order stage",
+  ],
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -436,6 +494,17 @@ export default function SupplierDemoPage() {
   const isAutoApproved = apiResult?.recommendation?.is_auto_approved
     ?? (bestName !== "" && meta[bestName]?.risk === "Low");
 
+  // ─── DecisionJustification data (demo or API) ─────────────────────────────
+  const djTopSupplier = isFromApi
+    ? (apiResult?.supplier_shortlist?.[0] ?? null)
+    : DEMO_TOP_SUPPLIER;
+  const djRunnerUp = isFromApi
+    ? (apiResult?.supplier_shortlist?.[1] ?? null)
+    : DEMO_RUNNER_UP;
+  const djRecommendation = isFromApi
+    ? (apiResult?.recommendation ?? null)
+    : DEMO_RECOMMENDATION;
+
   // ─── Assemble Supplier[] for table ────────────────────────────────────────
 
   const suppliers: Supplier[] = scored.map(({ name, score }) => {
@@ -644,10 +713,28 @@ export default function SupplierDemoPage() {
               isAutoApproved={isAutoApproved}
               status={hasBlocking ? "cannot_proceed" : "pending_approval"}
               escalations={realEscalations}
-              recommendation={apiResult?.recommendation}
+              recommendation={apiResult?.recommendation ?? undefined}
               requestId={apiResult?.request_id}
+              topSupplier={apiResult?.supplier_shortlist?.[0] ? {
+                score: Math.round((apiResult.supplier_shortlist[0].composite_score ?? 0) * 100),
+                unitPrice: apiResult.supplier_shortlist[0].total_price ?? null,
+                leadTime: apiResult.supplier_shortlist[0].standard_lead_time_days ?? null,
+                currency: apiResult?.request_interpretation?.currency ?? "EUR",
+              } : undefined}
             />
           </div>
+
+          {/* Decision justification */}
+          {(djTopSupplier || !isFromApi) && (
+            <div className="animate-fade-slide-up delay-200">
+              <DecisionJustification
+                recommendation={djRecommendation ? { ...djRecommendation, status: djRecommendation.status ?? "pending" } : null}
+                topSupplier={djTopSupplier as never}
+                runnerUp={djRunnerUp as never}
+                currency={ri?.currency ?? "CHF"}
+              />
+            </div>
+          )}
 
           {/* Validation issues (severity-tagged, from AI) */}
           {validationIssues.length > 0 && (
@@ -688,25 +775,7 @@ export default function SupplierDemoPage() {
             </div>
           )}
 
-          {suppliers.length > 0 ? (
-            <>
-              <div className="flex items-center justify-between pt-2">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Step 4</p>
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">Supplier Comparison</h2>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Compliant options ranked on price, risk, delivery, and ESG</p>
-              </div>
-              <div id="supplier-table" className="animate-scale-fade-in delay-700">
-                <SupplierComparisonTable
-                  suppliers={suppliers}
-                  sourceTags={sourceTags}
-                  conflicts={conflicts}
-                  auditTrail={auditTrail}
-                />
-              </div>
-            </>
-          ) : (
+          {suppliers.length === 0 && (
             <div className="animate-scale-fade-in delay-700 rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/8 px-6 py-5 shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 mb-2">Step 4</p>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">No Compliant Supplier Available</h2>
@@ -789,7 +858,7 @@ export default function SupplierDemoPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400">Human approval path for blocking or policy-sensitive cases</p>
                 </div>
                 <EscalationHierarchyPanel
-                  escalations={realEscalations}
+                  escalations={realEscalations as never}
                   currency={apiResult?.request_interpretation?.currency ?? "EUR"}
                 />
               </div>

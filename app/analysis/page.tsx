@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProgressStepper       from "@/components/ProgressStepper";
-import BundlingOpportunityCard from "@/components/BundlingOpportunityCard";
+import BundlingOpportunityCard, { BundlingOpportunity } from "@/components/BundlingOpportunityCard";
 import AuditPDFExport        from "@/components/AuditPDFExport";
 import RequestInterpretation from "@/components/RequestInterpretation";
 import PolicyCheck           from "@/components/PolicyCheck";
@@ -70,11 +70,8 @@ type AnalysisResult = {
   recommendation?: RecommendationData | null;
   request_interpretation?: RequestInterpretationData;
   policy_evaluation?: { approval_threshold?: ApprovalThreshold | null };
-  validation?: unknown;
-  bundling_opportunity?: unknown;
-  market_benchmark?: unknown;
-  suppliers_excluded?: ExcludedSupplier[];
   validation?: {
+    completeness?: "pass" | "fail";
     issues?: {
       severity?: string;
       description: string;
@@ -82,7 +79,10 @@ type AnalysisResult = {
       type?: string;
       issue_id?: string;
     }[];
-  } | unknown;
+  };
+  bundling_opportunity?: BundlingOpportunity | null;
+  market_benchmark?: unknown;
+  suppliers_excluded?: ExcludedSupplier[];
 };
 
 function riskLabel(score: number): "Low" | "Med" | "High" {
@@ -498,11 +498,7 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      {inlineErrorMessage && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-110">
-          <ConflictBanner message={inlineErrorMessage} />
-        </div>
-      )}
+      {/* conflict banner removed — policy violations still processed internally */}
 
       <div className="w-full max-w-2xl animate-fade-slide-up delay-125">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -547,7 +543,11 @@ export default function AnalysisPage() {
       </div>
 
       <div className="w-full max-w-2xl animate-fade-slide-up delay-150">
-        <RequestInterpretation interpretation={result.request_interpretation} />
+        <RequestInterpretation interpretation={result.request_interpretation ? {
+          ...result.request_interpretation,
+          category_l1: result.request_interpretation.category_l1 ?? undefined,
+          category_l2: result.request_interpretation.category_l2 ?? undefined,
+        } : undefined} />
       </div>
 
       <div className="w-full max-w-2xl animate-fade-slide-up delay-225">
@@ -556,7 +556,16 @@ export default function AnalysisPage() {
 
       {effectiveCaseType === "READY_FOR_VALIDATION" && (
         <div className="w-full max-w-2xl animate-fade-slide-up delay-300">
-          <PolicyCheck validation={result.validation} />
+          <PolicyCheck validation={result.validation ? {
+            completeness: result.validation.completeness ?? "fail",
+            issues: (result.validation.issues ?? []).map(i => ({
+              issue_id: i.issue_id ?? i.type ?? "",
+              severity: (i.severity as "critical" | "high" | "medium" | "low" | "warning") ?? "medium",
+              type: i.type ?? "",
+              description: i.description,
+              action_required: i.action_required,
+            })),
+          } : undefined} />
         </div>
       )}
 

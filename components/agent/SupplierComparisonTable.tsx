@@ -173,12 +173,11 @@ function ScorePill({ label, value, muted = false }: { label: string; value: numb
 export function SupplierComparisonTable({
   suppliers,
   sourceTags,
-  conflicts,
   auditTrail,
 }: {
   suppliers: Supplier[];
   sourceTags?: SourceTag[];
-  conflicts?: ConflictWarning[];
+  conflicts?: ConflictWarning[]; // kept in type for call-site compatibility, no longer rendered
   auditTrail?: AuditEntry[];
 }) {
   const eligibleCount = suppliers.filter(s => s.badge !== "blocked").length;
@@ -186,26 +185,7 @@ export function SupplierComparisonTable({
   return (
     <div className="space-y-4">
 
-      {/* Conflict warnings */}
-      {conflicts && conflicts.length > 0 && (
-        <div className="space-y-2">
-          {conflicts.map((c, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-3 rounded-lg border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 shadow-sm"
-              style={{ borderLeftWidth: 4, borderLeftColor: "#D97706" }}
-            >
-              <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-              </svg>
-              <div className="text-sm">
-                <span className="font-semibold text-amber-700 dark:text-amber-400">Conflict detected — </span>
-                <span className="text-amber-600 dark:text-amber-300/80">{c.message}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* conflict warnings removed from display — escalations still processed internally */}
 
       {/* Source tags */}
       {sourceTags && sourceTags.length > 0 && (
