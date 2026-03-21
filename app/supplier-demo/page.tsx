@@ -14,6 +14,7 @@ import {
 import { DecisionRow } from "@/components/agent/DecisionRow";
 import { DecisionJustification } from "@/components/agent/DecisionJustification";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
+import { DecisionExplanation } from "@/components/DecisionExplanation";
 import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
 type ScoreBreakdown = {
@@ -721,8 +722,20 @@ export default function SupplierDemoPage() {
                 leadTime: apiResult.supplier_shortlist[0].standard_lead_time_days ?? null,
                 currency: apiResult?.request_interpretation?.currency ?? "EUR",
               } : undefined}
+              confidenceScore={confidence}
             />
           </div>
+
+          {/* Decision Explanation - Data Driven Reasoning */}
+          {apiResult?.supplier_shortlist && apiResult.supplier_shortlist.length > 0 && (
+            <div className="animate-fade-slide-up delay-200">
+              <DecisionExplanation
+                shortlist={apiResult.supplier_shortlist as any}
+                recommendation={djRecommendation ? { ...djRecommendation, status: djRecommendation.status ?? "pending" } : null}
+                confidenceScore={confidence}
+              />
+            </div>
+          )}
 
           {/* Decision justification */}
           {(djTopSupplier || !isFromApi) && (
