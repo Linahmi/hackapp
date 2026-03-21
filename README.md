@@ -1,36 +1,11 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ProcureTrace: The Intelligence Layer for Modern Enterprise Sourcing
 
-## Getting Started
+In the modern enterprise, procurement is often the invisible bottleneck. While high-level strategy moves at the speed of thought, the actual process of buying—from laptops for a new team to specialized consulting services—is frequently trapped in a web of messy emails, manual policy checks, and rigid legacy forms. Every year, organizations lose billions in "maverick spend" and operational waste simply because the distance between a raw human request and a compliant, data-driven decision is too large.
 
-First, run the development server:
+ProcureTrace was built to bridge that gap. It is an inference-first procurement agent designed to handle the chaotic reality of how work actually gets done. Instead of forcing employees to fill out 40-field forms they don't understand, ProcureTrace uses advanced AI to "read" the intent behind a request. It extracts the details, identifies the hidden constraints, and maps them instantly to the complex web of global corporate policies. It turns a single sentence into a fully auditable sourcing strategy.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+What sets ProcureTrace apart is its commitment to trust through technical depth. Most AI tools in this space are simple "price-checkers" that recommend the cheapest option. ProcureTrace goes deeper, utilizing a sophisticated Total Cost of Ownership (TCO) model that accounts for lead-time risks and operational premiums. It layers this with a proprietary Historical Performance Engine that rewards suppliers based on their actual track record of delivery and reliability within the organization. The result is a recommendation that isn't just cheap—it's right.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Every action taken by ProcureTrace is anchored in an immutable audit trail. By automating the verification of 15+ currency-aware approval thresholds and multi-country geography rules, the system ensures that compliance is a byproduct of the workflow, not a manual after-thought. From detecting brand-safety risks in marketing campaigns to enforcing data residency for Swiss IT infrastructure, ProcureTrace protects the enterprise while empowering the individual.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This is more than just automation; it is the implementation of a "Sourcing Command Center" that understands the nuances of the supply chain as well as it understands the needs of the requester. By moving from manual oversight to intelligent inference, ProcureTrace allows procurement teams to stop chasing paperwork and start driving strategic value.
