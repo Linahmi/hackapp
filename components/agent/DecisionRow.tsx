@@ -42,6 +42,7 @@ export type DecisionRowProps = {
   recommendation?: RecommendationData;
   requestId?: string;
   topSupplier?: TopSupplierSnapshot;
+  confidenceScore?: number | null;
 };
 
 // ─── Modal content helpers ────────────────────────────────────────────────────
@@ -464,6 +465,7 @@ export function DecisionRow({
   recommendation,
   requestId,
   topSupplier,
+  confidenceScore,
 }: DecisionRowProps) {
   const [approvedSupplier, setApprovedSupplier] = useState<string | null>(null);
   const [showModal,  setShowModal]  = useState(false);
@@ -570,6 +572,11 @@ export function DecisionRow({
                           ? "Auto-approved based on your priorities · All conditions are met"
                           : "Conflict detected — manual validation required"}
                       </p>
+                      {confidenceScore !== null && (
+                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 mt-1">
+                          Confidence: {confidenceScore}/100
+                        </p>
+                      )}
                     </div>
                   </div>
 

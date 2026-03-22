@@ -1,5 +1,5 @@
 {
-  "counter": 85,
+  "counter": 89,
   "requests": [
     {
       "id": "R-0001",
@@ -619,35 +619,67 @@
     },
     {
       "id": "R-0082",
-      "timestamp": "2026-03-21T19:40:17.907Z",
-      "category": "IT > Docking Stations",
-      "quantity": 240,
-      "budget": 28000,
-      "status": "cannot_proceed"
+      "timestamp": "2026-03-21T22:10:17.797Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
     },
     {
       "id": "R-0083",
-      "timestamp": "2026-03-21T19:41:30.064Z",
-      "category": "IT > Docking Stations",
+      "timestamp": "2026-03-21T22:15:38.622Z",
+      "category": "undefined > Docking Stations",
       "quantity": 240,
       "budget": 28000,
       "status": "cannot_proceed"
     },
     {
       "id": "R-0084",
-      "timestamp": "2026-03-21T19:45:08.899Z",
-      "category": "IT > Laptops",
-      "quantity": null,
-      "budget": null,
+      "timestamp": "2026-03-21T22:19:50.518Z",
+      "category": "undefined > Software Licenses",
+      "quantity": 20,
+      "budget": 45000,
       "status": "cannot_proceed"
     },
     {
       "id": "R-0085",
-      "timestamp": "2026-03-21T21:28:20.752Z",
+      "timestamp": "2026-03-22T14:49:27.669Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0086",
+      "timestamp": "2026-03-22T15:23:26.982Z",
+      "category": "IT > Laptops",
+      "quantity": 500,
+      "budget": 400000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0087",
+      "timestamp": "2026-03-22T15:36:03.481Z",
+      "category": "IT > Laptops",
+      "quantity": 500,
+      "budget": 400000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0088",
+      "timestamp": "2026-03-22T15:48:59.452Z",
       "category": "null > null",
       "quantity": null,
-      "budget": 72000,
+      "budget": 110000,
       "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0089",
+      "timestamp": "2026-03-22T15:49:24.015Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
     }
   ]
 }

@@ -12,14 +12,6 @@ import { SupplierComparisonTable, Supplier, ConflictWarning } from "@/components
 import { ArrowLeft } from "lucide-react";
 
 type ConfidenceDriver = { tone: "good" | "warn" | "danger"; label: string };
-type ApprovalThreshold = {
-  rule_applied?: string;
-  tier?: number;
-  quotes_required?: number;
-  approver?: string;
-  approvers?: string[];
-  deviation_approval?: string | null;
-};
 type EscalationData = {
   blocking: boolean;
   escalate_to?: string;
@@ -69,7 +61,7 @@ type AnalysisResult = {
   case_type?: string;
   recommendation?: RecommendationData | null;
   request_interpretation?: RequestInterpretationData;
-  policy_evaluation?: { approval_threshold?: ApprovalThreshold | null };
+  policy_evaluation?: { approval_threshold?: unknown };
   validation?: {
     completeness?: "pass" | "fail";
     issues?: {
@@ -239,50 +231,6 @@ function LiveSupplierShortlist({
   );
 }
 
-function PolicySnapshot({
-  threshold,
-}: {
-  threshold?: {
-    rule_applied?: string;
-    tier?: number;
-    quotes_required?: number;
-    approver?: string;
-    approvers?: string[];
-    deviation_approval?: string | null;
-  } | null;
-}) {
-  if (!threshold) return null;
-
-  return (
-    <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#12151f] px-5 py-4 shadow-sm">
-      <div className="flex items-center gap-2.5 mb-3">
-        <span className="h-2 w-2 rounded-full bg-blue-500" />
-        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Policy Snapshot</h3>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <SummaryCard
-          label="Approval Rule"
-          value={`${threshold.rule_applied ?? "N/A"}${threshold.tier ? ` · Tier ${threshold.tier}` : ""}`}
-        />
-        <SummaryCard
-          label="Quotes Required"
-          value={threshold.quotes_required != null ? `${threshold.quotes_required}` : "N/A"}
-        />
-        <SummaryCard
-          label="Approver"
-          value={threshold.approver || threshold.approvers?.join(", ") || "N/A"}
-          tone={threshold.tier && threshold.tier > 1 ? "warn" : "default"}
-        />
-      </div>
-      {threshold.deviation_approval && (
-        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-          Deviation approval: <span className="font-semibold text-gray-700 dark:text-gray-200">{threshold.deviation_approval}</span>
-        </p>
-      )}
-    </div>
-  );
-}
-
 function CaseBanner({ caseType, onValidate }: { caseType: string; onValidate?: () => void }) {
   const cfg = CASE_CONFIG[caseType];
   if (!cfg) return null;
@@ -327,16 +275,12 @@ export default function AnalysisPage() {
   const [validated, setValidated] = useState(false);
   const intelFetchStarted = useRef(false);
 
-  // Hydrate from sessionStorage only on client — avoids server/client mismatch
   useEffect(() => {
-    const stored = readStoredResult();
-    setResult(stored);
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    setMounted(true);
-    setResult(readStoredResult());
+    const frameId = window.requestAnimationFrame(() => {
+      setResult(readStoredResult());
+      setMounted(true);
+    });
+    return () => window.cancelAnimationFrame(frameId);
   }, []);
 
   useEffect(() => {
@@ -359,47 +303,46 @@ export default function AnalysisPage() {
     const controller = new AbortController();
 
     intelFetchStarted.current = true;
-    setIntelLoading(true);
-    console.log("[MarketIntel] starting fetch, ref=", intelFetchStarted.current);
 
-    fetch("/api/supplier-intel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        discoveryMode
-          ? { category, region, discoveryMode: true }
-          : { suppliers: shortlist.map((s) => s.supplier_name), category, region }
-      ),
-      signal: controller.signal,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("intel fetch failed");
-        return res.json() as Promise<{ results?: SupplierIntelResult[]; mode?: "shortlist" | "discovery" }>;
+    const frameId = window.requestAnimationFrame(() => {
+      setIntelLoading(true);
+
+      fetch("/api/supplier-intel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          discoveryMode
+            ? { category, region, discoveryMode: true }
+            : { suppliers: shortlist.map((s) => s.supplier_name), category, region }
+        ),
+        signal: controller.signal,
       })
-      .then((data) => {
-        console.log("[MarketIntel] fetch success, results=", data);
-        setMarketIntel(data.results ?? []);
-        setIntelMode(data.mode === "discovery" ? "discovery" : "shortlist");
-        setIntelError(false);
-      })
-      .catch((err: unknown) => {
-        console.log("[MarketIntel] fetch error:", err);
-        setIntelError(true);
-      })
-      .finally(() => {
-        console.log("[MarketIntel] finally, setting loading false");
-        setIntelLoading(false);
-        setIntelFetched(true);
-      });
+        .then((res) => {
+          if (!res.ok) throw new Error("intel fetch failed");
+          return res.json() as Promise<{ results?: SupplierIntelResult[]; mode?: "shortlist" | "discovery" }>;
+        })
+        .then((data) => {
+          setMarketIntel(data.results ?? []);
+          setIntelMode(data.mode === "discovery" ? "discovery" : "shortlist");
+          setIntelError(false);
+        })
+        .catch(() => {
+          setIntelError(true);
+        })
+        .finally(() => {
+          setIntelLoading(false);
+          setIntelFetched(true);
+        });
+    });
 
     return () => {
+      window.cancelAnimationFrame(frameId);
       controller.abort();
     };
   }, [result]);
 
   if (!mounted || !result) return null;
 
-  const approvalThreshold = result.policy_evaluation?.approval_threshold ?? null;
   const confidenceDetails = result.confidence_details ?? [];
   const blockingEscalations = (result.escalations ?? []).filter((e) => e.blocking);
   const hasBlockers = blockingEscalations.length > 0;
@@ -498,7 +441,11 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      {/* conflict banner removed — policy violations still processed internally */}
+      {inlineErrorMessage && (
+        <div className="w-full max-w-2xl animate-fade-slide-up delay-110">
+          <ConflictBanner message={inlineErrorMessage} />
+        </div>
+      )}
 
       <div className="w-full max-w-2xl animate-fade-slide-up delay-125">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -548,10 +495,6 @@ export default function AnalysisPage() {
           category_l1: result.request_interpretation.category_l1 ?? undefined,
           category_l2: result.request_interpretation.category_l2 ?? undefined,
         } : undefined} />
-      </div>
-
-      <div className="w-full max-w-2xl animate-fade-slide-up delay-225">
-        <PolicySnapshot threshold={approvalThreshold} />
       </div>
 
       {effectiveCaseType === "READY_FOR_VALIDATION" && (

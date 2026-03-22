@@ -31,6 +31,15 @@ type ScenarioRow  = { tag: string; count: number; pct: number };
 type BURow        = { name: string; count: number; budget: number };
 type RecentRow    = { id: string; timestamp: string; category: string; quantity: number | null; budget: number | null; status: string };
 
+type DemandVelocity = {
+  category: string;
+  ratio: number;
+  signal: string;
+  trigger: string | null;
+  recent_count: number;
+  prior_count: number;
+};
+
 type DashboardData = {
   kpis: KPIs;
   byL1: CategoryBar[];
@@ -39,6 +48,8 @@ type DashboardData = {
   byScenario: ScenarioRow[];
   byBusinessUnit: BURow[];
   recentProcessed: RecentRow[];
+  demand_velocity?: DemandVelocity[];
+  framework_triggers?: string[];
 };
 
 type PeriodMetrics = {
@@ -631,6 +642,44 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* ── Demand Acceleration (Feature 3) ────────────────────────────── */}
+        {data.demand_velocity && data.demand_velocity.length > 0 && (
+          <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-sm overflow-hidden mb-6">
+            <div className="p-6">
+              <SectionHeader title="Category Demand Velocity" sub="Comparing last 45 days vs prior 45 days" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
+                {data.demand_velocity.map((v, idx) => (
+                  <div key={v.category} className="p-4 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-card)] flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start mb-3 gap-2">
+                        <span className="text-[11px] font-bold text-[var(--text-main)] line-clamp-2 leading-tight" title={v.category}>{v.category}</span>
+                        <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                          v.signal === 'Surge' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 
+                          v.signal === 'Cooling' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
+                          'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                        }`}>{v.signal}</span>
+                      </div>
+                      <div className="flex items-baseline gap-1.5 mb-1.5">
+                        <span className="text-2xl font-black text-[var(--text-main)] tabular-nums tracking-tight">{v.ratio.toFixed(2)}x</span>
+                      </div>
+                      <div className="text-[10px] text-[var(--text-muted)]">
+                        Current <span className="font-semibold text-[var(--text-main)]">{v.recent_count}</span> vs Prior <span className="font-semibold text-[var(--text-main)]">{v.prior_count}</span>
+                      </div>
+                    </div>
+                    {v.trigger && (
+                      <div className="mt-4 pt-3 border-t border-[var(--border-card)]">
+                        <div className="text-[10px] text-rose-400 font-medium leading-snug">
+                          {v.trigger}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Recent Pipeline Activity ───────────────────────────────────── */}
         {recentProcessed.length > 0 && (
           <div className="rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-sm overflow-hidden">
@@ -639,8 +688,8 @@ export default function DashboardPage() {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Live Pipeline</p>
                 <h2 className="text-base font-bold text-[var(--text-main)]">Recent AI Processing Activity</h2>
               </div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-wide">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-wide">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
                 Live
               </span>
             </div>

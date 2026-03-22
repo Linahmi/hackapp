@@ -14,6 +14,8 @@ import {
 import { DecisionRow } from "@/components/agent/DecisionRow";
 import { DecisionJustification } from "@/components/agent/DecisionJustification";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
+import { DecisionExplanation } from "@/components/DecisionExplanation";
+import { WeightSliders, Weights as WeightType } from "@/components/WeightSliders";
 import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
 type ScoreBreakdown = {
@@ -131,6 +133,19 @@ type ApiResult = {
   validation?: { issues?: ValidationIssue[] };
   suppliers_excluded?: ExcludedSupplier[];
   request_id?: string;
+  concentration_risk?: {
+    risk_level: "low" | "medium" | "high";
+    hhi: number;
+    warning: boolean;
+  };
+  counterfactuals?: {
+    supplier_id: string;
+    supplier_name: string;
+    required_discount_pct: number;
+    required_unit_price: number;
+    feasibility_flag: "low" | "medium" | "high";
+    score_gap: number;
+  }[];
 };
 
 function readStoredResult(): ApiResult | null {
@@ -285,13 +300,13 @@ type Weights = { price: number; risk: number; delivery: number; esg: number };
 type RawScores = Record<string, { price: number; risk: number; delivery: number; esg: number }>;
 const FALLBACK_WEIGHTS: Weights = { price: 25, risk: 40, delivery: 20, esg: 15 };
 
-function computeFinalScore(name: string, w: Weights, rawData: RawScores): number {
-  const total = w.price + w.risk + w.delivery + w.esg;
+function computeFinalScore(name: string, w: WeightType, rawData: RawScores): number {
+  const total = w.price + w.risk + w.lead_time + w.esg;
   if (total === 0) return 0;
   const r = rawData[name];
   if (!r) return 0;
   return Math.round(
-    (r.price * w.price + r.risk * w.risk + r.delivery * w.delivery + r.esg * w.esg) / total
+    (r.price * w.price + r.risk * w.risk + r.delivery * w.lead_time + r.esg * w.esg) / total
   );
 }
 
@@ -304,6 +319,7 @@ export default function SupplierDemoPage() {
   const [buyerRequest] = useState(() => readStoredRequestText());
   const [marketIntel, setMarketIntel] = useState<SupplierIntelResult[]>([]);
   const [intelLoading, setIntelLoading] = useState(false);
+  const [weights, setWeights] = useState<WeightType>({ price: 30, risk: 20, lead_time: 30, esg: 20 });
   const intelFetchStarted = useRef(false);
   const apiResult = contextResult ?? storedApiResult;
 
@@ -476,13 +492,13 @@ export default function SupplierDemoPage() {
     }
 
     return Object.keys(rawScores)
-      .map((name) => ({ name, score: meta[name]?.blocked ? null : computeFinalScore(name, FALLBACK_WEIGHTS, rawScores) }))
+      .map((name) => ({ name, score: meta[name]?.blocked ? null : computeFinalScore(name, weights, rawScores) }))
       .sort((a, b) => {
         if (a.score === null) return 1;
         if (b.score === null) return -1;
-        return b.score - a.score;
+        return (b.score as number) - (a.score as number);
       });
-  }, [apiResult, meta, rawScores]);
+  }, [apiResult, meta, rawScores, weights]);
 
   const eligibleRanked = scored.filter(s => s.score !== null);
   const bestName = eligibleRanked[0]?.name ?? "";
@@ -666,6 +682,7 @@ export default function SupplierDemoPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-6 md:px-12 mt-8 space-y-8 relative">
+          <WeightSliders weights={weights} onChange={setWeights} />
           {/* Content area background elements */}
           <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
             {/* Large gradient wash from top */}
@@ -721,8 +738,20 @@ export default function SupplierDemoPage() {
                 leadTime: apiResult.supplier_shortlist[0].standard_lead_time_days ?? null,
                 currency: apiResult?.request_interpretation?.currency ?? "EUR",
               } : undefined}
+              confidenceScore={confidence}
             />
           </div>
+
+          {/* Decision Explanation - Data Driven Reasoning */}
+          {apiResult?.supplier_shortlist && apiResult.supplier_shortlist.length > 0 && (
+            <div className="animate-fade-slide-up delay-200">
+              <DecisionExplanation
+                shortlist={apiResult.supplier_shortlist as any}
+                recommendation={djRecommendation ? { ...djRecommendation, status: djRecommendation.status ?? "pending" } : null}
+                confidenceScore={confidence}
+              />
+            </div>
+          )}
 
           {/* Decision justification */}
           {(djTopSupplier || !isFromApi) && (
@@ -733,6 +762,55 @@ export default function SupplierDemoPage() {
                 runnerUp={djRunnerUp as never}
                 currency={ri?.currency ?? "CHF"}
               />
+            </div>
+          )}
+
+          {/* Concentration Risk (Feature 1) */}
+          {apiResult?.concentration_risk && (
+            <div className="animate-fade-slide-up delay-400">
+              <div className="rounded-2xl border border-gray-200 dark:border-[#1e2130] bg-white dark:bg-[#12151f] shadow-sm p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-gray-900 dark:text-white flex items-center gap-2">
+                    Market Concentration Risk (HHI)
+                  </h3>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border ${apiResult.concentration_risk.risk_level === 'high' ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20' : apiResult.concentration_risk.risk_level === 'medium' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'}`}>
+                    {apiResult.concentration_risk.warning && <AlertTriangle className="h-3.5 w-3.5" />}
+                    Risk: {apiResult.concentration_risk.risk_level.toUpperCase()}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  The Herfindahl-Hirschman Index (HHI) for the <span className="font-semibold text-gray-900 dark:text-white">{ri?.category_l2 || 'current category'}</span> market is <span className="font-semibold text-gray-900 dark:text-white">{apiResult.concentration_risk.hhi}</span>.
+                  {apiResult.concentration_risk.risk_level === 'high' && " Proceed with caution: the market is highly concentrated among a few incumbent suppliers."}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Counterfactual Leverage Engine (Feature 2) */}
+          {apiResult?.counterfactuals && apiResult.counterfactuals.length > 0 && (
+            <div className="animate-fade-slide-up delay-500">
+              <div className="rounded-2xl border border-gray-200 dark:border-[#1e2130] bg-white dark:bg-[#12151f] shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-[#1e2130]">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-gray-900 dark:text-white">Counterfactual Leverage Engine</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Price reductions required for runners-up to displace the winner</p>
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-white/5">
+                  {apiResult.counterfactuals.map((c, idx) => (
+                    <div key={idx} className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{c.supplier_name}</span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Requires an estimated <span className="font-bold text-gray-800 dark:text-gray-200">{c.required_discount_pct}%</span> base price reduction to overcome the <span className="font-bold text-gray-800 dark:text-gray-200">{c.score_gap}</span> point score gap.</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-lg font-black text-gray-900 dark:text-white tabular-nums pt-1">${c.required_unit_price.toLocaleString()}</span>
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wide border ${c.feasibility_flag === 'high' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20' : c.feasibility_flag === 'medium' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20' : 'bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-500/20'}`}>
+                          Feasibility: {c.feasibility_flag}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
