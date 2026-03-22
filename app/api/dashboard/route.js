@@ -11,6 +11,7 @@ import {
   groupByBusinessUnit,
   getRecentProcessed,
 } from '@/lib/dashboardAnalytics';
+import { calculateDemandVelocity } from '@/lib/demandVelocity';
 
 export async function GET() {
   try {
@@ -27,6 +28,20 @@ export async function GET() {
       fs.readFileSync(path.join(dataDir, 'request_counter.json'), 'utf-8')
     );
 
+    const allL2s = Array.from(new Set(requests.map(r => r.category_l2).filter(Boolean)));
+    const demand_velocity = [];
+    const framework_triggers = [];
+
+    allL2s.forEach(c => {
+       const v = calculateDemandVelocity(c, requests);
+       demand_velocity.push({ category: c, ...v });
+       if (v.trigger) {
+         framework_triggers.push(v.trigger);
+       }
+    });
+
+    demand_velocity.sort((a, b) => b.ratio - a.ratio);
+
     return NextResponse.json({
       kpis: computeKPIs(requests, historicalAwards, processedLog),
       byL1: groupByL1(requests),
@@ -35,6 +50,8 @@ export async function GET() {
       byScenario: groupByScenario(requests),
       byBusinessUnit: groupByBusinessUnit(requests),
       recentProcessed: getRecentProcessed(processedLog, 8),
+      demand_velocity: demand_velocity.slice(0, 5),
+      framework_triggers: framework_triggers,
     });
   } catch (err) {
     console.error('[dashboard]', err);

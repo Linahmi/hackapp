@@ -8,6 +8,8 @@ import { explainConfidence } from '@/lib/confidenceScorer';
 import { findHistoricalContext } from '@/lib/historicalLookup';
 import { generateDecision } from '@/lib/decisionEngine';
 import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
+import { computeConcentration } from '@/lib/concentrationScorer';
+import { generateCounterfactuals } from '@/lib/counterfactualEngine';
 
 // Local proxy functions to bridge the requested step-by-step logic
 // with the existing merged Backend-A native module signatures dynamically.
@@ -204,6 +206,26 @@ export async function POST(req) {
     );
     const confidence = confidenceResult.score;
 
+    // --- NEW: Concentration & Counterfactuals ---
+    let concentrationResult = { risk_level: 'unknown', hhi: 0, warning: false };
+    let counterfactuals = [];
+    try {
+      concentrationResult = computeConcentration(
+        enrichedRequest.category_l2,
+        enrichedRequest.delivery_countries?.[0],
+        historicalContext
+      );
+      counterfactuals = generateCounterfactuals(rankedSuppliers, enrichedRequest);
+
+      if (concentrationResult.warning) {
+        rankedSuppliers.forEach(s => {
+          s.concentration_warning = true;
+        });
+      }
+    } catch (err) {
+      console.error('Error generating new analytical features', err);
+    }
+
     // 11. Return structure
     return NextResponse.json({
       request_id,
@@ -225,6 +247,8 @@ export async function POST(req) {
         composite_score_pct: Math.round(s.composite_score * 100)
       })),
       suppliers_excluded: excludedSuppliers ?? [],
+      concentration_risk: concentrationResult,
+      counterfactuals: counterfactuals,
       escalations: escalations,
       bundling_opportunity: bundlingOpportunity,
       recommendation: {
