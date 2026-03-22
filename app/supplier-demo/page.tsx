@@ -15,6 +15,7 @@ import { DecisionRow } from "@/components/agent/DecisionRow";
 import { DecisionJustification } from "@/components/agent/DecisionJustification";
 import { EscalationHierarchyPanel } from "@/components/agent/EscalationHierarchyPanel";
 import { DecisionExplanation } from "@/components/DecisionExplanation";
+import { WeightSliders, Weights as WeightType } from "@/components/WeightSliders";
 import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
 
 type ScoreBreakdown = {
@@ -286,13 +287,13 @@ type Weights = { price: number; risk: number; delivery: number; esg: number };
 type RawScores = Record<string, { price: number; risk: number; delivery: number; esg: number }>;
 const FALLBACK_WEIGHTS: Weights = { price: 25, risk: 40, delivery: 20, esg: 15 };
 
-function computeFinalScore(name: string, w: Weights, rawData: RawScores): number {
-  const total = w.price + w.risk + w.delivery + w.esg;
+function computeFinalScore(name: string, w: WeightType, rawData: RawScores): number {
+  const total = w.price + w.risk + w.lead_time + w.esg;
   if (total === 0) return 0;
   const r = rawData[name];
   if (!r) return 0;
   return Math.round(
-    (r.price * w.price + r.risk * w.risk + r.delivery * w.delivery + r.esg * w.esg) / total
+    (r.price * w.price + r.risk * w.risk + r.delivery * w.lead_time + r.esg * w.esg) / total
   );
 }
 
@@ -305,6 +306,7 @@ export default function SupplierDemoPage() {
   const [buyerRequest] = useState(() => readStoredRequestText());
   const [marketIntel, setMarketIntel] = useState<SupplierIntelResult[]>([]);
   const [intelLoading, setIntelLoading] = useState(false);
+  const [weights, setWeights] = useState<WeightType>({ price: 30, risk: 20, lead_time: 30, esg: 20 });
   const intelFetchStarted = useRef(false);
   const apiResult = contextResult ?? storedApiResult;
 
@@ -477,13 +479,13 @@ export default function SupplierDemoPage() {
     }
 
     return Object.keys(rawScores)
-      .map((name) => ({ name, score: meta[name]?.blocked ? null : computeFinalScore(name, FALLBACK_WEIGHTS, rawScores) }))
+      .map((name) => ({ name, score: meta[name]?.blocked ? null : computeFinalScore(name, weights, rawScores) }))
       .sort((a, b) => {
         if (a.score === null) return 1;
         if (b.score === null) return -1;
-        return b.score - a.score;
+        return (b.score as number) - (a.score as number);
       });
-  }, [apiResult, meta, rawScores]);
+  }, [apiResult, meta, rawScores, weights]);
 
   const eligibleRanked = scored.filter(s => s.score !== null);
   const bestName = eligibleRanked[0]?.name ?? "";
@@ -667,6 +669,7 @@ export default function SupplierDemoPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-6 md:px-12 mt-8 space-y-8 relative">
+          <WeightSliders weights={weights} onChange={setWeights} />
           {/* Content area background elements */}
           <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
             {/* Large gradient wash from top */}
