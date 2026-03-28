@@ -1,5 +1,5 @@
 {
-  "counter": 89,
+  "counter": 104,
   "requests": [
     {
       "id": "R-0001",
@@ -676,6 +676,126 @@
     {
       "id": "R-0089",
       "timestamp": "2026-03-22T15:49:24.015Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0090",
+      "timestamp": "2026-03-23T09:35:19.564Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": 72000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0091",
+      "timestamp": "2026-03-23T09:58:06.068Z",
+      "category": "IT > Software Licenses",
+      "quantity": 5,
+      "budget": 45000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0092",
+      "timestamp": "2026-03-23T09:58:33.387Z",
+      "category": "Facilities > Medical Transport Coolers",
+      "quantity": null,
+      "budget": 12000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0093",
+      "timestamp": "2026-03-23T09:58:56.111Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0094",
+      "timestamp": "2026-03-23T10:05:40.401Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0095",
+      "timestamp": "2026-03-23T10:17:54.301Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0096",
+      "timestamp": "2026-03-23T10:34:18.922Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0097",
+      "timestamp": "2026-03-23T12:21:41.662Z",
+      "category": "IT > Software Licenses",
+      "quantity": 5,
+      "budget": 45000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0098",
+      "timestamp": "2026-03-23T12:31:28.094Z",
+      "category": "Facilities > Medical Transport Coolers",
+      "quantity": null,
+      "budget": 12000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0099",
+      "timestamp": "2026-03-23T12:31:54.862Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0100",
+      "timestamp": "2026-03-23T12:40:20.802Z",
+      "category": "IT > Monitors",
+      "quantity": null,
+      "budget": 45000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0101",
+      "timestamp": "2026-03-23T12:41:39.340Z",
+      "category": "IT > Monitors",
+      "quantity": null,
+      "budget": 45000,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0102",
+      "timestamp": "2026-03-23T19:18:22.742Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0103",
+      "timestamp": "2026-03-23T19:21:32.217Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0104",
+      "timestamp": "2026-03-25T10:48:18.314Z",
       "category": "IT > Laptops",
       "quantity": 120,
       "budget": 180000,
