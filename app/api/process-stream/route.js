@@ -8,6 +8,10 @@ import { generateDecision } from '@/lib/decisionEngine';
 import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
 import { getNextRequestId, logRequest } from '@/lib/requestCounter';
 import { explainConfidence } from '@/lib/confidenceScorer';
+// ── Audit & Notifications ────────────────────────────────────────────────────
+import { logAuditEvent, AUDIT_EVENTS } from '@/lib/auditLogger';
+import { sendApprovalEmail, sendDecisionEmail } from '@/lib/notificationService';
+import { scheduleReminder } from '@/lib/reminderService';
 
 const HARD_BLOCK_CASE_TYPES = ['FAILED_IMPOSSIBLE_DATE', 'MORE_INFO_REQUIRED', 'NO_SUPPLIER_AVAILABLE', 'PENDING_RESOLUTION'];
 
@@ -46,6 +50,13 @@ export async function POST(req) {
         // Assign a unique R- request ID
         const reqId = getNextRequestId();
 
+        // ── AUDIT: request received ──────────────────────────────────────
+        logAuditEvent({
+          action: AUDIT_EVENTS.REQUEST_RECEIVED,
+          requestId: reqId,
+          metadata: { text_preview: text?.slice(0, 120) },
+        });
+
         // ── Step 1: Parsing (20%) ────────────────────────────────────
         let parsingThinking = `[${reqId}] Analyzing request context...\n`;
         send('step', { step: 'parsing', status: 'active', pct: 0, requestId: reqId, thinking: parsingThinking });
@@ -77,6 +88,20 @@ export async function POST(req) {
           ? `${historicalContext.length} historical award(s) consulted — no gaps to fill`
           : 'No historical context found for this category/region';
         send('step', { step: 'parsing', status: 'done', pct: 20, thinking: `Extracted: ${parsed.category} · qty ${parsed.quantity ?? '?'} · budget ${parsed.budget ?? 'not stated'} · supplier ${parsed.supplier ?? 'none stated'}\n${inferredFields}` });
+
+        // ── AUDIT: parsing completed ─────────────────────────────────────
+        logAuditEvent({
+          action: AUDIT_EVENTS.REQUEST_PARSED,
+          requestId: reqId,
+          metadata: {
+            category: enrichedRequest.category_l2,
+            quantity: enrichedRequest.quantity,
+            budget: enrichedRequest.budget_amount,
+            currency: enrichedRequest.currency,
+            gaps: enrichedRequest.gaps,
+            assumptions_applied: (enrichedRequest.assumptions?.length ?? 0) > 0,
+          },
+        });
 
         // ── Step 2: Rules Check (40%) ────────────────────────────────
         await delay(1000); // min delay so users see each step
@@ -144,6 +169,18 @@ export async function POST(req) {
           ? `Ranked ${rankedSuppliers.length} supplier(s)${excludedSuppliers?.length ? ` · ${excludedSuppliers.length} excluded` : ''} · #1: ${rankedSuppliers[0].supplier_name} — score ${Math.round(rankedSuppliers[0].composite_score * 100)}/100, ${rankedSuppliers[0].unit_price?.toLocaleString()} ${enrichedRequest.currency ?? 'EUR'}/unit, lead time ${rankedSuppliers[0].standard_lead_time_days}d`
           : `No eligible suppliers found for ${enrichedRequest.category_l2 ?? 'this category'} in [${(enrichedRequest.delivery_countries ?? []).join(', ')}]`;
         send('step', { step: 'scoring', status: 'done', pct: 60, thinking: scoringSummary });
+
+        // ── AUDIT: suppliers scored ──────────────────────────────────────
+        logAuditEvent({
+          action: rankedSuppliers.length > 0 ? AUDIT_EVENTS.SUPPLIERS_SCORED : AUDIT_EVENTS.NO_SUPPLIER_FOUND,
+          requestId: reqId,
+          metadata: {
+            shortlisted: rankedSuppliers.length,
+            excluded: excludedSuppliers?.length ?? 0,
+            top_supplier: rankedSuppliers[0]?.supplier_name ?? null,
+            top_score: rankedSuppliers[0] ? Math.round(rankedSuppliers[0].composite_score * 100) : null,
+          },
+        });
 
         // ── Step 4: Decision (85%) ───────────────────────────────────
         await delay(800);
@@ -248,6 +285,31 @@ export async function POST(req) {
           : `✗ Cannot proceed — ${escalations.filter(e=>e.blocking).map(e=>e.rule).join(', ')} · ${decision.decision_summary ?? 'manual intervention required'}`;
         send('step', { step: 'decision', status: 'done', pct: 85, thinking: decisionDone });
 
+        // ── AUDIT: escalations raised (if any) ───────────────────────────
+        if (escalations.length > 0) {
+          logAuditEvent({
+            action: AUDIT_EVENTS.ESCALATION_RAISED,
+            requestId: reqId,
+            metadata: {
+              count: escalations.length,
+              blocking: escalations.filter(e => e.blocking).length,
+              escalated_to: escalations.map(e => e.escalate_to),
+              rules: escalations.map(e => e.rule),
+            },
+          });
+        }
+
+        // ── AUDIT: decision generated ────────────────────────────────────
+        logAuditEvent({
+          action: AUDIT_EVENTS.DECISION_GENERATED,
+          requestId: reqId,
+          metadata: {
+            case_type,
+            decision_status: decision.status,
+            top_supplier: rankedSuppliers[0]?.supplier_name ?? null,
+          },
+        });
+
         // ── Step 5: Logged (100%) ────────────────────────────────────
         await delay(600);
         send('step', { step: 'logged', status: 'active', pct: 90, thinking: 'Writing audit trail and computing confidence score…' });
@@ -322,6 +384,56 @@ export async function POST(req) {
             generated_at: new Date().toISOString()
           }
         };
+
+        // ── AUDIT: auto-approved or approval required ────────────────────
+        logAuditEvent({
+          action: isAutoApproved ? AUDIT_EVENTS.AUTO_APPROVED : AUDIT_EVENTS.APPROVAL_REQUIRED,
+          requestId: reqId,
+          metadata: {
+            confidence,
+            required_approver: requiredApprover ?? null,
+            escalation_count: escalations.length,
+          },
+        });
+
+        // ── NOTIFICATIONS ────────────────────────────────────────────────
+        // Build a short summary string used in both emails
+        const _summary = [
+          enrichedRequest.quantity, '×', enrichedRequest.category_l2,
+          '·', enrichedRequest.currency, enrichedRequest.budget_amount?.toLocaleString(),
+        ].filter(Boolean).join(' ');
+
+        // Always notify requester of the outcome (placeholder email until auth is ready)
+        await sendDecisionEmail({
+          to:              'requester@company.com',
+          requestId:       reqId,
+          summary:         _summary,
+          status:          decision.status,
+          aiDecision:      decision.decision_summary ?? '',
+          justification:   decision.justification ?? '',
+          topSupplier:     rankedSuppliers[0]?.supplier_name,
+          confidenceScore: confidence,
+        });
+
+        // If approval is needed: notify the approver and schedule a reminder
+        if (!isAutoApproved && requiredApprover) {
+          await sendApprovalEmail({
+            to:            'approver@company.com',
+            requestId:     reqId,
+            approverName:  requiredApprover,
+            summary:       _summary,
+            aiDecision:    decision.decision_summary ?? '',
+            justification: decision.justification ?? '',
+            escalations,
+          });
+
+          scheduleReminder({
+            requestId:     reqId,
+            approverEmail: 'approver@company.com',
+            approverName:  requiredApprover,
+            summary:       _summary,
+          });
+        }
 
         // Log this request to history
         logRequest(reqId, {

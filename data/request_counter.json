@@ -1,5 +1,5 @@
 {
-  "counter": 104,
+  "counter": 107,
   "requests": [
     {
       "id": "R-0001",
@@ -619,58 +619,18 @@
     },
     {
       "id": "R-0082",
-      "timestamp": "2026-03-21T22:10:17.797Z",
-      "category": "IT > Laptops",
-      "quantity": 120,
-      "budget": 180000,
-      "status": "recommended"
+      "timestamp": "2026-03-26T11:48:30.151Z",
+      "category": "IT > Docking Stations",
+      "quantity": 240,
+      "budget": 25199.55,
+      "status": "cannot_proceed"
     },
     {
       "id": "R-0083",
-      "timestamp": "2026-03-21T22:15:38.622Z",
-      "category": "undefined > Docking Stations",
+      "timestamp": "2026-03-27T12:56:08.380Z",
+      "category": "IT > Docking Stations",
       "quantity": 240,
-      "budget": 28000,
-      "status": "cannot_proceed"
-    },
-    {
-      "id": "R-0084",
-      "timestamp": "2026-03-21T22:19:50.518Z",
-      "category": "undefined > Software Licenses",
-      "quantity": 20,
-      "budget": 45000,
-      "status": "cannot_proceed"
-    },
-    {
-      "id": "R-0085",
-      "timestamp": "2026-03-22T14:49:27.669Z",
-      "category": "IT > Laptops",
-      "quantity": 120,
-      "budget": 180000,
-      "status": "recommended"
-    },
-    {
-      "id": "R-0086",
-      "timestamp": "2026-03-22T15:23:26.982Z",
-      "category": "IT > Laptops",
-      "quantity": 500,
-      "budget": 400000,
-      "status": "cannot_proceed"
-    },
-    {
-      "id": "R-0087",
-      "timestamp": "2026-03-22T15:36:03.481Z",
-      "category": "IT > Laptops",
-      "quantity": 500,
-      "budget": 400000,
-      "status": "cannot_proceed"
-    },
-    {
-      "id": "R-0088",
-      "timestamp": "2026-03-22T15:48:59.452Z",
-      "category": "null > null",
-      "quantity": null,
-      "budget": 110000,
+      "budget": 25199.55,
       "status": "cannot_proceed"
     },
     {
@@ -800,6 +760,30 @@
       "quantity": 120,
       "budget": 180000,
       "status": "recommended"
+    },
+    {
+      "id": "R-0105",
+      "timestamp": "2026-03-27T20:14:29.628Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0106",
+      "timestamp": "2026-03-28T00:01:52.698Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
+    },
+    {
+      "id": "R-0107",
+      "timestamp": "2026-03-28T00:21:14.318Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
     }
   ]
 }
