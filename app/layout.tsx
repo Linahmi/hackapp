@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "../components/Navbar";
 import { ProcurementProvider } from "@/contexts/ProcurementContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -19,10 +20,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ backgroundColor: "var(--bg-app)", margin: 0 }}
       >
-        <ProcurementProvider>
-          <Navbar />
-          {children}
-        </ProcurementProvider>
+        <AuthProvider>
+          <ProcurementProvider>
+            <Navbar />
+            {children}
+          </ProcurementProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,5 +1,5 @@
 {
-  "counter": 92,
+  "counter": 93,
   "requests": [
     {
       "id": "R-0001",
@@ -640,6 +640,14 @@
       "quantity": 120,
       "budget": 180000,
       "status": "recommended"
+    },
+    {
+      "id": "R-0093",
+      "timestamp": "2026-03-27T20:14:29.628Z",
+      "category": "null > null",
+      "quantity": null,
+      "budget": null,
+      "status": "cannot_proceed"
     }
   ]
 }

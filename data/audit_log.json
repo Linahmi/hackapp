@@ -1,0 +1,136 @@
+[
+  {
+    "id": "EVT-1774642463695-4cap",
+    "timestamp": "2026-03-27T20:14:23.695Z",
+    "action": "REQUEST_RECEIVED",
+    "request_id": "R-0093",
+    "user_id": "system",
+    "metadata": {
+      "text_preview": "jhwf"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774642464025-pp8g",
+    "timestamp": "2026-03-27T20:14:24.025Z",
+    "action": "REQUEST_PARSED",
+    "request_id": "R-0093",
+    "user_id": "system",
+    "metadata": {
+      "category": null,
+      "quantity": null,
+      "budget": null,
+      "currency": "EUR",
+      "gaps": [
+        "budget_amount",
+        "quantity",
+        "preferred_supplier_stated"
+      ],
+      "assumptions_applied": false
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774642467633-t4lp",
+    "timestamp": "2026-03-27T20:14:27.633Z",
+    "action": "NO_SUPPLIER_FOUND",
+    "request_id": "R-0093",
+    "user_id": "system",
+    "metadata": {
+      "shortlisted": 0,
+      "excluded": 0,
+      "top_supplier": null,
+      "top_score": null
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774642468513-lbn4",
+    "timestamp": "2026-03-27T20:14:28.513Z",
+    "action": "ESCALATION_RAISED",
+    "request_id": "R-0093",
+    "user_id": "system",
+    "metadata": {
+      "count": 2,
+      "blocking": 2,
+      "escalated_to": [
+        "Head of Category",
+        "Requester"
+      ],
+      "rules": [
+        "ER-004",
+        "ER-001"
+      ]
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774642468515-a66o",
+    "timestamp": "2026-03-27T20:14:28.515Z",
+    "action": "DECISION_GENERATED",
+    "request_id": "R-0093",
+    "user_id": "system",
+    "metadata": {
+      "case_type": "MORE_INFO_REQUIRED",
+      "decision_status": "cannot_proceed",
+      "top_supplier": null
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774642469620-arkf",
+    "timestamp": "2026-03-27T20:14:29.620Z",
+    "action": "APPROVAL_REQUIRED",
+    "request_id": "R-0093",
+    "user_id": "system",
+    "metadata": {
+      "confidence": 35,
+      "required_approver": "Head of Category",
+      "escalation_count": 2
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774642469623-78sk",
+    "timestamp": "2026-03-27T20:14:29.623Z",
+    "action": "NOTIFICATION_SENT",
+    "request_id": "R-0093",
+    "user_id": "system",
+    "metadata": {
+      "notification_type": "decision_result",
+      "to": "requester@company.com",
+      "status": "sent",
+      "decision_status": "cannot_proceed",
+      "messageId": "mock-1774642469622"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774642469625-i3q6",
+    "timestamp": "2026-03-27T20:14:29.625Z",
+    "action": "NOTIFICATION_SENT",
+    "request_id": "R-0093",
+    "user_id": "system",
+    "metadata": {
+      "notification_type": "approval_request",
+      "to": "approver@company.com",
+      "status": "sent",
+      "approverName": "Head of Category",
+      "messageId": "mock-1774642469625"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774642469626-opv4",
+    "timestamp": "2026-03-27T20:14:29.626Z",
+    "action": "REMINDER_SCHEDULED",
+    "request_id": "R-0093",
+    "user_id": "system",
+    "metadata": {
+      "approverEmail": "approver@company.com",
+      "approverName": "Head of Category",
+      "firstDueAt": "2026-03-28T20:14:29.626Z"
+    },
+    "schema_version": 1
+  }
+]
