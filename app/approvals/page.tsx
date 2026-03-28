@@ -18,7 +18,18 @@ interface ApprovalItem {
   case_type: string | null;
   decision_status: string | null;
   top_supplier: string | null;
+  requester: string;
+  escalation_reason: string | null;
 }
+
+const APPROVAL_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  SUBMITTED:       { label: "Submitted",      color: "#1d4ed8", bg: "#eff6ff" },
+  APPROVED:        { label: "Approved",       color: "#16a34a", bg: "#f0fdf4" },
+  AUTO_APPROVED:   { label: "Auto-approved",  color: "#16a34a", bg: "#f0fdf4" },
+  REJECTED:        { label: "Rejected",       color: "#dc2626", bg: "#fef2f2" },
+  PENDING_APPROVAL:{ label: "Pending",        color: "#d97706", bg: "#fef3c7" },
+  PROCESSING:      { label: "Processing",     color: "#9ca3af", bg: "#f3f4f6" },
+};
 
 interface ModalState {
   action: "approve" | "reject";
@@ -285,6 +296,17 @@ export default function ApprovalsPage() {
                         {item.decision_status === "recommended" ? "Recommended" : "Cannot proceed"}
                       </span>
                     )}
+                    {item.approval_status && APPROVAL_STATUS_CONFIG[item.approval_status] && (
+                      <span
+                        className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                        style={{
+                          color: APPROVAL_STATUS_CONFIG[item.approval_status].color,
+                          backgroundColor: APPROVAL_STATUS_CONFIG[item.approval_status].bg,
+                        }}
+                      >
+                        {APPROVAL_STATUS_CONFIG[item.approval_status].label}
+                      </span>
+                    )}
                     {item.confidence !== null && (
                       <span className="text-xs text-[color:var(--text-muted)]">
                         {item.confidence}% confidence
@@ -297,6 +319,9 @@ export default function ApprovalsPage() {
                   </p>
 
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
+                    <span className="text-xs text-[color:var(--text-muted)] font-semibold">
+                      Requester: {item.requester}
+                    </span>
                     {item.quantity && (
                       <span className="text-xs text-[color:var(--text-muted)]">Qty {item.quantity}</span>
                     )}
@@ -315,7 +340,12 @@ export default function ApprovalsPage() {
                     </span>
                   </div>
 
-                  {item.required_approver && (
+                  {item.escalation_reason && (
+                    <p className="text-xs mt-2 p-2 rounded bg-red-50 text-red-700 border border-red-100">
+                      <span className="font-bold">Escalation Reason:</span> {item.escalation_reason}
+                    </p>
+                  )}
+                  {item.required_approver && !item.escalation_reason && (
                     <p className="text-xs text-[color:var(--text-muted)] mt-1">
                       Requires: <span className="font-medium text-[color:var(--text-main)]">{item.required_approver}</span>
                     </p>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ProgressStepper       from "@/components/ProgressStepper";
 import BundlingOpportunityCard, { BundlingOpportunity } from "@/components/BundlingOpportunityCard";
 import AuditPDFExport        from "@/components/AuditPDFExport";
@@ -265,6 +265,8 @@ function CaseBanner({ caseType, onValidate }: { caseType: string; onValidate?: (
 
 export default function AnalysisPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const idParam = searchParams.get("id");
   const [mounted, setMounted] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [marketIntel, setMarketIntel] = useState<SupplierIntelResult[]>([]);
@@ -277,11 +279,25 @@ export default function AnalysisPage() {
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
-      setResult(readStoredResult());
-      setMounted(true);
+      if (idParam) {
+        fetch(`/api/db/requests/${idParam}`)
+          .then(res => res.json())
+          .then(data => {
+            setResult(data);
+            setMounted(true);
+          })
+          .catch(err => {
+            console.error("Failed to fetch from DB:", err);
+            setResult(readStoredResult());
+            setMounted(true);
+          });
+      } else {
+        setResult(readStoredResult());
+        setMounted(true);
+      }
     });
     return () => window.cancelAnimationFrame(frameId);
-  }, []);
+  }, [idParam]);
 
   useEffect(() => {
     if (mounted && !result) {

@@ -65,6 +65,9 @@ export async function GET(req) {
     const parsedEvent   = requestEvents.find(e => e.action === AUDIT_EVENTS.REQUEST_PARSED);
     const decisionEvent = requestEvents.find(e => e.action === AUDIT_EVENTS.DECISION_GENERATED);
 
+    const receivedEvent = requestEvents.find(e => e.action === AUDIT_EVENTS.REQUEST_RECEIVED) || requestEvents[0];
+    const topEscalation = decisionEvent?.metadata?.escalations?.[0]?.trigger ?? decisionEvent?.metadata?.case_type ?? null;
+
     pending.push({
       request_id:        requestId,
       approval_status:   decision?.approval_status ?? 'PENDING_APPROVAL',
@@ -81,6 +84,8 @@ export async function GET(req) {
       case_type:         decisionEvent?.metadata?.case_type ?? null,
       decision_status:   decisionEvent?.metadata?.decision_status ?? null,
       top_supplier:      decisionEvent?.metadata?.top_supplier ?? null,
+      requester:         receivedEvent?.user_id !== 'system' && receivedEvent?.user_id ? receivedEvent.user_id : 'Unknown Requester',
+      escalation_reason: topEscalation,
     });
   }
 

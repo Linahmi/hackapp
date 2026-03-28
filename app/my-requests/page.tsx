@@ -18,12 +18,13 @@ interface RequestItem {
   comment: string | null;
 }
 
-const APPROVAL_STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  APPROVED:        { label: "Approved",       color: "#22c55e", icon: <CheckCircle2 size={13} /> },
-  AUTO_APPROVED:   { label: "Auto-approved",  color: "#6366f1", icon: <Zap size={13} /> },
-  REJECTED:        { label: "Rejected",       color: "#dc2626", icon: <XCircle size={13} /> },
-  PENDING_APPROVAL:{ label: "Pending",        color: "#f59e0b", icon: <Clock size={13} /> },
-  PROCESSING:      { label: "Processing",     color: "#9ca3af", icon: <RefreshCw size={13} className="animate-spin" /> },
+const APPROVAL_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+  SUBMITTED:       { label: "Submitted",      color: "#1d4ed8", bg: "#eff6ff", icon: <Clock size={13} /> },
+  APPROVED:        { label: "Approved",       color: "#16a34a", bg: "#f0fdf4", icon: <CheckCircle2 size={13} /> },
+  AUTO_APPROVED:   { label: "Auto-approved",  color: "#16a34a", bg: "#f0fdf4", icon: <Zap size={13} /> },
+  REJECTED:        { label: "Rejected",       color: "#dc2626", bg: "#fef2f2", icon: <XCircle size={13} /> },
+  PENDING_APPROVAL:{ label: "Pending",        color: "#d97706", bg: "#fef3c7", icon: <Clock size={13} /> },
+  PROCESSING:      { label: "Processing",     color: "#9ca3af", bg: "#f3f4f6", icon: <RefreshCw size={13} className="animate-spin" /> },
 };
 
 const AI_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -55,7 +56,7 @@ export default function MyRequestsPage() {
 
   useEffect(() => {
     if (!user) return;
-    fetch("/api/requests/mine", { credentials: "include" })
+    fetch(`/api/db/requests?userId=${user.id}`, { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
         setRequests(data.items ?? []);
@@ -140,7 +141,8 @@ export default function MyRequestsPage() {
             return (
               <div
                 key={req.request_id}
-                className="rounded-xl p-5 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors hover:bg-[var(--bg-hover)]"
+                onClick={() => router.push(`/analysis?id=${req.request_id}`)}
+                className="cursor-pointer rounded-xl p-5 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors hover:bg-[var(--bg-hover)]"
                 style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-card)" }}
               >
                 {/* Left: ID + category */}
@@ -185,7 +187,7 @@ export default function MyRequestsPage() {
                     className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
                     style={{
                       color: approvalCfg.color,
-                      backgroundColor: `${approvalCfg.color}18`,
+                      backgroundColor: approvalCfg.bg,
                     }}
                   >
                     {approvalCfg.icon}
