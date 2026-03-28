@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import RequestInput from "@/components/RequestInput";
 import ProgressStepper from "@/components/ProgressStepper";
 import { Laptop, Package, AlertTriangle, Search } from "lucide-react";
 import { useProcurement } from "@/contexts/ProcurementContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Stage = "idle" | "streaming" | "done" | "error";
 
@@ -33,6 +35,7 @@ const SCENARIOS = [
 export default function Home() {
   const router = useRouter();
   const { requestText, setRequestText } = useProcurement();
+  const { user, loading: authLoading } = useAuth();
   const [stage, setStage] = useState<Stage>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -107,6 +110,10 @@ export default function Home() {
   }, [requestText, router, setRequestText]);
 
   async function handleSubmit(file?: File | null) {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
     let finalRequestText = requestText;
     
     if (file) {
@@ -314,6 +321,15 @@ export default function Home() {
             onSubmit={handleSubmit}
             disabled={isLoading}
           />
+
+          {!authLoading && !user && (
+            <p className="text-xs text-center text-gray-400 dark:text-gray-500 mt-1">
+              <Link href="/login" className="text-red-600 hover:underline underline-offset-2 font-semibold">
+                Sign in
+              </Link>{" "}
+              to submit a request
+            </p>
+          )}
 
           {isLoading && (
             <div className="w-full max-w-2xl mt-8 animate-fade-slide-up">
