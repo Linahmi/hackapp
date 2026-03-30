@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id         String   @id @default(uuid()) @db.Uuid
+  email      String   @unique
+  name       String?
+  role       String   @default("requester")
+  created_at DateTime @default(now())
+
+  requests   Request[]
+  audit_logs AuditLog[]
+
+  @@map("users")
+}
+
+model Request {
+  id             String   @id // TEXT primary key — uses R-XXXX format from requestCounter.js
+  raw_text       String   @db.Text
+  requester_id   String?  @db.Uuid
+  status         String   @default("SUBMITTED") // SUBMITTED | PENDING_APPROVAL | APPROVED | REJECTED
+  category_l1    String?
+  category_l2    String?
+  quantity       Float?
+  budget_amount  Float?
+  currency       String?
+  countries      String[]
+  pipeline_result Json?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  requester  User?      @relation(fields: [requester_id], references: [id])
+  decision   Decision?
+  audit_logs AuditLog[]
+
+  @@index([requester_id])
+  @@index([status])
+  @@map("requests")
+}
+
+model Decision {
+  id          String   @id @default(uuid()) @db.Uuid
+  request_id  String   @unique
+  status      String
+  approver_id String?
+  notes       String?
+  decided_at  DateTime @default(now())
+
+  request Request @relation(fields: [request_id], references: [id])
+
+  @@map("decisions")
+}
+
+model AuditLog {
+  id             String   @id // TEXT primary key — uses EVT-{timestamp}-{random} format from auditLogger.js
+  timestamp      DateTime
+  action         String
+  request_id     String?
+  user_id        String?  @db.Uuid
+  metadata       Json?
+  schema_version Int?
+
+  user    User?    @relation(fields: [user_id], references: [id])
+  request Request? @relation(fields: [request_id], references: [id], onDelete: SetNull)
+
+  @@index([request_id])
+  @@index([timestamp])
+  @@map("audit_logs")
+}

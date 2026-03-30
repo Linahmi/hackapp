@@ -74,7 +74,7 @@ export async function POST(req, { params }) {
     },
   });
 
-  // 3. Persist decision
+  // 3. Persist decision (JSON file)
   const record = setDecision(requestId, {
     status:          'REJECTED',
     userId:          session.id,
@@ -82,6 +82,18 @@ export async function POST(req, { params }) {
     requiredApprover,
     summary,
   });
+
+  // 3b. Persist decision (PostgreSQL — non-blocking)
+  try {
+    const { prisma } = await import('@/lib/prisma');
+    await prisma.decision.upsert({
+      where:  { request_id: requestId },
+      update: { status: 'REJECTED', approver_id: session.id, notes: comment, decided_at: new Date() },
+      create: { request_id: requestId, status: 'REJECTED', approver_id: session.id, notes: comment, decided_at: new Date() },
+    });
+  } catch (e) {
+    console.warn('[DB] Failed to persist REJECTED decision:', e.message);
+  }
 
   // 4. Notify requester (placeholder email until requester auth is wired)
   const requesterEmail = 'requester@company.com';

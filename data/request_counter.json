@@ -1,5 +1,5 @@
 {
-  "counter": 108,
+  "counter": 109,
   "requests": [
     {
       "id": "R-0001",
@@ -788,6 +788,14 @@
     {
       "id": "R-0108",
       "timestamp": "2026-03-28T11:49:11.076Z",
+      "category": "IT > Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0109",
+      "timestamp": "2026-03-30T12:41:29.264Z",
       "category": "IT > Laptops",
       "quantity": 120,
       "budget": 180000,

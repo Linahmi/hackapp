@@ -531,5 +531,136 @@
       "firstDueAt": "2026-03-29T11:49:11.070Z"
     },
     "schema_version": 1
+  },
+  {
+    "id": "EVT-1774874483270-t9ck",
+    "timestamp": "2026-03-30T12:41:23.270Z",
+    "action": "REQUEST_RECEIVED",
+    "request_id": "R-0109",
+    "user_id": null,
+    "metadata": {
+      "text_preview": "Need 120 laptops for the Geneva and Zurich offices within 3 weeks. Budget 180k CHF. Prefer Dell, but open to any complia"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774874483520-me57",
+    "timestamp": "2026-03-30T12:41:23.520Z",
+    "action": "REQUEST_PARSED",
+    "request_id": "R-0109",
+    "user_id": null,
+    "metadata": {
+      "category": "Laptops",
+      "quantity": 120,
+      "budget": 180000,
+      "currency": "CHF",
+      "gaps": [],
+      "assumptions_applied": true
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774874487193-nfg4",
+    "timestamp": "2026-03-30T12:41:27.193Z",
+    "action": "SUPPLIERS_SCORED",
+    "request_id": "R-0109",
+    "user_id": null,
+    "metadata": {
+      "shortlisted": 5,
+      "excluded": 0,
+      "top_supplier": "Bechtle Workplace Solutions",
+      "top_score": 92
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774874488091-awjs",
+    "timestamp": "2026-03-30T12:41:28.091Z",
+    "action": "ESCALATION_RAISED",
+    "request_id": "R-0109",
+    "user_id": null,
+    "metadata": {
+      "count": 2,
+      "blocking": 0,
+      "escalated_to": [
+        "Head of Category",
+        "Head of Category"
+      ],
+      "rules": [
+        "AT-008",
+        "ER-003"
+      ]
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774874488096-gp65",
+    "timestamp": "2026-03-30T12:41:28.096Z",
+    "action": "DECISION_GENERATED",
+    "request_id": "R-0109",
+    "user_id": null,
+    "metadata": {
+      "case_type": "READY_FOR_VALIDATION",
+      "decision_status": "recommended",
+      "top_supplier": "Bechtle Workplace Solutions"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774874489208-tizl",
+    "timestamp": "2026-03-30T12:41:29.208Z",
+    "action": "APPROVAL_REQUIRED",
+    "request_id": "R-0109",
+    "user_id": null,
+    "metadata": {
+      "confidence": 87,
+      "required_approver": "Head of Category",
+      "escalation_count": 2
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774874489223-bw01",
+    "timestamp": "2026-03-30T12:41:29.224Z",
+    "action": "NOTIFICATION_SENT",
+    "request_id": "R-0109",
+    "user_id": "system",
+    "metadata": {
+      "notification_type": "decision_result",
+      "to": "requester@company.com",
+      "status": "sent",
+      "decision_status": "recommended",
+      "topSupplier": "Bechtle Workplace Solutions",
+      "messageId": "mock-1774874489220"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774874489245-5qkm",
+    "timestamp": "2026-03-30T12:41:29.245Z",
+    "action": "NOTIFICATION_SENT",
+    "request_id": "R-0109",
+    "user_id": "system",
+    "metadata": {
+      "notification_type": "approval_request",
+      "to": "approver@company.com",
+      "status": "sent",
+      "approverName": "Head of Category",
+      "messageId": "mock-1774874489245"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1774874489255-3ghi",
+    "timestamp": "2026-03-30T12:41:29.255Z",
+    "action": "REMINDER_SCHEDULED",
+    "request_id": "R-0109",
+    "user_id": null,
+    "metadata": {
+      "approverEmail": "approver@company.com",
+      "approverName": "Head of Category",
+      "firstDueAt": "2026-03-31T12:41:29.254Z"
+    },
+    "schema_version": 1
   }
 ]

@@ -443,6 +443,58 @@ export async function POST(req) {
           status: decision.status,
         });
 
+        // ── DB PERSISTENCE ──────────────────────────────────────────────
+        // Save request to PostgreSQL (non-blocking — pipeline continues on failure)
+        try {
+          const requestPayload = {
+            id: result.request_id,
+            raw_text: text,
+            status: isAutoApproved ? 'APPROVED' : (requiredApprover ? 'PENDING_APPROVAL' : 'SUBMITTED'),
+            category_l1: result.request_interpretation?.category_l1,
+            category_l2: result.request_interpretation?.category_l2,
+            quantity: result.request_interpretation?.quantity,
+            budget_amount: result.request_interpretation?.budget_amount,
+            currency: result.request_interpretation?.currency,
+            countries: result.request_interpretation?.delivery_countries || [],
+            pipeline_result: result,
+          };
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+          const dbRes = await fetch(`${baseUrl}/api/db/requests`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestPayload),
+          });
+          const dbData = await dbRes.json();
+          if (!dbData.success) {
+            console.warn('DB request save returned failure:', dbData);
+          }
+        } catch (e) {
+          console.warn('DB request save failed, continuing:', e.message);
+        }
+
+        // Save decision to PostgreSQL (non-blocking)
+        try {
+          const { prisma } = await import('@/lib/prisma');
+          await prisma.decision.upsert({
+            where:  { request_id: reqId },
+            update: {
+              status:      isAutoApproved ? 'APPROVED' : 'PENDING_APPROVAL',
+              approver_id: null,
+              notes:       isAutoApproved ? 'Auto-approved — tier 1, no escalations, no critical issues' : null,
+              decided_at:  new Date(),
+            },
+            create: {
+              request_id:  reqId,
+              status:      isAutoApproved ? 'APPROVED' : 'PENDING_APPROVAL',
+              approver_id: null,
+              notes:       isAutoApproved ? 'Auto-approved — tier 1, no escalations, no critical issues' : null,
+              decided_at:  new Date(),
+            },
+          });
+        } catch (e) {
+          console.warn('[DB] Decision save failed, continuing:', e.message);
+        }
+
         send('result', result);
         controller.close();
 
