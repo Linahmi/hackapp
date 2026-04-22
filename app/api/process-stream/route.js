@@ -7,6 +7,7 @@ import { findHistoricalContext } from '@/lib/historicalLookup';
 import { generateDecision } from '@/lib/decisionEngine';
 import { detectBundlingOpportunity } from '@/lib/bundlingDetector';
 import { getNextRequestId, logRequest } from '@/lib/requestCounter';
+import { flushAuditEventsToDB } from '@/lib/auditLogger';
 import { explainConfidence } from '@/lib/confidenceScorer';
 // ── Audit & Notifications ────────────────────────────────────────────────────
 import { logAuditEvent, AUDIT_EVENTS } from '@/lib/auditLogger';
@@ -51,7 +52,7 @@ export async function POST(req) {
 
       try {
         // Assign a unique R- request ID
-        const reqId = getNextRequestId();
+        const reqId = await getNextRequestId();
 
         // ── AUDIT: request received ──────────────────────────────────────
         logAuditEvent({
@@ -441,7 +442,7 @@ export async function POST(req) {
         }
 
         // Log this request to history
-        logRequest(reqId, {
+        await logRequest(reqId, {
           category: `${enrichedRequest.category_l1} > ${enrichedRequest.category_l2}`,
           quantity: enrichedRequest.quantity,
           budget: enrichedRequest.budget_amount,
@@ -500,6 +501,9 @@ export async function POST(req) {
         } catch (e) {
           console.warn('[DB] Decision save failed, continuing:', e.message);
         }
+
+        // Flush audit events to DB before closing the stream
+        await flushAuditEventsToDB(reqId);
 
         send('result', result);
         controller.close();

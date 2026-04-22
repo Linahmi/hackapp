@@ -50,11 +50,11 @@ export async function GET(req, { params }) {
 
   // ── Gather data ───────────────────────────────────────────────────────────
 
-  const decision    = getApproval(requestId);
-  const auditEvents = getPersistedAuditEvents(requestId);
+  const decision    = await getApproval(requestId);
+  const auditEvents = await getPersistedAuditEvents(requestId);
 
   // AI pipeline status from request history
-  const history    = getRequestHistory();
+  const history    = await getRequestHistory();
   const histRecord = history.find(r => r.id === requestId);
 
   // Determine approval status

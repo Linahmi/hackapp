@@ -2,16 +2,7 @@
  * POST /api/requests/[id]/reject
  *
  * Allowed roles: manager, admin
- *
  * Body (optional): { comment: string }
- *
- * Actions:
- *   1. Verify session (manager or admin)
- *   2. Check request isn't already decided
- *   3. cancelReminder(requestId)
- *   4. logAuditEvent(REQUEST_REJECTED)
- *   5. Persist decision to approvalStore
- *   6. Send decision email to requester
  */
 
 import { getSessionFromRequest } from '@/lib/session';
@@ -21,7 +12,6 @@ import { setDecision, isDecided } from '@/lib/approvalStore';
 import { sendDecisionEmail } from '@/lib/notificationService';
 
 export async function POST(req, { params }) {
-  // ── Auth ────────────────────────────────────────────────────────────────
   const session = getSessionFromRequest(req);
   if (!session) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -32,12 +22,10 @@ export async function POST(req, { params }) {
 
   const { id: requestId } = await params;
 
-  // ── Guard: already decided ───────────────────────────────────────────────
-  if (isDecided(requestId)) {
+  if (await isDecided(requestId)) {
     return Response.json({ error: 'Request already decided' }, { status: 409 });
   }
 
-  // ── Optional comment ────────────────────────────────────────────────────
   let comment = null;
   try {
     const body = await req.json();
@@ -46,8 +34,7 @@ export async function POST(req, { params }) {
     // no body is fine
   }
 
-  // ── Pull context from audit trail ────────────────────────────────────────
-  const auditEvents = getPersistedAuditEvents(requestId);
+  const auditEvents      = await getPersistedAuditEvents(requestId);
   const approvalReqEvent = auditEvents.find(e => e.action === AUDIT_EVENTS.APPROVAL_REQUIRED);
   const requiredApprover = approvalReqEvent?.metadata?.required_approver ?? null;
 
@@ -56,17 +43,13 @@ export async function POST(req, { params }) {
     ? [parsedEvent.metadata?.quantity, '×', parsedEvent.metadata?.category, '·', parsedEvent.metadata?.currency, parsedEvent.metadata?.budget].filter(Boolean).join(' ')
     : requestId;
 
-  // ── Core actions ─────────────────────────────────────────────────────────
-
-  // 1. Cancel the pending reminder so the approver stops receiving emails
   cancelReminder(requestId);
 
-  // 2. Log the rejection event with the real userId
   logAuditEvent({
-    action:    AUDIT_EVENTS.REQUEST_REJECTED,
+    action:   AUDIT_EVENTS.REQUEST_REJECTED,
     requestId,
-    userId:    session.id,
-    metadata:  {
+    userId:   session.id,
+    metadata: {
       rejected_by:       session.email,
       rejector_name:     session.name,
       required_approver: requiredApprover,
@@ -74,35 +57,19 @@ export async function POST(req, { params }) {
     },
   });
 
-  // 3. Persist decision (JSON file)
-  const record = setDecision(requestId, {
-    status:          'REJECTED',
-    userId:          session.id,
+  const record = await setDecision(requestId, {
+    status:  'REJECTED',
+    userId:  session.id,
     comment,
-    requiredApprover,
-    summary,
   });
 
-  // 3b. Persist decision (PostgreSQL — non-blocking)
-  try {
-    const { prisma } = await import('@/lib/prisma');
-    await prisma.decision.upsert({
-      where:  { request_id: requestId },
-      update: { status: 'REJECTED', approver_id: session.id, notes: comment, decided_at: new Date() },
-      create: { request_id: requestId, status: 'REJECTED', approver_id: session.id, notes: comment, decided_at: new Date() },
-    });
-  } catch (e) {
-    console.warn('[DB] Failed to persist REJECTED decision:', e.message);
-  }
-
-  // 4. Notify requester (placeholder email until requester auth is wired)
   const requesterEmail = 'requester@company.com';
   await sendDecisionEmail({
-    to:           requesterEmail,
+    to:            requesterEmail,
     requestId,
     summary,
-    status:       'cannot_proceed',
-    aiDecision:   `Request ${requestId} has been rejected by ${session.name}.`,
+    status:        'cannot_proceed',
+    aiDecision:    `Request ${requestId} has been rejected by ${session.name}.`,
     justification: comment ?? `Rejected by ${session.name} (${session.title ?? session.role}).`,
   });
 

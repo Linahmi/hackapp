@@ -37,9 +37,8 @@ model Request {
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
 
-  requester  User?      @relation(fields: [requester_id], references: [id])
-  decision   Decision?
-  audit_logs AuditLog[]
+  requester User?     @relation(fields: [requester_id], references: [id])
+  decision  Decision?
 
   @@index([requester_id])
   @@index([status])
@@ -60,7 +59,7 @@ model Decision {
 }
 
 model AuditLog {
-  id             String   @id // TEXT primary key — uses EVT-{timestamp}-{random} format from auditLogger.js
+  id             String   @id
   timestamp      DateTime
   action         String
   request_id     String?
@@ -68,8 +67,7 @@ model AuditLog {
   metadata       Json?
   schema_version Int?
 
-  user    User?    @relation(fields: [user_id], references: [id])
-  request Request? @relation(fields: [request_id], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [user_id], references: [id])
 
   @@index([request_id])
   @@index([timestamp])

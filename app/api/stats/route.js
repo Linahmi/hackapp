@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const file = path.join(process.cwd(), 'data', 'request_counter.json');
-    const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
-    const requests = data.requests || [];
-    const total = data.counter ?? requests.length;
-    const approved = requests.filter(
-      (r) => r.status === 'approved' || r.status === 'pending_approval' || r.status === 'recommended'
-    ).length;
+    const total    = await prisma.request.count();
+    const approved = await prisma.request.count({
+      where: { status: { in: ['APPROVED', 'PENDING_APPROVAL'] } },
+    });
     const autoApprovedPct = total > 0 ? Math.round((approved / total) * 100) : 0;
     return NextResponse.json({ total, autoApprovedPct });
   } catch {

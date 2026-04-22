@@ -911,5 +911,136 @@
       "firstDueAt": "2026-04-05T14:53:19.268Z"
     },
     "schema_version": 1
+  },
+  {
+    "id": "EVT-1776865047925-8rhv",
+    "timestamp": "2026-04-22T13:37:27.925Z",
+    "action": "REQUEST_PARSED",
+    "request_id": "R-0112",
+    "user_id": null,
+    "metadata": {
+      "category": "Monitors",
+      "quantity": 85,
+      "budget": 42000,
+      "currency": "EUR",
+      "gaps": [],
+      "assumptions_applied": true
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1776865047701-4dp2",
+    "timestamp": "2026-04-22T13:37:27.701Z",
+    "action": "REQUEST_RECEIVED",
+    "request_id": "R-0112",
+    "user_id": null,
+    "metadata": {
+      "text_preview": "Need 85 monitors for new analysts in Paris and Brussels. Delivery within 21 days. Budget 42k EUR. Please include ergonom"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1776865051569-v0ij",
+    "timestamp": "2026-04-22T13:37:31.569Z",
+    "action": "SUPPLIERS_SCORED",
+    "request_id": "R-0112",
+    "user_id": null,
+    "metadata": {
+      "shortlisted": 3,
+      "excluded": 1,
+      "top_supplier": "Bechtle Workplace Solutions",
+      "top_score": 88
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1776865052473-02jz",
+    "timestamp": "2026-04-22T13:37:32.473Z",
+    "action": "ESCALATION_RAISED",
+    "request_id": "R-0112",
+    "user_id": null,
+    "metadata": {
+      "count": 2,
+      "blocking": 0,
+      "escalated_to": [
+        "Procurement Manager",
+        "Procurement Manager"
+      ],
+      "rules": [
+        "AT-002",
+        "ER-003"
+      ]
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1776865052476-t9rp",
+    "timestamp": "2026-04-22T13:37:32.476Z",
+    "action": "DECISION_GENERATED",
+    "request_id": "R-0112",
+    "user_id": null,
+    "metadata": {
+      "case_type": "READY_FOR_VALIDATION",
+      "decision_status": "recommended",
+      "top_supplier": "Bechtle Workplace Solutions"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1776865053608-grze",
+    "timestamp": "2026-04-22T13:37:33.608Z",
+    "action": "APPROVAL_REQUIRED",
+    "request_id": "R-0112",
+    "user_id": null,
+    "metadata": {
+      "confidence": 89,
+      "required_approver": "Procurement Manager",
+      "escalation_count": 2
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1776865053661-wu8d",
+    "timestamp": "2026-04-22T13:37:33.662Z",
+    "action": "NOTIFICATION_SENT",
+    "request_id": "R-0112",
+    "user_id": "system",
+    "metadata": {
+      "notification_type": "decision_result",
+      "to": "requester@company.com",
+      "status": "sent",
+      "decision_status": "recommended",
+      "topSupplier": "Bechtle Workplace Solutions",
+      "messageId": "mock-1776865053658"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1776865053738-oaez",
+    "timestamp": "2026-04-22T13:37:33.738Z",
+    "action": "NOTIFICATION_SENT",
+    "request_id": "R-0112",
+    "user_id": "system",
+    "metadata": {
+      "notification_type": "approval_request",
+      "to": "alice@company.com",
+      "status": "sent",
+      "approverName": "Procurement Manager",
+      "messageId": "mock-1776865053738"
+    },
+    "schema_version": 1
+  },
+  {
+    "id": "EVT-1776865053743-rzc3",
+    "timestamp": "2026-04-22T13:37:33.743Z",
+    "action": "REMINDER_SCHEDULED",
+    "request_id": "R-0112",
+    "user_id": null,
+    "metadata": {
+      "approverEmail": "alice@company.com",
+      "approverName": "Procurement Manager",
+      "firstDueAt": "2026-04-23T13:37:33.743Z"
+    },
+    "schema_version": 1
   }
 ]

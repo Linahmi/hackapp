@@ -36,7 +36,7 @@ export async function GET(req) {
     : getApproverTitleByEmail(session.email);
 
   // ── Scan audit log for APPROVAL_REQUIRED events ───────────────────────
-  const allEvents = getPersistedAuditEvents(null); // all events from file
+  const allEvents = await getPersistedAuditEvents(null);
   const approvalRequiredEvents = allEvents.filter(
     e => e.action === AUDIT_EVENTS.APPROVAL_REQUIRED
   );
@@ -52,7 +52,7 @@ export async function GET(req) {
 
   for (const [requestId, event] of byRequest.entries()) {
     // Skip if already decided
-    const decision = getApproval(requestId);
+    const decision = await getApproval(requestId);
     if (decision && decision.approval_status !== 'PENDING_APPROVAL') continue;
 
     const requiredApprover = event.metadata?.required_approver ?? null;
