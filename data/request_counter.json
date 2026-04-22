@@ -1,5 +1,5 @@
 {
-  "counter": 109,
+  "counter": 111,
   "requests": [
     {
       "id": "R-0001",
@@ -799,6 +799,22 @@
       "category": "IT > Laptops",
       "quantity": 120,
       "budget": 180000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0110",
+      "timestamp": "2026-04-04T14:45:41.569Z",
+      "category": "IT > Monitors",
+      "quantity": 85,
+      "budget": 42000,
+      "status": "recommended"
+    },
+    {
+      "id": "R-0111",
+      "timestamp": "2026-04-04T14:53:19.279Z",
+      "category": "IT > Monitors",
+      "quantity": 85,
+      "budget": 42000,
       "status": "recommended"
     }
   ]

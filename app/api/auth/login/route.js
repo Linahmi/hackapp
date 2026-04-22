@@ -8,6 +8,7 @@
 
 import { findUserByEmail } from '@/lib/users';
 import { createSessionToken, sessionCookieHeader } from '@/lib/session';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req) {
   let body;
@@ -31,6 +32,14 @@ export async function POST(req) {
   }
 
   const token = createSessionToken(user);
+
+  // Sync user into Prisma so requester_id FK on requests table resolves.
+  // Non-blocking — login succeeds even if DB is unavailable.
+  prisma.user.upsert({
+    where:  { id: user.id },
+    update: { email: user.email, name: user.name, role: user.role },
+    create: { id: user.id, email: user.email, name: user.name, role: user.role },
+  }).catch((e) => console.warn('[login] Prisma user sync failed:', e.message));
 
   return Response.json(
     { user: { id: user.id, email: user.email, name: user.name, role: user.role, title: user.title } },

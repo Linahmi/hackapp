@@ -44,7 +44,7 @@ export async function GET(req, { params }) {
   const { id: requestId } = await params;
 
   // Access control: requester must own the request
-  if (session.role === 'requester' && !isOwner(requestId, session.id)) {
+  if (session.role === 'requester' && !(await isOwner(requestId, session.id))) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 

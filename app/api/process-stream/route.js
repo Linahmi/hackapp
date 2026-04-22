@@ -12,6 +12,8 @@ import { explainConfidence } from '@/lib/confidenceScorer';
 import { logAuditEvent, AUDIT_EVENTS } from '@/lib/auditLogger';
 import { sendApprovalEmail, sendDecisionEmail } from '@/lib/notificationService';
 import { scheduleReminder } from '@/lib/reminderService';
+import { getApproverEmail } from '@/lib/users';
+import { getSessionFromRequest } from '@/lib/session';
 
 const HARD_BLOCK_CASE_TYPES = ['FAILED_IMPOSSIBLE_DATE', 'MORE_INFO_REQUIRED', 'NO_SUPPLIER_AVAILABLE', 'PENDING_RESOLUTION'];
 
@@ -35,6 +37,7 @@ function scoreSuppliersLocal(l1, l2, countries, qty, currency, originalReq, days
 const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
 export async function POST(req) {
+  const session = getSessionFromRequest(req);
   const body = await req.json();
   const { text, request_id } = body;
 
@@ -417,8 +420,10 @@ export async function POST(req) {
 
         // If approval is needed: notify the approver and schedule a reminder
         if (!isAutoApproved && requiredApprover) {
+          const resolvedApproverEmail = getApproverEmail(requiredApprover) ?? 'approver@company.com';
+
           await sendApprovalEmail({
-            to:            'approver@company.com',
+            to:            resolvedApproverEmail,
             requestId:     reqId,
             approverName:  requiredApprover,
             summary:       _summary,
@@ -429,7 +434,7 @@ export async function POST(req) {
 
           scheduleReminder({
             requestId:     reqId,
-            approverEmail: 'approver@company.com',
+            approverEmail: resolvedApproverEmail,
             approverName:  requiredApprover,
             summary:       _summary,
           });
@@ -449,6 +454,7 @@ export async function POST(req) {
           const requestPayload = {
             id: result.request_id,
             raw_text: text,
+            requester_id: session?.id ?? null,
             status: isAutoApproved ? 'APPROVED' : (requiredApprover ? 'PENDING_APPROVAL' : 'SUBMITTED'),
             category_l1: result.request_interpretation?.category_l1,
             category_l2: result.request_interpretation?.category_l2,

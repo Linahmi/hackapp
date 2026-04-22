@@ -19,7 +19,6 @@ import { cancelReminder } from '@/lib/reminderService';
 import { logAuditEvent, AUDIT_EVENTS, getPersistedAuditEvents } from '@/lib/auditLogger';
 import { setDecision, isDecided } from '@/lib/approvalStore';
 import { sendDecisionEmail } from '@/lib/notificationService';
-import { getApproverEmail } from '@/lib/users';
 
 export async function POST(req, { params }) {
   // ── Auth ────────────────────────────────────────────────────────────────

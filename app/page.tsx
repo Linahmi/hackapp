@@ -191,6 +191,13 @@ export default function Home() {
               sessionStorage.setItem("procuretrace_result", JSON.stringify(payload));
               sessionStorage.setItem("procuretrace_session_active", "true");
               sessionStorage.setItem("procuretrace_request_text", finalRequestText);
+              if (payload.request_id) {
+                fetch(`/api/requests/${payload.request_id}/claim`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                }).catch((err) => console.warn("[claim] failed:", err));
+              }
               setStage("done");
               router.push("/analysis");
               return;
