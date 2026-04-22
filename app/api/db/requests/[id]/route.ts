@@ -14,7 +14,6 @@ export async function GET(
     const request = await prisma.request.findUnique({
       where: { id },
       include: {
-        audit_logs: { orderBy: { timestamp: 'asc' } },
         decision: true,
       },
     })
@@ -93,7 +92,7 @@ export async function PATCH(
 
       return tx.request.findUnique({
         where: { id },
-        include: { decision: true, audit_logs: true },
+        include: { decision: true },
       })
     })
 
