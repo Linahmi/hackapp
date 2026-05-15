@@ -30,5 +30,21 @@
     "owner_name": "John Requester",
     "claimed_at": "2026-04-22T14:40:25.469Z",
     "draft_id": null
+  },
+  "R-0004": {
+    "request_id": "R-0004",
+    "owner_id": "c197dd1a-ed4f-43e8-a7ad-c64e451694d1",
+    "owner_email": "alice@company.com",
+    "owner_name": "Alice Martin",
+    "claimed_at": "2026-05-15T18:51:37.777Z",
+    "draft_id": null
+  },
+  "R-0005": {
+    "request_id": "R-0005",
+    "owner_id": "c197dd1a-ed4f-43e8-a7ad-c64e451694d1",
+    "owner_email": "alice@company.com",
+    "owner_name": "Alice Martin",
+    "claimed_at": "2026-05-15T19:01:46.245Z",
+    "draft_id": null
   }
 }

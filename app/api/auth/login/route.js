@@ -24,7 +24,7 @@ export async function POST(req) {
     return Response.json({ error: 'email and password are required' }, { status: 400 });
   }
 
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
 
   // Plain-text comparison — acceptable for hackathon only
   if (!user || user.password !== password) {

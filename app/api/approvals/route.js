@@ -1,26 +1,20 @@
 /**
  * GET /api/approvals
  *
- * Returns pending approval requests for the currently logged-in manager.
+ * Returns pending approval requests for the logged-in manager.
+ * Queries the requests + decisions tables directly — no audit log scan.
  *
- * Scoping logic:
- *   - admin → sees all PENDING_APPROVAL requests
- *   - manager → sees only requests where requiredApprover matches their title
- *     (cross-referenced via APPROVER_EMAIL_MAP in lib/users.js)
- *
- * Data source:
- *   Uses the persisted audit log (data/audit_log.json) to find all requests
- *   that reached APPROVAL_REQUIRED status, then filters out those already decided
- *   in the approvalStore (data/approvals.json).
+ * Scoping:
+ *   admin   → all PENDING_APPROVAL requests
+ *   manager → only requests where pipeline_result.recommendation.required_approver
+ *             matches their title (from APPROVER_EMAIL_MAP)
  */
 
 import { getSessionFromRequest } from '@/lib/session';
-import { getPersistedAuditEvents, AUDIT_EVENTS } from '@/lib/auditLogger';
-import { getApproval } from '@/lib/approvalStore';
 import { getApproverTitleByEmail } from '@/lib/users';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req) {
-  // ── Auth ──────────────────────────────────────────────────────────────
   const session = getSessionFromRequest(req);
   if (!session) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,73 +23,46 @@ export async function GET(req) {
     return Response.json({ error: 'Forbidden — manager or admin role required' }, { status: 403 });
   }
 
-  // ── Find approver title for this manager ──────────────────────────────
-  // admin sees everything; managers see their own queue
   const myApproverTitle = session.role === 'admin'
     ? null
     : getApproverTitleByEmail(session.email);
 
-  // ── Scan audit log for APPROVAL_REQUIRED events ───────────────────────
-  const allEvents = await getPersistedAuditEvents(null);
-  const approvalRequiredEvents = allEvents.filter(
-    e => e.action === AUDIT_EVENTS.APPROVAL_REQUIRED
-  );
+  // Single indexed query: pending requests scoped to this manager's queue
+  const rows = await prisma.request.findMany({
+    where: {
+      status: 'PENDING_APPROVAL',
+      OR: [{ decision: null }, { decision: { status: 'PENDING_APPROVAL' } }],
+      ...(myApproverTitle ? { required_approver: myApproverTitle } : {}),
+    },
+    include: { decision: true },
+    orderBy: { created_at: 'asc' },
+  });
 
-  // Deduplicate by request_id (keep latest event per request)
-  const byRequest = new Map();
-  for (const event of approvalRequiredEvents) {
-    byRequest.set(event.request_id, event);
-  }
-
-  // ── Build pending list ─────────────────────────────────────────────────
-  const pending = [];
-
-  for (const [requestId, event] of byRequest.entries()) {
-    // Skip if already decided
-    const decision = await getApproval(requestId);
-    if (decision && decision.approval_status !== 'PENDING_APPROVAL') continue;
-
-    const requiredApprover = event.metadata?.required_approver ?? null;
-
-    // Scope to this manager's queue
-    if (myApproverTitle !== null && requiredApprover !== myApproverTitle) continue;
-
-    // Enrich with parsed request details from audit trail
-    const requestEvents = allEvents.filter(e => e.request_id === requestId);
-    const parsedEvent   = requestEvents.find(e => e.action === AUDIT_EVENTS.REQUEST_PARSED);
-    const decisionEvent = requestEvents.find(e => e.action === AUDIT_EVENTS.DECISION_GENERATED);
-
-    const receivedEvent = requestEvents.find(e => e.action === AUDIT_EVENTS.REQUEST_RECEIVED) || requestEvents[0];
-    const topEscalation = decisionEvent?.metadata?.escalations?.[0]?.trigger ?? decisionEvent?.metadata?.case_type ?? null;
-
-    pending.push({
-      request_id:        requestId,
-      approval_status:   decision?.approval_status ?? 'PENDING_APPROVAL',
-      required_approver: requiredApprover,
-      submitted_at:      event.timestamp,
-      confidence:        event.metadata?.confidence ?? null,
-      escalation_count:  event.metadata?.escalation_count ?? null,
-      // From REQUEST_PARSED event
-      category:          parsedEvent?.metadata?.category ?? null,
-      quantity:          parsedEvent?.metadata?.quantity ?? null,
-      budget:            parsedEvent?.metadata?.budget ?? null,
-      currency:          parsedEvent?.metadata?.currency ?? null,
-      // From DECISION_GENERATED event
-      case_type:         decisionEvent?.metadata?.case_type ?? null,
-      decision_status:   decisionEvent?.metadata?.decision_status ?? null,
-      top_supplier:      decisionEvent?.metadata?.top_supplier ?? null,
-      requester:         receivedEvent?.user_id !== 'system' && receivedEvent?.user_id ? receivedEvent.user_id : 'Unknown Requester',
-      escalation_reason: topEscalation,
-    });
-  }
-
-  // Sort: oldest first (most urgent)
-  pending.sort((a, b) => new Date(a.submitted_at) - new Date(b.submitted_at));
+  const items = rows.map(r => {
+    const pipeline = r.pipeline_result;
+    return {
+      request_id:        r.id,
+      approval_status:   r.decision?.status ?? 'PENDING_APPROVAL',
+      required_approver: r.required_approver ?? null,
+      submitted_at:      r.created_at.toISOString(),
+      confidence:        pipeline?.confidence_score ?? null,
+      escalation_count:  pipeline?.escalations?.length ?? null,
+      category:          r.category_l2 ?? r.category_l1 ?? null,
+      quantity:          r.quantity,
+      budget:            r.budget_amount,
+      currency:          r.currency,
+      case_type:         pipeline?.case_type ?? null,
+      decision_status:   pipeline?.recommendation?.status ?? null,
+      top_supplier:      pipeline?.supplier_shortlist?.[0]?.supplier_name ?? null,
+      requester:         r.requester_id ?? 'Unknown Requester',
+      escalation_reason: pipeline?.escalations?.[0]?.trigger ?? null,
+    };
+  });
 
   return Response.json({
     approver:      session.name,
     approver_role: session.title ?? session.role,
-    total:         pending.length,
-    items:         pending,
+    total:         items.length,
+    items,
   });
 }

@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSessionFromRequest } from '@/lib/session'
 
 const VALID_STATUSES = ['SUBMITTED', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED']
 
 // GET /api/db/requests/[id] — return one request by id
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = getSessionFromRequest(req)
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const { id } = await params
 
@@ -25,12 +31,16 @@ export async function GET(
       )
     }
 
+    // Requesters can only view their own requests
+    if (session.role === 'requester' && request.requester_id !== session.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     return NextResponse.json(request)
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown database error'
-    console.error('[DB] GET /api/db/requests/[id] failed:', message)
+    console.error('[DB] GET /api/db/requests/[id] failed:', error instanceof Error ? error.message : error)
     return NextResponse.json(
-      { success: false, error: message },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -41,6 +51,14 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = getSessionFromRequest(req)
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  if (!['manager', 'admin'].includes(session.role)) {
+    return NextResponse.json({ error: 'Forbidden — manager or admin role required' }, { status: 403 })
+  }
+
   try {
     const { id } = await params
     const body = await req.json()
@@ -98,10 +116,9 @@ export async function PATCH(
 
     return NextResponse.json(updated)
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown database error'
-    console.error('[DB] PATCH /api/db/requests/[id] failed:', message)
+    console.error('[DB] PATCH /api/db/requests/[id] failed:', error instanceof Error ? error.message : error)
     return NextResponse.json(
-      { success: false, error: message },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     )
   }

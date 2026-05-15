@@ -29,7 +29,7 @@ export async function POST(req, { params }) {
     // no body is fine
   }
 
-  const record = claimRequest(
+  const record = await claimRequest(
     requestId,
     { id: session.id, email: session.email, name: session.name },
     draftId

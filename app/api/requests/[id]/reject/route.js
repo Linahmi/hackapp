@@ -10,6 +10,7 @@ import { cancelReminder } from '@/lib/reminderService';
 import { logAuditEvent, AUDIT_EVENTS, getPersistedAuditEvents } from '@/lib/auditLogger';
 import { setDecision, isDecided } from '@/lib/approvalStore';
 import { sendDecisionEmail } from '@/lib/notificationService';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req, { params }) {
   const session = getSessionFromRequest(req);
@@ -21,6 +22,17 @@ export async function POST(req, { params }) {
   }
 
   const { id: requestId } = await params;
+
+  const requestRecord = await prisma.request.findUnique({
+    where: { id: requestId },
+    select: { required_approver: true },
+  });
+  if (!requestRecord) {
+    return Response.json({ error: 'Request not found' }, { status: 404 });
+  }
+  if (session.role === 'manager' && requestRecord.required_approver && requestRecord.required_approver !== session.title) {
+    return Response.json({ error: 'Forbidden — this request is not in your approval queue' }, { status: 403 });
+  }
 
   if (await isDecided(requestId)) {
     return Response.json({ error: 'Request already decided' }, { status: 409 });

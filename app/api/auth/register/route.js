@@ -48,13 +48,13 @@ export async function POST(req) {
   }
 
   // ── Check email uniqueness ─────────────────────────────────────────────
-  const existing = findUserByEmail(email);
+  const existing = await findUserByEmail(email);
   if (existing) {
     return Response.json({ error: 'An account with this email already exists' }, { status: 409 });
   }
 
   // ── Create user ────────────────────────────────────────────────────────
-  const user = createUser({ name: name.trim(), email: email.trim(), password, role });
+  const user = await createUser({ name: name.trim(), email: email.trim(), password, role });
 
   // Auto-login: set session cookie immediately
   const token = createSessionToken({ ...user, password: undefined });
