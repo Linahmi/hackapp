@@ -65,6 +65,7 @@ export async function searchSupplier(
 
   try {
     const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch("https://api.exa.ai/search", {
       method: "POST",
       signal: controller.signal,
@@ -81,25 +82,33 @@ export async function searchSupplier(
         },
       }),
     });
+    clearTimeout(timeout);
 
     if (!res.ok) {
       const err = await res.text();
       console.error(`[Exa] API error ${res.status}:`, err);
-      return { supplier: supplierName, excerpts: [], searchQuery: query, suggestedCandidate: null };
+      return { supplier: supplierName, excerpts: [], searchQuery: query, suggestedCandidate: buildDatasetFallbackCandidate(productCategory, region) };
     }
 
     const data = await res.json();
+    const rawResults = (data.results ?? []) as ExaResultRow[];
 
-    const excerpts = ((data.results ?? []) as ExaResultRow[]).map((r) => ({
+    const excerpts = rawResults.map((r) => ({
       title: r.title ?? "",
       content: r.text ?? r.snippet ?? "",
       url: r.url ?? "",
     }));
 
-    return { supplier: supplierName, excerpts, searchQuery: query, suggestedCandidate: null };
+    return {
+      supplier: supplierName,
+      excerpts,
+      searchQuery: query,
+      suggestedCandidate: buildSuggestedCandidate(rawResults, productCategory, region),
+      liveCandidates: buildLiveCandidates(rawResults, productCategory, region),
+    };
   } catch (err) {
     console.error(`[Exa] Search failed for "${supplierName}":`, err);
-    return { supplier: supplierName, excerpts: [], searchQuery: query, suggestedCandidate: null };
+    return { supplier: supplierName, excerpts: [], searchQuery: query, suggestedCandidate: buildDatasetFallbackCandidate(productCategory, region) };
   }
 }
 

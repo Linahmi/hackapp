@@ -8,7 +8,6 @@ import AuditPDFExport        from "@/components/AuditPDFExport";
 import RequestInterpretation from "@/components/RequestInterpretation";
 import PolicyCheck           from "@/components/PolicyCheck";
 import MarketIntelCard, { SupplierIntelResult } from "@/components/MarketIntelCard";
-import { SupplierComparisonTable, Supplier, ConflictWarning } from "@/components/agent/SupplierComparisonTable";
 import { ArrowLeft } from "lucide-react";
 
 type ConfidenceDriver = { tone: "good" | "warn" | "danger"; label: string };
@@ -149,11 +148,56 @@ function ConflictBanner({ message }: { message: string }) {
   );
 }
 
+type MergedCandidate = {
+  name: string;
+  url?: string;
+  reason: string;
+  score: number;
+  source: "exa" | "dataset_fallback" | "internal";
+  sourceCount?: number;
+  preferred?: boolean;
+  incumbent?: boolean;
+  currency?: string;
+  total_price?: number;
+  standard_lead_time_days?: number;
+};
+
 function LiveSupplierShortlist({
   candidates,
+  csvCandidates = [],
 }: {
   candidates: NonNullable<SupplierIntelResult["liveCandidates"]>;
+  csvCandidates?: ShortlistSupplier[];
 }) {
+  const internalEntries: MergedCandidate[] = csvCandidates.map((s) => ({
+    name: s.supplier_name,
+    url: undefined,
+    reason: s.recommendation_note ?? "Approved internal supplier",
+    score: typeof s.composite_score === "number" ? Math.round(s.composite_score * 100) : 62,
+    source: "internal" as const,
+    sourceCount: 0,
+    preferred: s.preferred,
+    incumbent: s.incumbent,
+    currency: s.currency,
+    total_price: s.total_price,
+    standard_lead_time_days: s.standard_lead_time_days,
+  }));
+
+  const exaEntries: MergedCandidate[] = candidates.map((c) => ({
+    name: c.name,
+    url: c.url,
+    reason: c.reason,
+    score: c.score,
+    source: c.source,
+    sourceCount: c.sourceCount,
+  }));
+
+  const all = [...internalEntries, ...exaEntries].sort((a, b) => b.score - a.score);
+  const exaCount = exaEntries.length;
+  const internalCount = internalEntries.length;
+
+  if (all.length === 0) return null;
+
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-6 py-3.5">
@@ -161,71 +205,112 @@ function LiveSupplierShortlist({
           Updated Supplier Shortlist
         </span>
         <span className="text-xs font-medium text-gray-400">
-          {candidates.length} live candidates via Exa
+          {internalCount} internal · {exaCount} live via Exa
         </span>
       </div>
 
       <div className="divide-y divide-gray-100">
-        {candidates.map((candidate, index) => (
-          <div
-            key={`${candidate.name}-${candidate.url || index}`}
-            className={`px-6 py-5 ${index === 0 ? "bg-blue-50/40" : "bg-white"}`}
-            style={index === 0 ? { borderLeft: "3px solid #2563eb" } : { borderLeft: "3px solid transparent" }}
-          >
-            <div className="flex items-start justify-between gap-6">
-              <div className="min-w-0 flex-1">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="text-lg font-bold leading-tight text-gray-900">{candidate.name}</span>
-                  {index === 0 && (
-                    <span className="inline-block rounded border border-blue-500/40 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-blue-600 leading-none">
-                      Live Rank #1
-                    </span>
+        {all.map((candidate, index) => {
+          const isInternal = candidate.source === "internal";
+          const accentColor = isInternal ? "#16a34a" : "#2563eb";
+          const bgClass = index === 0 ? (isInternal ? "bg-green-50/40" : "bg-blue-50/40") : "bg-white";
+
+          return (
+            <div
+              key={`${candidate.name}-${index}`}
+              className={`px-6 py-5 ${bgClass}`}
+              style={{ borderLeft: `3px solid ${index === 0 ? accentColor : "transparent"}` }}
+            >
+              <div className="flex items-start justify-between gap-6">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="text-lg font-bold leading-tight text-gray-900">{candidate.name}</span>
+                    {index === 0 && (
+                      <span
+                        className="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest leading-none"
+                        style={{ background: `${accentColor}18`, border: `1px solid ${accentColor}66`, color: accentColor }}
+                      >
+                        Rank #1
+                      </span>
+                    )}
+                    {isInternal ? (
+                      <>
+                        <span className="inline-block rounded border border-green-500/30 bg-green-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-green-700 leading-none">
+                          Approved
+                        </span>
+                        {candidate.preferred && (
+                          <span className="inline-block rounded border border-indigo-300/50 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-indigo-600 leading-none">
+                            Preferred
+                          </span>
+                        )}
+                        {candidate.incumbent && (
+                          <span className="inline-block rounded border border-emerald-300/50 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-600 leading-none">
+                            Incumbent
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="inline-block rounded border border-blue-500/20 bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-blue-600 leading-none">
+                        {candidate.source === "exa"
+                          ? `${candidate.sourceCount} live source${candidate.sourceCount === 1 ? "" : "s"}`
+                          : "dataset fallback"}
+                      </span>
+                    )}
+                  </div>
+
+                  {isInternal ? (
+                    <div className="mb-3 flex flex-wrap gap-4 text-sm text-gray-700">
+                      {candidate.total_price != null && (
+                        <span className="font-semibold">
+                          {candidate.currency ?? "EUR"} {candidate.total_price.toLocaleString()}
+                        </span>
+                      )}
+                      {candidate.standard_lead_time_days != null && (
+                        <span className="text-gray-500">{candidate.standard_lead_time_days}d lead time</span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mb-3 flex items-baseline gap-1.5">
+                      <span className="text-base font-bold text-gray-900">External candidate</span>
+                      <span className="text-xs text-gray-400">· qualification required before award</span>
+                    </div>
                   )}
-                  <span className="inline-block rounded border border-blue-500/20 bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-blue-600 leading-none">
-                    {candidate.source === "exa" ? `${candidate.sourceCount} live source${candidate.sourceCount === 1 ? "" : "s"}` : "dataset fallback"}
-                  </span>
+
+                  <div className="rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-3">
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                      {isInternal ? "Recommendation note" : "Live justification"}
+                    </p>
+                    <p className="text-xs leading-relaxed text-gray-600">{candidate.reason}</p>
+                    {candidate.url && (
+                      <a
+                        href={candidate.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block text-xs font-semibold text-blue-600 hover:text-blue-800"
+                      >
+                        Open live source
+                      </a>
+                    )}
+                  </div>
                 </div>
 
-                <div className="mb-3 flex items-baseline gap-1.5">
-                  <span className="text-base font-bold text-gray-900">External candidate</span>
-                  <span className="text-xs text-gray-400">· qualification required before award</span>
-                </div>
-
-                <div className="rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-3">
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                    Live justification
-                  </p>
-                  <p className="text-xs leading-relaxed text-gray-600">
-                    {candidate.reason}
-                  </p>
-                  {candidate.url && (
-                    <a
-                      href={candidate.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 inline-block text-xs font-semibold text-blue-600 hover:text-blue-800"
-                    >
-                      Open live source
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              <div className="shrink-0 flex flex-col items-end justify-center pl-2">
-                <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                  Score
-                </span>
-                <div className={`text-3xl font-black tabular-nums leading-none ${index === 0 ? "text-blue-600" : "text-gray-600"}`}>
-                  {candidate.score}
-                  <span className="text-sm font-medium text-gray-400"> / 100</span>
+                <div className="shrink-0 flex flex-col items-end justify-center pl-2">
+                  <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Score</span>
+                  <div
+                    className="text-3xl font-black tabular-nums leading-none"
+                    style={{ color: index === 0 ? accentColor : "#4b5563" }}
+                  >
+                    {candidate.score}
+                    <span className="text-sm font-medium text-gray-400"> / 100</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <p className="mt-2 px-1 text-[10px] leading-relaxed text-gray-400">
-        This shortlist is generated from live Exa web search and is meant for sourcing discovery. It does not override procurement policy or approved-supplier controls.
+        Internal candidates are approved suppliers scored by price, lead time, quality, risk, and ESG. External candidates are sourced from live Exa web search and require qualification before award.
       </p>
     </div>
   );
@@ -380,32 +465,6 @@ export default function AnalysisClient() {
     result.recommendation?.status === "cannot_proceed" || hasBlockers
       ? "danger"
       : "good";
-  const comparisonSuppliers: Supplier[] = (result.supplier_shortlist ?? []).map((supplier, index) => ({
-    supplier_id: supplier.supplier_id,
-    name: supplier.supplier_name,
-    price: formatAmount(supplier.total_price, supplier.currency ?? "EUR"),
-    tco: formatAmount(supplier.tco, supplier.currency ?? "EUR"),
-    totalPriceValue: supplier.total_price,
-    tcoValue: supplier.tco ?? undefined,
-    leadTimeDays: supplier.standard_lead_time_days,
-    risk: riskLabel(supplier.risk_score ?? 50),
-    esg: esgLabel(supplier.esg_score ?? 50),
-    score: typeof supplier.composite_score === "number" ? Math.round(supplier.composite_score * 100) : null,
-    badge: index === 0 ? "best" : "normal",
-    recommendationNote: supplier.recommendation_note,
-    historicalFlags: supplier.historical_flags,
-    preferred: supplier.preferred,
-    incumbent: supplier.incumbent,
-    breakdown: [
-      { label: "Price", value: Math.round((supplier.score_breakdown?.price ?? 0.5) * 100) },
-      { label: "Risk", value: Math.round((supplier.score_breakdown?.risk ?? 0.5) * 100) },
-      { label: "Delivery", value: Math.round((supplier.score_breakdown?.lead_time ?? 0.5) * 100) },
-      { label: "ESG", value: Math.round((supplier.score_breakdown?.esg ?? 0.5) * 100) },
-    ],
-  }));
-  const comparisonConflicts: ConflictWarning[] = blockingEscalations
-    .filter((escalation) => escalation.trigger)
-    .map((escalation) => ({ message: escalation.trigger! }));
   const liveCandidates = marketIntel.find((entry) => entry.liveCandidates?.length)?.liveCandidates ?? [];
   const inlineErrorMessage =
     blockingEscalations[0]?.trigger
@@ -528,18 +587,12 @@ export default function AnalysisClient() {
         </div>
       )}
 
-      {comparisonSuppliers.length > 0 && (
-        <div className="w-full max-w-2xl animate-fade-slide-up delay-325">
-          <SupplierComparisonTable
-            suppliers={comparisonSuppliers}
-            conflicts={comparisonConflicts}
-          />
-        </div>
-      )}
-
-      {liveCandidates.length > 0 && (
+      {(liveCandidates.length > 0 || (result.supplier_shortlist ?? []).length > 0) && (
         <div className="w-full max-w-2xl animate-fade-slide-up delay-340">
-          <LiveSupplierShortlist candidates={liveCandidates} />
+          <LiveSupplierShortlist
+            candidates={liveCandidates}
+            csvCandidates={result.supplier_shortlist ?? []}
+          />
         </div>
       )}
 
