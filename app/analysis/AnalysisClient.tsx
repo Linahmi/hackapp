@@ -111,6 +111,7 @@ const CASE_CONFIG: Record<string, { bg: string; border: string; iconColor: strin
   FAILED_IMPOSSIBLE_DATE:{ bg: "rgba(220,38,38,0.06)", border: "rgba(220,38,38,0.3)",   iconColor: "#dc2626", title: "Delivery date is not achievable",     desc: "The requested delivery window cannot be met by any available supplier. Please revise the deadline or accept an alternative timeline." },
   PENDING_RESOLUTION:   { bg: "rgba(220,38,38,0.06)", border: "rgba(220,38,38,0.3)",   iconColor: "#dc2626", title: "Pending resolution",                 desc: "The request cannot proceed automatically. Resolve the blocking policy, budget, or approval issue below before continuing." },
   NO_SUPPLIER_AVAILABLE: { bg: "rgba(220,38,38,0.06)", border: "rgba(220,38,38,0.3)",   iconColor: "#dc2626", title: "No compliant supplier found",          desc: "No supplier in the approved panel can fulfill this request with the given constraints. A sourcing specialist will need to intervene." },
+  OUT_OF_SCOPE:          { bg: "rgba(107,114,128,0.06)", border: "rgba(107,114,128,0.3)", iconColor: "#6b7280", title: "Category outside approved panel",       desc: "This category is not covered by any approved panel supplier. Candidates discovered via live market search are shown below as a starting point — a full RFQ and onboarding process is required before any award." },
   SIMILAR_NOT_EXACT_MATCH:{ bg: "rgba(99,102,241,0.06)", border: "rgba(99,102,241,0.3)", iconColor: "#6366f1", title: "Similar alternatives found",            desc: "The exact product or configuration requested is not available. The suppliers below offer the closest compliant alternatives." },
   READY_FOR_VALIDATION:  { bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.3)",   iconColor: "#22c55e", title: "Ready for validation",                 desc: "All compliance checks passed and suppliers are available. Review the recommendation below and validate to proceed." },
 };
@@ -398,7 +399,7 @@ export default function AnalysisClient() {
     const category = result.request_interpretation?.category_l2 ?? result.request_interpretation?.category_l1 ?? "enterprise hardware";
     const region = result.request_interpretation?.delivery_countries?.[0] ?? "Europe";
 
-    if (!shortlist.length && result.case_type !== "NO_SUPPLIER_AVAILABLE") return;
+    if (!shortlist.length && result.case_type !== "NO_SUPPLIER_AVAILABLE" && result.case_type !== "OUT_OF_SCOPE") return;
 
     const discoveryMode = shortlist.length === 0;
     const controller = new AbortController();
